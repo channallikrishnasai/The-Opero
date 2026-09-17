@@ -38,6 +38,11 @@ try:
 except Exception:      # pragma: no cover — HUD must never die over cosmetics
     HoloAvatar = None
 
+try:
+    from core.gradient_orb import GradientOrb
+except Exception:      # pragma: no cover
+    GradientOrb = None
+
 
 def _base_dir() -> Path:
     if getattr(sys, "frozen", False):
@@ -400,6 +405,14 @@ class HudCanvas(QWidget):
             except Exception:
                 self._avatar = None
 
+        # Gradient orb centrepiece — a third option alongside face and core.
+        self._orb = None
+        if GradientOrb is not None:
+            try:
+                self._orb = GradientOrb()
+            except Exception:
+                self._orb = None
+
         # Which centrepiece to draw. Read once here and changed live by the
         # settings toggle; the avatar object is kept either way so switching
         # back is instant and costs no reload.
@@ -589,6 +602,8 @@ class HudCanvas(QWidget):
                               v_open=v_open, v_wide=v_wide or 0.0,
                               v_level=v_level, v_seq=v_seq,
                               v_hop=(sched[2] if sched is not None else 0.02))
+        elif self.hud_style == "orb" and self._orb is not None:
+            self._orb.step(dt, amp)
         else:
             # Fallback core: slow "breathing" base target, lifted by the level.
             if now - self._last_t > (0.12 if self.speaking else 0.5):
@@ -860,10 +875,29 @@ class HudCanvas(QWidget):
                     _acc = qcol(C.PRI)
             self._avatar.paint(p, cx, _head_cy, _r_head, _main, _acc, qcol(C.BG))
 
+        # ── gradient orb ────────────────────────────────────────────────────
+        elif self.hud_style == "orb" and self._orb is not None:
+            _band_t = 12.0
+            _band_h = max(60.0, _sy_status - 12.0 - _band_t)
+            _r_orb = min(W * 0.42, _band_h / 2.0)
+            _orb_cy = _band_t + _band_h / 2.0
+
+            if self.muted:
+                _main = _acc = qcol(C.MUTED_C)
+            else:
+                _main = qcol(C.PRI)
+                if self.speaking:
+                    _acc = qcol(C.ACC)
+                elif self.state in ("THINKING", "PROCESSING"):
+                    _acc = qcol(C.ACC2)
+                elif self.state == "LISTENING":
+                    _acc = qcol(C.GREEN)
+                else:
+                    _acc = qcol(C.PRI)
+            self._orb.paint(p, cx, _orb_cy, _r_orb, _main, _acc, qcol(C.BG))
+
         # reactor core — the other centrepiece, and the fallback if the head
-        # could not be built. There is no third path: the old face.png branch
-        # was unreachable (no such file ships) and the bare orb it fell through
-        # to is what this replaces.
+        # could not be built.
         else:
             _band_t = 12.0
             _band_h = max(60.0, _sy_status - 12.0 - _band_t)
@@ -2973,6 +3007,7 @@ class MainWindow(QMainWindow):
         self._current_file: str | None = None
         self._remote_overlay: RemoteKeyOverlay | None = None
         self._customize_overlay: CustomizeOverlay | None = None
+        self._voice_engine: str = "opero"   # local UI state only — not persisted
 
         central = QWidget()
         central.setStyleSheet(f"background: {C.BG};")
@@ -3961,6 +3996,14 @@ class MainWindow(QMainWindow):
         lay.addWidget(self._hud_btn)
         self._refresh_hud_btn()
 
+        self._voice_engine_btn = QPushButton()
+        self._voice_engine_btn.setFixedHeight(26)
+        self._voice_engine_btn.setFont(QFont("Courier New", 7))
+        self._voice_engine_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._voice_engine_btn.clicked.connect(self._toggle_voice_engine)
+        lay.addWidget(self._voice_engine_btn)
+        self._refresh_voice_engine_btn()
+
         audio_btn = QPushButton("🎧  AUDIO DEVICES")
         audio_btn.setFixedHeight(26)
         audio_btn.setFont(QFont("Courier New", 7))
@@ -4765,29 +4808,37 @@ class MainWindow(QMainWindow):
 
     def _refresh_hud_btn(self):
         from memory.config_manager import get_hud_style
-        face = get_hud_style() == "face"
-        # Neither state is "off", so both read as active — this is a choice
-        # between two things, not a switch with a disabled side.
+        style_name = get_hud_style()
+        # All three are active choices — a cycle, not a toggle.
         style = f"""
             QPushButton {{ background: {C.PANEL2}; color: {C.PRI};
                 border: 1px solid {C.BORDER_A}; border-radius: 3px;
                 text-align: left; padding: 0 8px; }}
             QPushButton:hover {{ color: {C.WHITE}; border: 1px solid {C.BORDER_B}; }}"""
-        self._hud_btn.setText("🧑  HUD: ANIMATED FACE" if face
-                              else "◉  HUD: REACTOR CORE")
+        _labels = {
+            "face": "🧑  HUD: REALISTIC FACE",
+            "orb":  "✨  HUD: GRADIENT ORB",
+            "core": "◉  HUD: REACTOR CORE",
+        }
+        _tips = {
+            "face": "A realistic human face with hair, skin and expressive features. "
+                    "Tap to switch to the gradient orb.",
+            "orb":  "An animated gradient orb with colour-shifting rings and spark "
+                    "particles. Tap to switch to the reactor core.",
+            "core": "A reactor core that turns with the state and moves with your "
+                    "voice. Tap to switch to the realistic face.",
+        }
+        self._hud_btn.setText(_labels.get(style_name, _labels["face"]))
         self._hud_btn.setStyleSheet(style)
-        self._hud_btn.setToolTip(
-            "An animated head that speaks your words and shows what OPERO is "
-            "doing. Tap to switch to the reactor core."
-            if face else
-            "A reactor core that turns with the state and moves with your voice. "
-            "Tap to switch to the animated head.")
+        self._hud_btn.setToolTip(_tips.get(style_name, ""))
 
     def _toggle_hud_style(self):
-        """Swap the centrepiece. Both objects stay in memory, so the change is
-        instant and switching back costs nothing."""
+        """Cycle through the three centrepieces: face → orb → core → face.
+        All objects stay in memory, so switching is instant."""
         from memory.config_manager import get_hud_style, save_hud_style
-        want = "core" if get_hud_style() == "face" else "face"
+        current = get_hud_style()
+        _cycle = {"face": "orb", "orb": "core", "core": "face"}
+        want = _cycle.get(current, "face")
         save_hud_style(want)
         try:
             self.hud.hud_style = want
@@ -4795,9 +4846,43 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
         self._refresh_hud_btn()
+        _msg = {
+            "face": "SYS: HUD switched to the realistic face.",
+            "orb":  "SYS: HUD switched to the gradient orb.",
+            "core": "SYS: HUD switched to the reactor core.",
+        }
+        self._log.append_log(_msg.get(want, ""))
+
+    # ── voice engine toggle ──────────────────────────────────────────────
+    def _refresh_voice_engine_btn(self):
+        """Update the VOICE ENGINE button to reflect the current selection."""
+        is_opero = self._voice_engine == "opero"
+        self._voice_engine_btn.setText(
+            "🎙  VOICE ENGINE: OPERO" if is_opero
+            else "🎙  VOICE ENGINE: ASSEMBLYAI"
+        )
+        self._voice_engine_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {C.PANEL2}; color: {C.PRI};
+                border: 1px solid {C.BORDER_A}; border-radius: 3px;
+                text-align: left; padding: 0 8px;
+            }}
+            QPushButton:hover {{ color: {C.WHITE}; border: 1px solid {C.BORDER_B}; }}
+        """)
+        self._voice_engine_btn.setToolTip(
+            "OPERO voice — native Gemini Live pipeline. Tap to switch to AssemblyAI."
+            if is_opero else
+            "AssemblyAI voice — real-time streaming STT. Tap to switch to OPERO.")
+
+    def _toggle_voice_engine(self):
+        """Switch the local voice engine selection. No backend change —
+        the actual provider switch will be wired later."""
+        self._voice_engine = "assemblyai" if self._voice_engine == "opero" else "opero"
+        self._refresh_voice_engine_btn()
         self._log.append_log(
-            "SYS: HUD switched to the animated face." if want == "face"
-            else "SYS: HUD switched to the reactor core.")
+            "SYS: Voice engine set to AssemblyAI (UI only — not active yet)."
+            if self._voice_engine == "assemblyai"
+            else "SYS: Voice engine set to OPERO (UI only — not active yet).")
 
     def _toggle_ptt(self):
         from memory.config_manager import (get_push_to_talk_enabled,
