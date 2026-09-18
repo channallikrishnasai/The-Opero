@@ -72,7 +72,8 @@ from memory.config_manager     import (
     get_brief_enabled, get_media_resolution, get_proactive_audio_enabled,
     get_push_to_talk_enabled, get_thinking_enabled, get_turn_tuning, get_voice,
     get_wake_word_enabled, save_wake_word_enabled,    get_input_device, get_output_device,
-    get_whatsapp_auto_answer_active, get_whatsapp_busy_message,
+    get_whatsapp_auto_answer_active, get_whatsapp_busy_message, get_voice_engine,
+    save_voice_engine,
 )
 from core.plugin_loader        import discover_plugins
 from core                      import undo as undo_stack
@@ -576,6 +577,9 @@ class OperaLive:
         self.ui.on_audio_device_change = self._on_audio_device_change
         self._reconnect_event: asyncio.Event | None = None
         self._reconnect_keep = True   # False → next rebuild drops the resumption handle
+        self._voice_generation = 0     # rejects callbacks from a retired input provider
+        self._assemblyai_engine = None
+        self._background_services_started = False
 
         # ── Session resumption ─────────────────────────────────────────
         # The server issues a resumption handle every few seconds and reissues
@@ -866,14 +870,96 @@ class OperaLive:
         """Voice engine switched (OPERO ↔ AssemblyAI).  Stops the current
         engine so the outer run() loop re-reads the config and starts the
         new one."""
-        # Stop the AssemblyAI engine if it's running
+        # Do not close an SDK websocket from the UI callback. Retire its
+        # callbacks now; TaskGroup teardown performs the blocking close before
+        # another provider is allowed to open the microphone.
         aai = getattr(self, '_assemblyai_engine', None)
         if aai is not None:
-            aai.stop()
+            aai.request_stop()
+        self._voice_generation += 1
         # For Gemini Live, signal a reconnect so the TaskGroup unwinds.
         # Flag it so _run_gemini_live returns to the outer loop.
         self._voice_engine_reconnect = True
         self.request_reconnect(keep_context=False, reason="voice engine change")
+
+    def _submit_assemblyai_transcript(self, text: str, generation: int) -> None:
+        """Feed an AssemblyAI *final* through the existing Gemini text route."""
+        if (generation != self._voice_generation or not self.session
+                or get_voice_engine() != "assemblyai"):
+            return
+        if self._wake_enabled and not self._awake:
+            return
+        text = text.strip()
+        if not text:
+            return
+        self._last_user_speech = time.monotonic()
+        self.ui.write_log(f"You: {text}")
+        self._session_log.append(f"User: {text}")
+        if self._dashboard:
+            asyncio.create_task(self._dashboard.broadcast({
+                "type": "log", "speaker": "user", "text": text,
+                "ts": datetime.now().isoformat(),
+            }))
+        asyncio.create_task(self.session.send_client_content(
+            turns={"role": "user", "parts": [{"text": text}]}, turn_complete=True,
+        ))
+
+    def _on_assemblyai_error(self, generation: int, message: str) -> None:
+        """A streaming failure is recoverable and must not leave a live mic behind."""
+        if generation != self._voice_generation:
+            return
+        # Retire all queued callbacks before changing the persisted selector.
+        self._voice_generation += 1
+        self.ui.write_log(f"ERR: {message} Switch back to OPERO or retry AssemblyAI.")
+        engine = self._assemblyai_engine
+        if engine is not None:
+            engine.request_stop()
+        # Failure is a controlled fallback, not an implicit retry loop. The
+        # user may choose AssemblyAI again from the existing selector to retry.
+        save_voice_engine("opero")
+        self.ui._voice_engine = "opero"
+        self.ui._refresh_voice_engine_btn()
+        self._voice_engine_reconnect = True
+        self.request_reconnect(keep_context=True, reason="AssemblyAI connection failure")
+
+    async def _run_assemblyai_input(self, engine, generation: int) -> None:
+        """Convert adapter startup/transport failures into a controlled reconnect."""
+        try:
+            await engine.run()
+        except Exception:
+            self._on_assemblyai_error(
+                generation, "AssemblyAI could not start. Check its key and network connection.",
+            )
+            # The reconnect watcher owns TaskGroup teardown. Waiting here avoids
+            # an ExceptionGroup bypassing that controlled shutdown path.
+            await asyncio.Event().wait()
+
+    def _accept_assemblyai_audio(self, indata, send_audio) -> None:
+        """Apply OPERO's wake/PTT/EchoGuard state machine before AAI sees PCM."""
+        if self._wake_enabled and not self._awake:
+            if self._wake_detector is not None:
+                self._wake_detector.feed(indata)
+            return
+        with self._speaking_lock:
+            if self._is_speaking:
+                return
+        if self._tail_active():
+            try:
+                if not self._echo.is_user_speech(indata, SEND_SAMPLE_RATE, _pcm_level(indata)):
+                    return
+                self._tail_until = 0.0
+            except Exception:
+                return
+        elif self._echo._hist:
+            self._echo.reset()
+        if self._ptt_enabled and not self._ptt_held:
+            return
+        if not self.ui.muted and not self._phone_active:
+            send_audio(indata.tobytes())
+            try:
+                self.ui.set_audio_level(_pcm_level(indata))
+            except Exception:
+                pass
 
     async def _watch_reconnect(self):
         """Session-scoped task: when a voluntary reconnect is requested, raise a
@@ -2147,46 +2233,34 @@ class OperaLive:
         self.ui.on_voice_engine_change = self._on_voice_engine_change
 
         while True:
-            # ── Voice engine dispatch ────────────────────────────────────────
-            from memory.config_manager import get_voice_engine
             voice_engine = get_voice_engine()
-
             if voice_engine == "assemblyai":
-                self.ui.write_log("SYS: Voice engine → AssemblyAI (streaming STT + TTS).")
-                try:
-                    from core.assemblyai_voice import AssemblyAIVoice
-                    aai_engine = AssemblyAIVoice(self)
-                    self._assemblyai_engine = aai_engine
-                    await aai_engine.run()   # blocks until engine stops
-                except Exception as e:
-                    print(f"[AssemblyAI] Engine failed: {e}", file=sys.stderr)
-                    import traceback; traceback.print_exc()
-                    self.ui.write_log(f"SYS: AssemblyAI failed ({e}). Falling back to OPERO voice.")
-                    from memory.config_manager import save_voice_engine
+                from core.assemblyai_voice import AssemblyAIVoice
+                error = AssemblyAIVoice.validate_configuration()
+                if error:
+                    self.ui.write_log(f"ERR: {error} Staying on OPERO voice.")
                     save_voice_engine("opero")
-                    self._voice_engine = "opero"
+                    self.ui._voice_engine = "opero"
                     self.ui._refresh_voice_engine_btn()
-                finally:
-                    self._assemblyai_engine = None
-                # Loop back — get_voice_engine() will return the current choice
-                continue
+                    continue
+                self.ui.write_log("SYS: Voice engine → AssemblyAI (streaming STT).")
+            await self._run_gemini_live(voice_engine)
 
-            # ── Gemini Live path (default) ───────────────────────────────────
-            await self._run_gemini_live()
-
-    async def _run_gemini_live(self):
-        """Gemini Live bidirectional audio session — the original OPERO voice."""
-        # Start dashboard (optional — needs: pip install fastapi "uvicorn[standard]" cryptography)
-        try:
-            from dashboard.server import DashboardServer
-            self._dashboard = DashboardServer()
-            self._dashboard.set_connect_callback(self._on_phone_connected)
-            asyncio.create_task(self._dashboard.serve())
-            # Runs for the whole lifetime, not just inside an active session
-            asyncio.create_task(self._process_dashboard_commands())
-        except Exception as e:
-            print(f"[Dashboard] Disabled: {e}")
-            self._dashboard = None
+    async def _run_gemini_live(self, voice_engine: str = "opero"):
+        """Gemini Live brain/output with either native or AssemblyAI microphone input."""
+        # Dashboard is process-scoped, not provider-scoped. A voice switch must
+        # not start another server or orphan another command relay.
+        if not self._background_services_started:
+            self._background_services_started = True
+            try:
+                from dashboard.server import DashboardServer
+                self._dashboard = DashboardServer()
+                self._dashboard.set_connect_callback(self._on_phone_connected)
+                asyncio.create_task(self._dashboard.serve())
+                asyncio.create_task(self._process_dashboard_commands())
+            except Exception as e:
+                print(f"[Dashboard] Disabled: {e}")
+                self._dashboard = None
 
         while True:
             try:
@@ -2245,7 +2319,17 @@ class OperaLive:
                     self._reconnect_event.clear()  # ignore requests from before this session
                     tg.create_task(self._watch_reconnect())
                     tg.create_task(self._send_realtime())
-                    tg.create_task(self._listen_audio())
+                    if voice_engine == "assemblyai":
+                        from core.assemblyai_voice import AssemblyAIVoice
+                        self._voice_generation += 1
+                        self._assemblyai_engine = AssemblyAIVoice(
+                            self, self._voice_generation, self._submit_assemblyai_transcript,
+                        )
+                        tg.create_task(self._run_assemblyai_input(
+                            self._assemblyai_engine, self._voice_generation,
+                        ))
+                    else:
+                        tg.create_task(self._listen_audio())
                     tg.create_task(self._receive_audio())
                     tg.create_task(self._play_audio())
                     tg.create_task(self._run_system_monitor())
@@ -2367,6 +2451,9 @@ class OperaLive:
                 else:
                     self._conn_backoff = 3
             finally:
+                if self._assemblyai_engine is not None:
+                    self._assemblyai_engine.stop()
+                    self._assemblyai_engine = None
                 self.session = None
                 # Only save if there was a real conversation (≥3 turns)
                 if len(self._session_log) >= 3:
