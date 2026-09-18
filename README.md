@@ -1,23 +1,42 @@
-# OPERO
+<div align="center">
 
-<p align="center">
-  <strong>A native, voice-first desktop operator that can reason, see, speak, automate, and report back.</strong><br />
-  Built with PyQt6, Gemini Live, AssemblyAI, Playwright, and local desktop controls.
-</p>
+# ◈ OPERO
 
-<p align="center">
-  <a href="#quick-start">Quick start</a> · <a href="#capabilities">Capabilities</a> · <a href="#whatsapp-call-assistant">WhatsApp</a> · <a href="#automation-studio">Automation Studio</a> · <a href="#demo-runbook">Demo</a>
-</p>
+### _A native voice-first desktop operator_
+
+`VOICE` · `VISION` · `AUTOMATION` · `LOCAL CONTROL`
+
+![Python](https://img.shields.io/badge/Python-3.11%2B-55c8ff?style=for-the-badge&logo=python&logoColor=white)
+![Desktop](https://img.shields.io/badge/Desktop-PyQt6-20d67a?style=for-the-badge)
+![Voice](https://img.shields.io/badge/Voice-Gemini%20Live-e0ad36?style=for-the-badge)
+![Automation](https://img.shields.io/badge/Automation-Local-9d7bff?style=for-the-badge)
+
+<sub>OPERO listens, reasons, acts, and reports the verified result.</sub>
+
+[**BOOT SYSTEM**](#quick-start) · [**CAPABILITIES**](#capabilities) · [**AUTOMATION STUDIO**](#automation-studio) · [**WHATSAPP LINK**](#whatsapp-call-assistant) · [**DEMO RUNBOOK**](#demo-runbook)
+
+</div>
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  OPERO // DESKTOP OPERATOR                                      STATUS: READY │
+│  INPUT  voice · text · file · camera       OUTPUT  speech · UI · local action │
+│  CORE   Gemini Live · AssemblyAI · Playwright · PyQt6 · local tool registry   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+> [!IMPORTANT]
+> OPERO is designed to act, not merely describe how to act. It keeps consequential work visible and stops for review before final submissions or irreversible external actions.
 
 ---
 
-## Why OPERO
+## ◈ // WHY OPERO
 
 Most assistants stop at advice. OPERO is designed to turn a spoken or typed request into an observable desktop result: opening an app, researching current information, processing a file, controlling a browser, preparing an application, or routing a voice interaction through a visual HUD.
 
 OPERO is a **local desktop application**. Its interface, audio devices, files, browser automation, and WhatsApp Desktop controls remain on the machine. Cloud services are used only for capabilities you configure, such as Gemini or AssemblyAI.
 
-## At a glance
+## ◈ // SYSTEM MAP
 
 | Area | What OPERO provides | Primary component |
 | --- | --- | --- |
@@ -31,7 +50,8 @@ OPERO is a **local desktop application**. Its interface, audio devices, files, b
 | Remote access | Optional phone dashboard with encrypted pairing | `dashboard/` |
 | Extensibility | Auto-discovered actions and plugins | `core/action_loader.py`, `plugins/` |
 
-## Capabilities
+<a id="capabilities"></a>
+## ◈ // CAPABILITIES
 
 | Capability | Typical request | Outcome |
 | --- | --- | --- |
@@ -44,11 +64,12 @@ OPERO is a **local desktop application**. Its interface, audio devices, files, b
 | Call assistance | “Answer WhatsApp calls and say I’m busy.” | Optional QR pairing, bridge detection, and Desktop-call handling |
 | Code similarity | “Run MOSS on this submissions folder.” | Submits authorized source code and returns a MOSS report link |
 
-> OPERO should report verified tool results, not claim an action occurred when it did not.
+> [!NOTE]
+> **Operator rule:** OPERO should report verified tool results, not claim an action occurred when it did not.
 
 ---
 
-## System architecture
+## ◈ // SYSTEM ARCHITECTURE
 
 ```mermaid
 flowchart LR
@@ -90,7 +111,8 @@ sequenceDiagram
     HUD-->>User: Result
 ```
 
-## Automation Studio
+<a id="automation-studio"></a>
+## ◈ // AUTOMATION STUDIO
 
 Open **⚙ Controls → Automation Studio** to inspect OPERO’s node-based workflow maps. It follows the actual operating model: a trigger enters a decision stage, eligible actions run, and consequential steps pause for review.
 
@@ -112,7 +134,8 @@ flowchart LR
 
 ---
 
-## Quick start
+<a id="quick-start"></a>
+## ◈ // QUICK START
 
 ### Prerequisites
 
@@ -157,7 +180,8 @@ On first launch, configure your Gemini key. API keys, paired sessions, and perso
 
 ---
 
-## WhatsApp call assistant
+<a id="whatsapp-call-assistant"></a>
+## ◈ // WHATSAPP CALL ASSISTANT
 
 ### Pairing flow
 
@@ -204,11 +228,12 @@ flowchart LR
 | A real caller rings you | Required to validate the current WhatsApp interface layout |
 | Virtual microphone selected in WhatsApp | Required for the remote caller to hear OPERO TTS |
 
-> **Important:** WhatsApp does not provide a supported public API to answer personal calls or inject audio. OPERO uses a linked local session and Desktop UI automation, which must be tested on the target machine and may need recalibration after WhatsApp UI changes.
+> [!WARNING]
+> WhatsApp does not provide a supported public API to answer personal calls or inject audio. OPERO uses a linked local session and Desktop UI automation, which must be tested on the target machine and may need recalibration after WhatsApp UI changes.
 
 ---
 
-## Voice engines
+## ◈ // VOICE ENGINES
 
 | Engine | Use it when | Setup |
 | --- | --- | --- |
@@ -217,7 +242,7 @@ flowchart LR
 
 If AssemblyAI cannot initialize, OPERO falls back to the default engine and records the reason in the activity log.
 
-## Resume and internship workflow
+## ◈ // RESUME & INTERNSHIP WORKFLOW
 
 ```mermaid
 flowchart LR
@@ -232,7 +257,7 @@ flowchart LR
 
 Provide a resume plus preferences such as target role, location, graduation date, work authorization, and companies to avoid or prioritize. OPERO can research listings and fill details you supplied. It must not invent qualifications or submit an application without your review.
 
-## MOSS similarity checks
+## ◈ // MOSS SIMILARITY CHECKS
 
 OPERO’s `moss_check` action uploads selected source code to Stanford MOSS and returns a report URL.
 
@@ -247,7 +272,7 @@ Only upload code you are authorized to share with Stanford MOSS.
 
 ---
 
-## Local configuration
+## ◈ // LOCAL CONFIGURATION
 
 Configuration is stored at `config/api_keys.json` and should never be committed.
 
@@ -271,7 +296,7 @@ Configuration is stored at `config/api_keys.json` and should never be committed.
 | `whatsapp_busy_message` | Exact line OPERO should deliver after answering |
 | `moss_user_id` | Numeric identifier issued by Stanford MOSS |
 
-## Repository map
+## ◈ // REPOSITORY MAP
 
 ```text
 .
@@ -288,7 +313,8 @@ Configuration is stored at `config/api_keys.json` and should never be committed.
 └── requirements.txt        # Python dependencies
 ```
 
-## Demo runbook
+<a id="demo-runbook"></a>
+## ◈ // DEMO RUNBOOK
 
 1. **Launch:** run `python main.py`; confirm the HUD is ready and the microphone meter moves.
 2. **Voice:** ask for a current web result and confirm the response arrives through the selected speaker.
@@ -299,7 +325,7 @@ Configuration is stored at `config/api_keys.json` and should never be committed.
 7. **WhatsApp:** confirm QR pairing, place a real test call, and verify answer control plus audio routing.
 8. **AssemblyAI (optional):** switch engines and confirm streaming transcription starts.
 
-## Troubleshooting
+## ◈ // TROUBLESHOOTING
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
@@ -311,13 +337,13 @@ Configuration is stored at `config/api_keys.json` and should never be committed.
 | Wallpaper from URL reverts | Image was not retained locally | Use the current `desktop_control` action; it stores downloads locally |
 | MOSS rejects a submission | Invalid MOSS ID | Use the numeric ID from Stanford MOSS registration |
 
-## Security and responsible use
+## ◈ // SECURITY & RESPONSIBLE USE
 
 - Keep `config/api_keys.json`, OAuth tokens, linked WhatsApp sessions, and browser profiles private.
 - Review recipients, form fields, attachments, and final submissions before they leave your machine.
 - Only pair accounts, answer calls, and automate workflows you are authorized to control.
 - Do not use OPERO to impersonate someone, invent application credentials, or bypass service security controls.
 
-## License
+## ◈ // LICENSE
 
 See [LICENSE](LICENSE).
