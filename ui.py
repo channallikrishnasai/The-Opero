@@ -21,6 +21,7 @@ else:
 from PyQt6.QtCore import (
     QEasingCurve, QLineF, QMimeData, QObject, QParallelAnimationGroup, QPointF,
     QPropertyAnimation, QRect, QRectF, QSize, Qt, QTimer, QUrl, pyqtSignal,
+    pyqtSlot,
 )
 from PyQt6.QtGui import (
     QBrush, QColor, QConicalGradient, QDragEnterEvent, QDropEvent, QFont,
@@ -2950,6 +2951,216 @@ class RemoteKeyOverlay(QWidget):
         self.closed.emit()
 
 
+class APIKeysOverlay(QWidget):
+    """Floating overlay — manage Gemini and AssemblyAI API keys."""
+
+    _saved = pyqtSignal()
+    _OW, _OH = 440, 340
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setStyleSheet(f"""
+            APIKeysOverlay {{
+                background: rgba(0, 6, 10, 245);
+                border: 1px solid {C.BORDER_B};
+                border-radius: 6px;
+            }}
+        """)
+
+        self._fs = (f"QLineEdit {{ background: #000d12; color: {C.TEXT}; "
+                    f"border: 1px solid {C.BORDER}; border-radius: 3px; padding: 4px 8px; }}"
+                    f"QLineEdit:focus {{ border: 1px solid {C.PRI}; }}")
+
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(24, 18, 24, 18)
+        lay.setSpacing(8)
+
+        def _lbl(txt, fs=9, bold=False, color=C.PRI,
+                 align=Qt.AlignmentFlag.AlignCenter):
+            w = QLabel(txt); w.setAlignment(align)
+            w.setFont(QFont("Courier New", fs,
+                            QFont.Weight.Bold if bold else QFont.Weight.Normal))
+            w.setStyleSheet(f"color: {color}; background: transparent;")
+            return w
+
+        lay.addWidget(_lbl("🔑  API KEYS", 12, True))
+        sep = QFrame(); sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setStyleSheet(f"color: {C.BORDER}; margin: 2px 0;")
+        lay.addWidget(sep)
+
+        # ── Gemini API Key ────────────────────────────────────────────────
+        lay.addWidget(_lbl("GEMINI API KEY", 8, color=C.TEXT_DIM,
+                            align=Qt.AlignmentFlag.AlignLeft))
+        self._gemini_input = QLineEdit()
+        self._gemini_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self._gemini_input.setPlaceholderText("AIza…")
+        self._gemini_input.setFont(QFont("Courier New", 10))
+        self._gemini_input.setFixedHeight(32)
+        self._gemini_input.setStyleSheet(self._fs)
+        lay.addWidget(self._gemini_input)
+
+        # ── AssemblyAI API Key ────────────────────────────────────────────
+        lay.addWidget(_lbl("ASSEMBLYAI API KEY  (for voice engine)", 8, color=C.TEXT_DIM,
+                            align=Qt.AlignmentFlag.AlignLeft))
+        aai_row = QHBoxLayout(); aai_row.setSpacing(6)
+        self._aai_input = QLineEdit()
+        self._aai_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self._aai_input.setPlaceholderText("…")
+        self._aai_input.setFont(QFont("Courier New", 10))
+        self._aai_input.setFixedHeight(32)
+        self._aai_input.setStyleSheet(self._fs)
+        aai_row.addWidget(self._aai_input, 1)
+
+        self._test_btn = QPushButton("TEST")
+        self._test_btn.setFixedSize(52, 32)
+        self._test_btn.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
+        self._test_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._test_btn.setStyleSheet(f"""
+            QPushButton {{ background: transparent; color: {C.PRI_DIM};
+                border: 1px solid {C.BORDER}; border-radius: 3px; }}
+            QPushButton:hover {{ color: {C.PRI}; border-color: {C.PRI_DIM}; }}
+        """)
+        self._test_btn.clicked.connect(self._test_aai_key)
+        aai_row.addWidget(self._test_btn)
+        lay.addLayout(aai_row)
+
+        self._aai_status = QLabel("")
+        self._aai_status.setFont(QFont("Courier New", 8))
+        self._aai_status.setStyleSheet("color: transparent; background: transparent;")
+        self._aai_status.setFixedHeight(16)
+        lay.addWidget(self._aai_status)
+
+        lay.addStretch(1)
+
+        # ── Buttons ───────────────────────────────────────────────────────
+        btn_row = QHBoxLayout(); btn_row.setSpacing(8)
+
+        save_btn = QPushButton("▸  SAVE")
+        save_btn.setFixedHeight(34)
+        save_btn.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
+        save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        save_btn.setStyleSheet(f"""
+            QPushButton {{ background: transparent; color: {C.PRI};
+                border: 1px solid {C.PRI_DIM}; border-radius: 3px; }}
+            QPushButton:hover {{ background: {C.PRI_GHO}; border: 1px solid {C.PRI}; }}
+        """)
+        save_btn.clicked.connect(self._save)
+        btn_row.addWidget(save_btn)
+
+        close_btn = QPushButton("CLOSE")
+        close_btn.setFixedHeight(34)
+        close_btn.setFont(QFont("Courier New", 9))
+        close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        close_btn.setStyleSheet(f"""
+            QPushButton {{ background: transparent; color: {C.TEXT_MED};
+                border: 1px solid {C.BORDER}; border-radius: 3px; }}
+            QPushButton:hover {{ color: {C.TEXT}; border-color: {C.BORDER_B}; }}
+        """)
+        close_btn.clicked.connect(self.hide)
+        btn_row.addWidget(close_btn)
+        lay.addLayout(btn_row)
+
+        # Load current keys
+        self._load_keys()
+
+    def _load_keys(self):
+        """Load current API keys from config."""
+        try:
+            cfg = json.loads(API_FILE.read_text(encoding="utf-8"))
+            self._gemini_input.setText(cfg.get("gemini_api_key", ""))
+            self._aai_input.setText(cfg.get("assemblyai_api_key", ""))
+        except Exception:
+            pass
+
+    def _save(self):
+        """Save API keys to config."""
+        try:
+            cfg = {}
+            if API_FILE.exists():
+                cfg = json.loads(API_FILE.read_text(encoding="utf-8"))
+            cfg["gemini_api_key"] = self._gemini_input.text().strip()
+            cfg["assemblyai_api_key"] = self._aai_input.text().strip()
+            API_FILE.write_text(json.dumps(cfg, indent=4), encoding="utf-8")
+            self._saved.emit()
+            self.hide()
+        except Exception as e:
+            self._aai_status.setText(f"Save failed: {e}")
+            self._aai_status.setStyleSheet(f"color: #ff6b6b; background: transparent;")
+
+    def _test_aai_key(self):
+        """Test AssemblyAI API key in background thread."""
+        key = self._aai_input.text().strip()
+        if not key:
+            self._aai_status.setText("Enter a key first")
+            self._aai_status.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
+            return
+
+        self._test_btn.setEnabled(False)
+        self._test_btn.setText("…")
+        self._aai_status.setText("Testing…")
+        self._aai_status.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
+
+        def worker():
+            try:
+                import assemblyai as aai
+                settings = aai.Settings(api_key=key)
+                # Try to list transcripts (lightweight API call)
+                client = aai.Transcriber(config=settings)
+                # A simple test: check if we can authenticate
+                # The simplest way is to try to get usage or a dummy transcript
+                import urllib.request
+                req = urllib.request.Request(
+                    "https://api.assemblyai.com/v2/transcript",
+                    headers={"Authorization": key, "Content-Type": "application/json"},
+                    method="POST"
+                )
+                # Send empty body to test auth — expect 400 (bad request) not 401
+                try:
+                    urllib.request.urlopen(req, data=b'{}', timeout=10)
+                except urllib.error.HTTPError as e:
+                    if e.code == 401:
+                        return False, "Invalid key — authentication failed"
+                    elif e.code == 400:
+                        return True, "Key is valid"
+                    else:
+                        return False, f"Unexpected response: {e.code}"
+                except Exception as e:
+                    return False, f"Connection error: {e}"
+                return True, "Key is valid"
+            except ImportError:
+                return False, "assemblyai package not installed"
+            except Exception as e:
+                return False, f"Error: {e}"
+
+        def on_result(ok, msg):
+            self._test_btn.setEnabled(True)
+            self._test_btn.setText("TEST")
+            self._aai_status.setText(msg)
+            color = C.PRI if ok else "#ff6b6b"
+            self._aai_status.setStyleSheet(f"color: {color}; background: transparent;")
+
+        import threading
+        def run():
+            result = worker()
+            # Use signal-safe approach
+            from PyQt6.QtCore import QMetaObject, Qt, Q_ARG
+            QMetaObject.invokeMethod(self, "_on_test_result",
+                                    Qt.ConnectionType.QueuedConnection,
+                                    Q_ARG(bool, result[0]),
+                                    Q_ARG(str, result[1]))
+        threading.Thread(target=run, daemon=True).start()
+
+    @pyqtSlot(bool, str)
+    def _on_test_result(self, ok: bool, msg: str):
+        """Handle test result on main thread."""
+        self._test_btn.setEnabled(True)
+        self._test_btn.setText("TEST")
+        self._aai_status.setText(msg)
+        color = C.PRI if ok else "#ff6b6b"
+        self._aai_status.setStyleSheet(f"color: {color}; background: transparent;")
+
+
 class MainWindow(QMainWindow):
     _log_sig        = pyqtSignal(str)
     _state_sig      = pyqtSignal(str)
@@ -3007,7 +3218,10 @@ class MainWindow(QMainWindow):
         self._current_file: str | None = None
         self._remote_overlay: RemoteKeyOverlay | None = None
         self._customize_overlay: CustomizeOverlay | None = None
-        self._voice_engine: str = "opero"   # local UI state only — not persisted
+        self._api_keys_overlay: APIKeysOverlay | None = None
+        self._voice_engine: str = (_cfg.get("voice_engine") or "opero").strip().lower()
+        if self._voice_engine not in ("opero", "assemblyai"):
+            self._voice_engine = "opero"
 
         central = QWidget()
         central.setStyleSheet(f"background: {C.BG};")
@@ -3952,6 +4166,14 @@ class MainWindow(QMainWindow):
         cust_btn.clicked.connect(self._open_customize)
         lay.addWidget(cust_btn)
 
+        api_keys_btn = QPushButton("🔑  API KEYS")
+        api_keys_btn.setFixedHeight(26)
+        api_keys_btn.setFont(QFont("Courier New", 7))
+        api_keys_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        api_keys_btn.setStyleSheet(_BTN_STYLE_DIM)
+        api_keys_btn.clicked.connect(self._open_api_keys)
+        lay.addWidget(api_keys_btn)
+
         self._brief_btn = QPushButton()
         self._brief_btn.setFixedHeight(26)
         self._brief_btn.setFont(QFont("Courier New", 7))
@@ -4875,14 +5097,23 @@ class MainWindow(QMainWindow):
             "AssemblyAI voice — real-time streaming STT. Tap to switch to OPERO.")
 
     def _toggle_voice_engine(self):
-        """Switch the local voice engine selection. No backend change —
-        the actual provider switch will be wired later."""
-        self._voice_engine = "assemblyai" if self._voice_engine == "opero" else "opero"
+        """Switch the voice engine and persist to config.  The backend
+        callback (on_voice_engine_change) is called so OperaLive can restart
+        the audio pipeline with the new engine."""
+        from memory.config_manager import save_voice_engine
+        new = "assemblyai" if self._voice_engine == "opero" else "opero"
+        self._voice_engine = new
+        save_voice_engine(new)
         self._refresh_voice_engine_btn()
-        self._log.append_log(
-            "SYS: Voice engine set to AssemblyAI (UI only — not active yet)."
-            if self._voice_engine == "assemblyai"
-            else "SYS: Voice engine set to OPERO (UI only — not active yet).")
+        label = "AssemblyAI" if new == "assemblyai" else "OPERO"
+        self._log.append_log(f"SYS: Voice engine → {label}. Restarting voice pipeline…")
+        # Notify backend — the callback is set by OperaLive.run()
+        cb = getattr(self, "on_voice_engine_change", None)
+        if cb:
+            try:
+                cb()
+            except Exception:
+                pass
 
     def _toggle_ptt(self):
         from memory.config_manager import (get_push_to_talk_enabled,
@@ -5034,6 +5265,33 @@ class MainWindow(QMainWindow):
         ov.saved.connect(self._apply_name_update)
         ov.show()
         self._customize_overlay = ov
+
+    def _open_api_keys(self):
+        """Open the API keys management overlay."""
+        if self._api_keys_overlay:
+            self._api_keys_overlay.hide()
+        cw = self.centralWidget()
+        ov = APIKeysOverlay(parent=cw)
+        ow, oh = APIKeysOverlay._OW, APIKeysOverlay._OH
+        oh = min(oh, cw.height() - 16)
+        ov.setGeometry(
+            (cw.width()  - ow) // 2,
+            (cw.height() - oh) // 2,
+            ow, oh,
+        )
+        ov._saved.connect(self._on_api_keys_saved)
+        ov.show()
+        self._api_keys_overlay = ov
+
+    def _on_api_keys_saved(self):
+        """Handle API keys save — reload cached keys."""
+        # Clear cached Gemini key so it reloads on next use
+        try:
+            from core import gemini as _gemini_mod
+            _gemini_mod._cached_key = None
+        except Exception:
+            pass
+        self._log_sig.emit("SYS: API keys updated.")
 
     def _preview_ui_color(self, hex_color: str):
         """Live preview — paints the whole interface the new colour (does NOT write to config)."""
@@ -5358,6 +5616,14 @@ class OperaUI:
     @on_audio_device_change.setter
     def on_audio_device_change(self, cb):
         self._win.on_audio_device_change = cb
+
+    @property
+    def on_voice_engine_change(self):
+        return getattr(self._win, 'on_voice_engine_change', None)
+
+    @on_voice_engine_change.setter
+    def on_voice_engine_change(self, cb):
+        self._win.on_voice_engine_change = cb
 
     def show_confirm(self, title: str, detail: str) -> None:
         """Thread-safe: raise the irreversible-action gate. Called from action

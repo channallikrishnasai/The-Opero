@@ -801,6 +801,19 @@ class OperaLive:
         landed before this feature did."""
         self.request_reconnect(keep_context=True, reason="audio device")
 
+    def _on_voice_engine_change(self):
+        """Voice engine switched (OPERO ↔ AssemblyAI).  Stops the current
+        engine so the outer run() loop re-reads the config and starts the
+        new one."""
+        # Stop the AssemblyAI engine if it's running
+        aai = getattr(self, '_assemblyai_engine', None)
+        if aai is not None:
+            aai.stop()
+        # For Gemini Live, signal a reconnect so the TaskGroup unwinds.
+        # Flag it so _run_gemini_live returns to the outer loop.
+        self._voice_engine_reconnect = True
+        self.request_reconnect(keep_context=False, reason="voice engine change")
+
     async def _watch_reconnect(self):
         """Session-scoped task: when a voluntary reconnect is requested, raise a
         signal that unwinds the TaskGroup so the run loop rebuilds the session."""
@@ -2066,6 +2079,38 @@ class OperaLive:
         # for host-API enumeration on the Qt thread.
         audio_devices.prefetch()
 
+        self.ui.on_voice_engine_change = self._on_voice_engine_change
+
+        while True:
+            # ── Voice engine dispatch ────────────────────────────────────────
+            from memory.config_manager import get_voice_engine
+            voice_engine = get_voice_engine()
+
+            if voice_engine == "assemblyai":
+                self.ui.write_log("SYS: Voice engine → AssemblyAI (streaming STT + TTS).")
+                try:
+                    from core.assemblyai_voice import AssemblyAIVoice
+                    aai_engine = AssemblyAIVoice(self)
+                    self._assemblyai_engine = aai_engine
+                    await aai_engine.run()   # blocks until engine stops
+                except Exception as e:
+                    print(f"[AssemblyAI] Engine failed: {e}", file=sys.stderr)
+                    import traceback; traceback.print_exc()
+                    self.ui.write_log(f"SYS: AssemblyAI failed ({e}). Falling back to OPERO voice.")
+                    from memory.config_manager import save_voice_engine
+                    save_voice_engine("opero")
+                    self._voice_engine = "opero"
+                    self.ui._refresh_voice_engine_btn()
+                finally:
+                    self._assemblyai_engine = None
+                # Loop back — get_voice_engine() will return the current choice
+                continue
+
+            # ── Gemini Live path (default) ───────────────────────────────────
+            await self._run_gemini_live()
+
+    async def _run_gemini_live(self):
+        """Gemini Live bidirectional audio session — the original OPERO voice."""
         # Start dashboard (optional — needs: pip install fastapi "uvicorn[standard]" cryptography)
         try:
             from dashboard.server import DashboardServer
@@ -2170,6 +2215,12 @@ class OperaLive:
                         # A deliberate clean slate (voice change) — drop the
                         # handle so the next connect really does start empty.
                         self._resume_handle = None
+                    # If the voice engine was changed, return to the outer
+                    # run() loop so it re-reads the config and picks the
+                    # new engine. Otherwise stay in the inner reconnect loop.
+                    if getattr(self, '_voice_engine_reconnect', False):
+                        self._voice_engine_reconnect = False
+                        return
                     self._conn_backoff = 0
                     continue
 

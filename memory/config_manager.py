@@ -382,3 +382,32 @@ def save_plugin_enabled(plugin_name: str, enabled: bool) -> None:
     plugins_cfg[plugin_name] = enabled
     data["plugins_enabled"] = plugins_cfg
     CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
+
+
+# ── Voice engine selection ───────────────────────────────────────────────────
+# "opero"   = native Gemini Live (bidirectional audio, no separate STT/TTS)
+# "assemblyai" = AssemblyAI streaming STT → Gemini text → EdgeTTS playback
+
+VOICE_ENGINES = ("opero", "assemblyai")
+DEFAULT_VOICE_ENGINE = "opero"
+
+
+def get_voice_engine() -> str:
+    """Return the selected voice engine, falling back to the default."""
+    v = str(load_api_keys().get("voice_engine", DEFAULT_VOICE_ENGINE)).strip().lower()
+    return v if v in VOICE_ENGINES else DEFAULT_VOICE_ENGINE
+
+
+def save_voice_engine(engine: str) -> None:
+    """Persist the chosen voice engine."""
+    v = str(engine or "").strip().lower()
+    _patch_config(voice_engine=v if v in VOICE_ENGINES else DEFAULT_VOICE_ENGINE)
+
+
+def get_assemblyai_key() -> str | None:
+    """AssemblyAI API key (required only when voice_engine == 'assemblyai')."""
+    return (load_api_keys().get("assemblyai_api_key") or "").strip() or None
+
+
+def save_assemblyai_key(key: str) -> None:
+    _patch_config(assemblyai_api_key=(key or "").strip())

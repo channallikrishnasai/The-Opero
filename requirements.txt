@@ -15,6 +15,9 @@ sounddevice>=0.4,<1
 numpy>=1.24,<3
 google-genai>=2.8.0,<3
 
+# ── AssemblyAI voice engine (optional — only needed when voice_engine=assemblyai)
+assemblyai>=0.35,<0.36
+
 # ── Web search & browser control ──────────────────────────────────────────────
 requests>=2.31,<3
 beautifulsoup4>=4.12,<5
