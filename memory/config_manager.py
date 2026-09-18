@@ -1,5 +1,6 @@
 import json
 import sys
+import time
 from pathlib import Path
 
 def get_base_dir() -> Path:
@@ -321,6 +322,28 @@ def get_output_device() -> str:
 
 def save_output_device(name: str) -> None:
     _patch_config(output_device=(name or "").strip())
+
+
+def get_whatsapp_auto_answer() -> bool:
+    """Whether OPERO answers detected incoming WhatsApp calls itself."""
+    return bool(load_api_keys().get("whatsapp_auto_answer", False))
+
+
+def get_whatsapp_auto_answer_active() -> bool:
+    """True only while the configured automatic-answer window is open."""
+    cfg = load_api_keys()
+    if not bool(cfg.get("whatsapp_auto_answer", False)):
+        return False
+    until = cfg.get("whatsapp_auto_answer_until")
+    try:
+        return float(until) > time.time() if until is not None else True
+    except (TypeError, ValueError):
+        return False
+
+
+def get_whatsapp_busy_message() -> str:
+    return (load_api_keys().get("whatsapp_busy_message")
+            or "I am kind of busy right now.").strip()
 
 
 def get_plugin_enabled(plugin_name: str) -> bool:

@@ -37,6 +37,7 @@ def _get_desktop() -> Path:
 
 def _build_sandbox() -> dict:
     import time
+    import urllib.request
 
     safe_builtins = {
         "print": print,
@@ -57,7 +58,8 @@ def _build_sandbox() -> dict:
             "copytree":   shutil.copytree,
             "disk_usage": shutil.disk_usage,
         })(),
-        "os_path": os.path,  
+        "os_path": os.path,
+        "urllib_request": urllib.request,
     }
 
     if _PYAUTOGUI:
@@ -67,9 +69,10 @@ def _build_sandbox() -> dict:
         try:
             import ctypes
             import winreg
+            import tempfile
             sandbox["ctypes"] = ctypes
+            sandbox["tempfile"] = tempfile
             sandbox["winreg"] = type("winreg", (), {
-                # Sadece okuma
                 "OpenKey":      winreg.OpenKey,
                 "QueryValueEx": winreg.QueryValueEx,
                 "HKEY_CURRENT_USER": winreg.HKEY_CURRENT_USER,
@@ -126,6 +129,8 @@ Allowed modules ONLY:
 - shutil.copy2, shutil.copytree, shutil.disk_usage (NO move, NO rmtree)
 - os_path (os.path equivalent, read-only)
 - time.sleep
+- urllib_request (urllib.request for downloads)
+- tempfile (for temp files)
 {os_specific}
 
 Hard rules:
@@ -134,6 +139,8 @@ Hard rules:
 - NO exec() or eval() inside the code
 - NO import statements (modules are pre-injected)
 - NO file write operations except explicitly requested
+- CRITICAL: Always use QUOTED strings — use "path" not rpath, and r"path" not rpath
+- CRITICAL: Use double quotes for strings with paths: "C:\\\\Users\\\\..."
 - If task cannot be done safely with these tools, output exactly: UNSAFE
 
 Output ONLY the Python code. No explanation, no markdown, no backticks.
@@ -171,7 +178,9 @@ def set_wallpaper(image_path: str) -> str:
                     path = bmp_path
                 except ImportError:
                     pass 
-            ctypes.windll.user32.SystemParametersInfoW(20, 0, str(path), 3)
+            ok = ctypes.windll.user32.SystemParametersInfoW(20, 0, str(path), 3)
+            if not ok:
+                return "Windows rejected the wallpaper update. Check the image and desktop policy settings."
             return f"Wallpaper set: {path.name}"
 
         elif _OS == "Darwin":
@@ -241,14 +250,16 @@ def set_wallpaper_from_url(url: str) -> str:
     try:
         import urllib.request
         suffix = Path(url.split("?")[0]).suffix or ".jpg"
-        tmp    = Path(tempfile.mktemp(suffix=suffix))
-        urllib.request.urlretrieve(url, str(tmp))
-        result = set_wallpaper(str(tmp))
-        try:
-            tmp.unlink()
-        except Exception:
-            pass
-        return result
+        if suffix.lower() not in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}:
+            suffix = ".jpg"
+        # Windows stores a path to the selected image.  A TemporaryDirectory
+        # file was deleted immediately after setting it, so downloaded
+        # wallpapers disappeared or reverted after a refresh/restart.
+        store = _get_base_dir() / "config" / "wallpapers"
+        store.mkdir(parents=True, exist_ok=True)
+        target = store / f"wallpaper-{datetime.now():%Y%m%d-%H%M%S}{suffix}"
+        urllib.request.urlretrieve(url, str(target))
+        return set_wallpaper(str(target))
     except Exception as e:
         return f"Could not download wallpaper: {e}"
 
@@ -463,6 +474,17 @@ def desktop_control(
             actual_task = task or params.get("description", "")
             if not actual_task:
                 return "Please describe what you want to do on the desktop."
+
+            # Shortcut: wallpaper download + set (no code generation needed)
+            lower_task = actual_task.lower()
+            if any(w in lower_task for w in ("wallpaper", "background", "desktop image")):
+                import re
+                # Try to extract a URL
+                url_match = re.search(r'https?://[^\s"\'<>]+', actual_task)
+                if url_match:
+                    url = url_match.group(0).rstrip(".,;:)")
+                    print(f"[Desktop] Downloading wallpaper from URL")
+                    return set_wallpaper_from_url(url)
 
             print(f"[Desktop] Asking Gemini: {actual_task}")
             if player:

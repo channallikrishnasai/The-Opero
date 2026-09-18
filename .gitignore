@@ -48,3 +48,8 @@ desktop.ini
 logs/
 downloads/
 screenshots/
+
+# ── WhatsApp bridge runtime state ───────────────────────────────────────────
+whatsapp_bridge/node_modules/
+whatsapp_bridge/.wwebjs_auth/
+whatsapp_bridge/qr.txt

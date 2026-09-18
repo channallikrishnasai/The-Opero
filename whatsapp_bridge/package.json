@@ -1,0 +1,14 @@
+{
+  "name": "opero-whatsapp-bridge",
+  "version": "1.0.0",
+  "description": "WhatsApp Web bridge for OPERO call detection",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.26.0",
+    "express": "^4.21.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

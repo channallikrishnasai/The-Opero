@@ -148,9 +148,84 @@ def _desktop_send(app_name: str, receiver: str, message: str) -> str:
     pyautogui.press("enter")
     time.sleep(0.3)
     return f"Message sent to {receiver} via {app_name}."
-
 def _send_whatsapp(receiver: str, message: str) -> str:
     return _desktop_send("WhatsApp", receiver, message)
+
+
+def _whatsapp_call(receiver: str, call_type: str = "voice") -> str:
+    """Make a WhatsApp voice or video call via WhatsApp Desktop automation."""
+    _require_pyautogui()
+
+    if not _open_app("WhatsApp"):
+        return "Could not open WhatsApp Desktop."
+
+    time.sleep(1.5)
+
+    # Search for the contact
+    _search_in_app(receiver)
+    time.sleep(0.8)
+    pyautogui.press("enter")
+    time.sleep(1.0)
+
+    # Click the call button (top-right area of chat)
+    # In WhatsApp Desktop, the phone icon is near the top-right
+    # Use keyboard shortcut: Ctrl+Shift+C opens call menu, or click the icon
+    # Safer approach: use Alt+C shortcut to start a voice call in the chat
+    # Actually, WhatsApp Desktop doesn't have a reliable keyboard shortcut for calls.
+    # We'll click the call icon by locating it on screen.
+
+    import pyautogui
+
+    # Try to find and click the call button by image or position
+    # WhatsApp Desktop call button is typically in the top toolbar area
+    # We'll use a reliable coordinate-based approach
+
+    # Anchor to WhatsApp's own window rather than the full screen.  A full-screen
+    # percentage breaks as soon as the app sits on a second monitor or is tiled.
+    try:
+        import pygetwindow as gw
+        windows = [w for w in gw.getAllWindows() if "whatsapp" in w.title.lower()]
+        wa = next((w for w in windows if w.width > 300 and w.height > 300), None)
+        if wa:
+            wa.activate()
+            time.sleep(0.3)
+            call_x = wa.left + int(wa.width * 0.86)
+            call_y = wa.top + int(wa.height * 0.055)
+        else:
+            raise RuntimeError("WhatsApp window not found")
+    except Exception:
+        screen_w, screen_h = pyautogui.size()
+        call_x, call_y = int(screen_w * 0.80), int(screen_h * 0.04)
+
+    if call_type == "video":
+        # Video call is slightly to the right of voice call
+        call_x = int(screen_w * 0.84)
+
+    pyautogui.click(call_x, call_y)
+    time.sleep(1.0)
+
+    # If it's a video call, there might be a confirmation dialog
+    if call_type == "video":
+        time.sleep(0.5)
+
+    return f"WhatsApp {call_type} call started with {receiver}."
+
+
+def _whatsapp_end_call() -> str:
+    """End the current WhatsApp call."""
+    _require_pyautogui()
+    import pyautogui
+
+    # The end call button is typically in the center-bottom area
+    # Red phone icon
+    screen_w, screen_h = pyautogui.size()
+    end_x = int(screen_w * 0.50)
+    end_y = int(screen_h * 0.85)
+
+    pyautogui.click(end_x, end_y)
+    time.sleep(0.5)
+    return "Call ended."
+
 
 def _send_telegram(receiver: str, message: str) -> str:
     return _desktop_send("Telegram", receiver, message)
@@ -234,19 +309,62 @@ def send_message(
     parameters: dict,
     response=None,
     player=None,
+    speak=None,
     session_memory=None,
 ) -> str:
     params       = parameters or {}
     receiver     = params.get("receiver", "").strip()
     message_text = params.get("message_text", "").strip()
     platform     = params.get("platform", "whatsapp").strip()
+    action       = params.get("action", "message").strip().lower()
 
+    if not _PYAUTOGUI:
+        return "PyAutoGUI is not installed — cannot control the desktop."
+
+    # ── Call actions ──────────────────────────────────────────────────────
+    if action in ("voice_call", "video_call", "call"):
+        if not receiver:
+            return "Please specify who to call."
+        call_type = "video" if action == "video_call" else "voice"
+        print(f"[SendMessage] 📞 WhatsApp {call_type} call → {receiver}")
+        if player:
+            player.write_log(f"[msg] WhatsApp {call_type} call → {receiver}")
+        try:
+            result = _whatsapp_call(receiver, call_type)
+            # A virtual microphone is intentionally a user-controlled routing
+            # choice: without it, playing TTS locally must never be claimed as
+            # speech delivered to the person on the call.
+            if "started" in result.lower() and message_text and callable(speak):
+                speak(
+                    "Read this call opener exactly, with no introduction or extra words: "
+                    + message_text
+                )
+                result += (
+                    " OPERO is reading the supplied opener now. It reaches the caller "
+                    "only when WhatsApp's microphone is routed to OPERO audio (for example, VB-CABLE)."
+                )
+        except Exception as e:
+            result = f"Could not start call: {e}"
+        print(f"[SendMessage] {'✅' if 'started' in result.lower() else '❌'} {result}")
+        if player:
+            player.write_log(f"[msg] {result}")
+        return result
+
+    if action == "end_call":
+        print("[SendMessage] 📞 Ending call")
+        if player:
+            player.write_log("[msg] Ending call")
+        try:
+            result = _whatsapp_end_call()
+        except Exception as e:
+            result = f"Could not end call: {e}"
+        return result
+
+    # ── Message actions ───────────────────────────────────────────────────
     if not receiver:
         return "Please specify a recipient."
     if not message_text:
         return "Please specify the message content."
-    if not _PYAUTOGUI:
-        return "PyAutoGUI is not installed — cannot control the desktop."
 
     preview = message_text[:50] + ("…" if len(message_text) > 50 else "")
     print(f"[SendMessage] 📨 {platform} → {receiver}: {preview}")
@@ -269,28 +387,36 @@ def send_message(
 # ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
 TOOL = {
     "name": "send_message",
-    "description": "Sends a text message via WhatsApp, Telegram, or other messaging platform.",
+    "description": (
+        "Sends a message or makes a call via WhatsApp, Telegram, or other platform. "
+        "Supports: message, voice_call, video_call, end_call actions. "
+        "For WhatsApp calls, it opens WhatsApp Desktop and clicks the call button."
+    ),
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "receiver": {
                 "type": "STRING",
-                "description": "Recipient contact name"
+                "description": "Recipient contact name",
             },
             "message_text": {
                 "type": "STRING",
-                "description": "The message to send"
+                "description": "The message to send (required for message action)",
             },
             "platform": {
                 "type": "STRING",
-                "description": "Platform: WhatsApp, Telegram, etc."
-            }
+                "description": "Platform: WhatsApp, Telegram, Signal, Discord, etc.",
+            },
+            "action": {
+                "type": "STRING",
+                "description": (
+                    "Action to perform: message (default), voice_call, video_call, end_call. "
+                    "For a call, message_text is the optional opening line OPERO reads after the call starts. "
+                    "voice_call/video_call open WhatsApp Desktop and start a call with the receiver."
+                ),
+            },
         },
-        "required": [
-            "receiver",
-            "message_text",
-            "platform"
-        ]
+        "required": ["receiver", "platform"],
     },
     "handler": send_message,
 }

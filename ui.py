@@ -2056,6 +2056,179 @@ class ConfirmBanner(_HudOverlay):
         no.setFocus()
 
 
+class IncomingCallBanner(_HudOverlay):
+    """A prominent, animated decision surface for an incoming WhatsApp call."""
+
+    answered = pyqtSignal(bool)
+    _OW = 430
+
+    def __init__(self, caller: str, is_video: bool = False, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setFixedWidth(self._OW)
+        self.setStyleSheet(f"""
+            IncomingCallBanner {{ background: rgba(0, 14, 9, 248);
+                border: 1px solid {C.GREEN}; border-radius: 8px; }}
+        """)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(20, 16, 20, 18)
+        lay.setSpacing(8)
+
+        hdr = QLabel("●  INCOMING WHATSAPP " + ("VIDEO" if is_video else "VOICE") + " CALL")
+        hdr.setFont(QFont("Courier New", 10, QFont.Weight.Bold))
+        hdr.setStyleSheet(f"color: {C.GREEN}; background: transparent;")
+        lay.addWidget(hdr)
+        who = QLabel(caller or "Unknown caller")
+        who.setWordWrap(True)
+        who.setFont(QFont("Courier New", 13, QFont.Weight.Bold))
+        who.setStyleSheet(f"color: {C.TEXT}; background: transparent;")
+        lay.addWidget(who)
+        note = QLabel("Answer opens WhatsApp Desktop. For OPERO to speak into the call, select a virtual microphone (for example VB-CABLE) as WhatsApp's input.")
+        note.setWordWrap(True)
+        note.setFont(QFont("Courier New", 8))
+        note.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent;")
+        lay.addWidget(note)
+        row = QHBoxLayout(); row.setSpacing(8)
+        answer = QPushButton("☎  ANSWER")
+        answer.setFixedHeight(34); answer.setCursor(Qt.CursorShape.PointingHandCursor)
+        answer.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
+        answer.setStyleSheet(f"QPushButton {{ color: {C.GREEN}; border: 1px solid {C.GREEN}; border-radius: 3px; background: rgba(0, 90, 35, 35); }} QPushButton:hover {{ background: rgba(0, 180, 70, 60); }}")
+        answer.clicked.connect(lambda: self.answered.emit(True))
+        row.addWidget(answer)
+        decline = QPushButton("DECLINE")
+        decline.setFixedHeight(34); decline.setCursor(Qt.CursorShape.PointingHandCursor)
+        decline.setFont(QFont("Courier New", 9))
+        decline.setStyleSheet(f"QPushButton {{ color: {C.ACC}; border: 1px solid {C.ACC}; border-radius: 3px; background: transparent; }} QPushButton:hover {{ background: rgba(255, 70, 40, 45); }}")
+        decline.clicked.connect(lambda: self.answered.emit(False))
+        row.addWidget(decline)
+        lay.addLayout(row)
+
+
+class WhatsAppPairingOverlay(_HudOverlay):
+    """Displays the bridge QR inside OPERO for one-time WhatsApp linking."""
+
+    _OW = 360
+
+    def __init__(self, qr_payload: str, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setFixedWidth(self._OW)
+        self.setStyleSheet(f"""WhatsAppPairingOverlay {{ background: rgba(0, 12, 8, 250);
+            border: 1px solid {C.GREEN}; border-radius: 8px; }}""")
+        lay = QVBoxLayout(self); lay.setContentsMargins(18, 16, 18, 16); lay.setSpacing(8)
+        title = QLabel("▣  LINK WHATSAPP")
+        title.setFont(QFont("Courier New", 11, QFont.Weight.Bold))
+        title.setStyleSheet(f"color: {C.GREEN}; background: transparent;")
+        lay.addWidget(title)
+        note = QLabel("WhatsApp → Settings → Linked devices → Link a device, then scan this code.")
+        note.setWordWrap(True); note.setFont(QFont("Courier New", 8))
+        note.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent;")
+        lay.addWidget(note)
+        image_label = QLabel(); image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        try:
+            import io, qrcode
+            image = qrcode.make(qr_payload).convert("RGB")
+            raw = io.BytesIO(); image.save(raw, format="PNG")
+            pixmap = QPixmap(); pixmap.loadFromData(raw.getvalue(), "PNG")
+            image_label.setPixmap(pixmap.scaled(260, 260, Qt.AspectRatioMode.KeepAspectRatio,
+                                                Qt.TransformationMode.SmoothTransformation))
+        except Exception:
+            image_label.setText("QR rendering unavailable. Check the bridge terminal.")
+            image_label.setStyleSheet(f"color: {C.ACC}; background: transparent;")
+        lay.addWidget(image_label)
+        close = QPushButton("HIDE")
+        close.setFixedHeight(28); close.clicked.connect(self.hide)
+        close.setStyleSheet(f"QPushButton {{ color: {C.TEXT_MED}; border: 1px solid {C.BORDER}; border-radius: 3px; background: transparent; }} QPushButton:hover {{ color: {C.TEXT}; }}")
+        lay.addWidget(close)
+
+
+class AutomationCanvas(QWidget):
+    """Compact node graph used by OPERO's Automation Studio."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._nodes = []
+        self.setMinimumHeight(230)
+
+    def set_nodes(self, nodes):
+        self._nodes = list(nodes or [])
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.fillRect(self.rect(), QColor("#020912"))
+        count = max(1, len(self._nodes))
+        gap = 18
+        width = min(150, max(105, (self.width() - gap * (count + 1)) // count))
+        height = 86
+        total = count * width + (count - 1) * gap
+        x = max(10, (self.width() - total) // 2)
+        y = (self.height() - height) // 2
+        colors = [QColor("#20d67a"), QColor("#e0ad36"), QColor("#55c8ff"), QColor("#9d7bff"), QColor("#ff7a90")]
+        for i, node in enumerate(self._nodes):
+            color = colors[i % len(colors)]
+            rect = QRectF(x, y, width, height)
+            if i:
+                p.setPen(QPen(QColor("#1d5268"), 2))
+                p.drawLine(int(x - gap), int(y + height / 2), int(x), int(y + height / 2))
+                p.setBrush(QBrush(QColor("#55c8ff")))
+                p.setPen(Qt.PenStyle.NoPen)
+                p.drawEllipse(QPointF(x - gap / 2, y + height / 2), 3.5, 3.5)
+            p.setPen(QPen(color, 1.4)); p.setBrush(QBrush(QColor("#07131e")))
+            p.drawRoundedRect(rect, 7, 7)
+            p.setPen(QPen(color)); p.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+            p.drawText(QRectF(x + 9, y + 12, width - 18, 18), Qt.AlignmentFlag.AlignLeft, str(node[0]).upper())
+            p.setPen(QPen(QColor("#d6e5ed"))); p.setFont(QFont("Courier New", 8))
+            p.drawText(QRectF(x + 9, y + 36, width - 18, 38), Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap, str(node[1]))
+            x += width + gap
+        p.end()
+
+
+class AutomationStudioOverlay(_HudOverlay):
+    """Visual workflow map inspired by node-based automation tools."""
+
+    _OW = 820
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setFixedWidth(self._OW)
+        self.setStyleSheet(f"""AutomationStudioOverlay {{ background: rgba(1, 9, 16, 252);
+            border: 1px solid {C.PRI_DIM}; border-radius: 8px; }}""")
+        self._flows = {
+            "WhatsApp busy reply": [("Trigger", "Incoming WhatsApp call"), ("Condition", "Auto-answer window active"), ("Action", "Answer in Desktop"), ("Voice", "Say busy message")],
+            "Internship application": [("Trigger", "Resume uploaded"), ("Research", "Find matching internships"), ("Rank", "Score roles and links"), ("Action", "Fill known form fields"), ("Review", "Wait before submit")],
+            "Smart reminder": [("Trigger", "Reminder due"), ("Condition", "User is available"), ("Action", "Speak and show alert")],
+            "Desktop command": [("Trigger", "Voice or text command"), ("Plan", "Resolve available tool"), ("Action", "Run desktop task"), ("Result", "Report outcome")],
+        }
+        lay = QVBoxLayout(self); lay.setContentsMargins(18, 16, 18, 16); lay.setSpacing(9)
+        title = QLabel("◈  AUTOMATION STUDIO")
+        title.setFont(QFont("Courier New", 12, QFont.Weight.Bold))
+        title.setStyleSheet(f"color: {C.PRI}; background: transparent;")
+        lay.addWidget(title)
+        subtitle = QLabel("Visualize how OPERO moves from trigger to result. Sensitive or external steps pause for review.")
+        subtitle.setWordWrap(True); subtitle.setFont(QFont("Courier New", 8)); subtitle.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent;")
+        lay.addWidget(subtitle)
+        self._picker = QComboBox(); self._picker.addItems(list(self._flows))
+        self._picker.setFixedHeight(30); self._picker.setFont(QFont("Courier New", 9))
+        self._picker.setStyleSheet(f"QComboBox {{ background: #061522; color: {C.TEXT}; border: 1px solid {C.BORDER_B}; border-radius: 3px; padding: 3px 8px; }} QComboBox QAbstractItemView {{ background: #061522; color: {C.TEXT}; }}")
+        self._picker.currentTextChanged.connect(self._select_flow); lay.addWidget(self._picker)
+        self._canvas = AutomationCanvas(); lay.addWidget(self._canvas)
+        self._status = QLabel(); self._status.setFont(QFont("Courier New", 8)); self._status.setStyleSheet(f"color: {C.GREEN}; background: #03140b; border: 1px solid #14623d; border-radius: 3px; padding: 7px;")
+        lay.addWidget(self._status)
+        close = QPushButton("CLOSE STUDIO"); close.setFixedHeight(30); close.clicked.connect(self.hide)
+        close.setStyleSheet(f"QPushButton {{ color: {C.TEXT_MED}; border: 1px solid {C.BORDER}; border-radius: 3px; background: transparent; }} QPushButton:hover {{ color: {C.TEXT}; border-color: {C.PRI_DIM}; }}")
+        lay.addWidget(close)
+        self._select_flow(self._picker.currentText())
+
+    def _select_flow(self, name: str):
+        self._canvas.set_nodes(self._flows.get(name, []))
+        active = "ACTIVE" if name == "WhatsApp busy reply" else "READY"
+        self._status.setText(f"● {active}  ·  {len(self._flows.get(name, []))} nodes  ·  OPERO controls the next eligible step")
+
+
+
 class AudioDeviceOverlay(_HudOverlay):
     """Choose which microphone OPERO listens to and which speakers it uses.
 
@@ -3176,6 +3349,9 @@ class MainWindow(QMainWindow):
     _quiz_sig       = pyqtSignal(str, object, object)  # (topic, questions, grader)
     _quiz_hide_sig  = pyqtSignal()
     _review_sig     = pyqtSignal(str, str, object, object)  # document review payload
+    _incoming_call_sig = pyqtSignal(object, object, object)  # call, answer callback, decline callback
+    _call_ended_sig = pyqtSignal()
+    _whatsapp_qr_sig = pyqtSignal(str)
 
     def __init__(self, face_path: str):
         super().__init__()
@@ -3332,6 +3508,9 @@ class MainWindow(QMainWindow):
         self._camera_sig.connect(self._show_camera_frame)
         self._confirm_sig.connect(self._show_confirm_banner)
         self._confirm_hide_sig.connect(self._hide_confirm_banner)
+        self._incoming_call_sig.connect(self._show_incoming_call)
+        self._call_ended_sig.connect(self._hide_incoming_call)
+        self._whatsapp_qr_sig.connect(self._show_whatsapp_qr)
         self._cam_stream_sig.connect(self._on_cam_stream)
         self._cam_frame_sig.connect(self._on_cam_frame)
         self._clipboard_sig.connect(self._show_clipboard_panel)
@@ -3340,6 +3519,10 @@ class MainWindow(QMainWindow):
         self._quiz_hide_sig.connect(self._hide_quiz)
         self._review_sig.connect(self._show_review)
         self._cam_stop = threading.Event()
+        self._call_overlay = None
+        self._call_callbacks = (None, None)
+        self._call_animation = None
+        self._whatsapp_qr_overlay = None
 
         # Camera preview overlay (child of central widget, positioned in resizeEvent)
         self._cam_preview = _CameraPreview(self.centralWidget())
@@ -4173,6 +4356,14 @@ class MainWindow(QMainWindow):
         api_keys_btn.setStyleSheet(_BTN_STYLE_DIM)
         api_keys_btn.clicked.connect(self._open_api_keys)
         lay.addWidget(api_keys_btn)
+
+        automation_btn = QPushButton("◈  AUTOMATION STUDIO")
+        automation_btn.setFixedHeight(26)
+        automation_btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        automation_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        automation_btn.setStyleSheet(_BTN_STYLE_DIM)
+        automation_btn.clicked.connect(self._open_automation_studio)
+        lay.addWidget(automation_btn)
 
         self._brief_btn = QPushButton()
         self._brief_btn.setFixedHeight(26)
@@ -5380,6 +5571,11 @@ class MainWindow(QMainWindow):
         self._centre_overlay(ov)
         self._memory_overlay = ov
 
+    def _open_automation_studio(self):
+        ov = AutomationStudioOverlay(parent=self.centralWidget())
+        self._centre_overlay(ov)
+        self._automation_overlay = ov
+
     # ── Irreversible-action confirmation ─────────────────────────────────────
 
     def _show_confirm_banner(self, title: str, detail: str):
@@ -5395,6 +5591,55 @@ class MainWindow(QMainWindow):
             ov.hide()
             ov.deleteLater()
             self._confirm_overlay = None
+
+    # ── WhatsApp incoming call surface ────────────────────────────────────
+
+    def _show_incoming_call(self, call: object, answer_cb: object, decline_cb: object):
+        self._hide_incoming_call()
+        data = call if isinstance(call, dict) else {}
+        caller = str(data.get("fromName") or data.get("from") or "Unknown caller")
+        ov = IncomingCallBanner(caller, bool(data.get("isVideo")), self.centralWidget())
+        self._call_callbacks = (answer_cb, decline_cb)
+        ov.answered.connect(self._on_incoming_call_answered)
+        ov.adjustSize()
+        cw = self.centralWidget()
+        final = QRect(max(0, (cw.width() - ov.width()) // 2),
+                      max(0, (cw.height() - ov.height()) // 2), ov.width(), ov.height())
+        start = QRect(final.x(), max(-ov.height(), final.y() - 70), final.width(), final.height())
+        ov.setGeometry(start); ov.show(); ov.raise_()
+        # A short slide-in gives urgent call state a distinct, polished motion
+        # without a perpetual animation competing with the audio HUD.
+        anim = QPropertyAnimation(ov, b"geometry", ov)
+        anim.setDuration(260); anim.setStartValue(start); anim.setEndValue(final)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic); anim.start()
+        self._call_animation = anim
+        self._call_overlay = ov
+
+    def _hide_incoming_call(self):
+        ov = getattr(self, "_call_overlay", None)
+        if ov is not None:
+            ov.hide(); ov.deleteLater()
+        self._call_overlay = None
+        self._call_callbacks = (None, None)
+
+    def _on_incoming_call_answered(self, accepted: bool):
+        callbacks = self._call_callbacks
+        self._hide_incoming_call()
+        cb = callbacks[0] if accepted else callbacks[1]
+        if callable(cb):
+            # Callback only initiates desktop automation; it never touches Qt.
+            threading.Thread(target=cb, daemon=True).start()
+
+    def _show_whatsapp_qr(self, payload: str):
+        old = getattr(self, "_whatsapp_qr_overlay", None)
+        if old is not None:
+            old.hide(); old.deleteLater(); self._whatsapp_qr_overlay = None
+        if not payload:
+            self._log.append_log("WA CALL: WhatsApp linked successfully.")
+            return
+        ov = WhatsAppPairingOverlay(payload, self.centralWidget())
+        self._centre_overlay(ov)
+        self._whatsapp_qr_overlay = ov
 
     def _on_confirm_answered(self, accepted: bool):
         # Tear the banner down first: core.confirm.resolve() may be about to
@@ -5633,6 +5878,17 @@ class OperaUI:
     def hide_confirm(self) -> None:
         """Thread-safe: take the gate down."""
         self._win._confirm_hide_sig.emit()
+
+    def show_incoming_call(self, call: dict, answer_cb, decline_cb) -> None:
+        """Thread-safe incoming-call prompt invoked by the WhatsApp bridge."""
+        self._win._incoming_call_sig.emit(dict(call or {}), answer_cb, decline_cb)
+
+    def hide_incoming_call(self) -> None:
+        self._win._call_ended_sig.emit()
+
+    def show_whatsapp_qr(self, payload: str) -> None:
+        """Thread-safe: show the one-time WhatsApp Web pairing code."""
+        self._win._whatsapp_qr_sig.emit(str(payload or ""))
 
     @property
     def get_plugins(self):

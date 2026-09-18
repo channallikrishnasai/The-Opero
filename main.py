@@ -72,6 +72,7 @@ from memory.config_manager     import (
     get_brief_enabled, get_media_resolution, get_proactive_audio_enabled,
     get_push_to_talk_enabled, get_thinking_enabled, get_turn_tuning, get_voice,
     get_wake_word_enabled, save_wake_word_enabled,    get_input_device, get_output_device,
+    get_whatsapp_auto_answer_active, get_whatsapp_busy_message,
 )
 from core.plugin_loader        import discover_plugins
 from core                      import undo as undo_stack
@@ -651,6 +652,66 @@ class OperaLive:
         self.ui.on_wake_toggle   = self._ui_wake_toggle   # (enable: bool) -> str
         self.ui.on_wake_manual   = self._ui_wake_manual   # () -> toggle awake/asleep
         self.ui.on_wake_install  = self._ui_wake_install  # () -> (ok, msg)
+        self._call_manager = None
+
+    # ── WhatsApp calling ──────────────────────────────────────────────────
+
+    def _start_whatsapp_calls(self) -> None:
+        """Start optional incoming-call detection without blocking voice startup."""
+        if self._call_manager is not None:
+            return
+        try:
+            from whatsapp_call import get_call_manager
+            self._call_manager = get_call_manager(
+                on_incoming_call=self._on_whatsapp_incoming,
+                on_call_ended=self._on_whatsapp_call_ended,
+                on_qr=self._on_whatsapp_qr,
+                log_fn=lambda msg: self.ui.write_log(f"WA CALL: {msg}"),
+            )
+            if self._call_manager.start():
+                self.ui.write_log("SYS: WhatsApp call detection starting — scan the bridge QR code once if prompted.")
+            else:
+                self.ui.write_log("SYS: WhatsApp call detection unavailable. Install bridge dependencies to enable it.")
+        except Exception as e:
+            self.ui.write_log(f"SYS: WhatsApp call detection unavailable ({e}).")
+
+    def _on_whatsapp_incoming(self, call: dict) -> None:
+        """Bridge thread callback: hand the user a real Answer/Decline choice."""
+        call_id = str(call.get("id", ""))
+        caller = call.get("fromName") or call.get("from") or "Unknown caller"
+        self.ui.write_log(f"WA CALL: Incoming call from {caller}.")
+        if get_whatsapp_auto_answer_active():
+            self.ui.write_log("WA CALL: Auto-answer enabled — answering now.")
+            self._answer_whatsapp_call(call_id, announce=True)
+            return
+        self.ui.show_incoming_call(
+            call,
+            lambda: self._answer_whatsapp_call(call_id),
+            lambda: self._reject_whatsapp_call(call_id),
+        )
+
+    def _answer_whatsapp_call(self, call_id: str, announce: bool = False) -> None:
+        ok = bool(self._call_manager and self._call_manager.answer_call(call_id))
+        self.ui.write_log("WA CALL: Answered in WhatsApp Desktop." if ok else
+                          "WA CALL: Could not answer — make sure WhatsApp Desktop is visible.")
+        if ok and announce:
+            time.sleep(1.2)  # wait for WhatsApp to finish connecting the call
+            self.plugin_say(
+                "You are speaking to a caller on WhatsApp. Say exactly this sentence, "
+                "with no greeting, explanation, or additional words: "
+                + get_whatsapp_busy_message()
+            )
+
+    def _reject_whatsapp_call(self, call_id: str) -> None:
+        ok = bool(self._call_manager and self._call_manager.reject_call(call_id))
+        self.ui.write_log("WA CALL: Declined." if ok else "WA CALL: Could not decline the call.")
+
+    def _on_whatsapp_call_ended(self, call: dict) -> None:
+        self.ui.hide_incoming_call()
+        self.ui.write_log("WA CALL: Call ended.")
+
+    def _on_whatsapp_qr(self, payload: str) -> None:
+        self.ui.show_whatsapp_qr(payload)
 
     # ── Wake word: state machine ─────────────────────────────────────────────
 
@@ -2058,6 +2119,10 @@ class OperaLive:
     async def run(self):
         self._loop = asyncio.get_event_loop()
         self._reconnect_event = asyncio.Event()
+
+        # The bridge runs independently of the Live session, so an incoming
+        # call can still be shown while Gemini reconnects.
+        self._start_whatsapp_calls()
 
         # ── Wire the shared core services to the interface ───────────────────
         # The confirmation gate is useless without a way to ask, and a memory
