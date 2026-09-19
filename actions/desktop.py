@@ -9,6 +9,11 @@ import platform
 from pathlib import Path
 from datetime import datetime
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
+
 try:
     import pyautogui
     _PYAUTOGUI = True
@@ -77,8 +82,8 @@ def _build_sandbox() -> dict:
                 "QueryValueEx": winreg.QueryValueEx,
                 "HKEY_CURRENT_USER": winreg.HKEY_CURRENT_USER,
             })()
-        except ImportError:
-            pass
+        except ImportError as e:
+            log.debug("%s", e)
 
     return sandbox
 
@@ -100,7 +105,7 @@ def _execute_generated_code(code: str, player=None) -> str:
         exec(compile(code, "<opero_desktop>", "exec"), sandbox)
         return "\n".join(output_lines) if output_lines else "Done."
     except Exception as e:
-        print(f"[Desktop] Exec error: {e}\nCode:\n{code[:300]}")
+        log.error(f"[Desktop] Exec error: {e}\nCode:\n{code[:300]}")
         return f"Execution error: {e}"
 
 
@@ -176,8 +181,8 @@ def set_wallpaper(image_path: str) -> str:
                     bmp_path = Path(tempfile.mktemp(suffix=".bmp"))
                     Image.open(path).convert("RGB").save(bmp_path, "BMP")
                     path = bmp_path
-                except ImportError:
-                    pass 
+                except ImportError as e:
+                    log.debug("%s", e)
             ok = ctypes.windll.user32.SystemParametersInfoW(20, 0, str(path), 3)
             if not ok:
                 return "Windows rejected the wallpaper update. Check the image and desktop policy settings."
@@ -440,6 +445,7 @@ def desktop_control(
         task   : natural language description for AI-powered actions
     """
     params = parameters or {}
+    params = validate_params(params, VALIDATOR, tool_name="desktop_control")
     action = params.get("action", "").lower().strip()
     task   = params.get("task", "").strip()
 
@@ -483,10 +489,10 @@ def desktop_control(
                 url_match = re.search(r'https?://[^\s"\'<>]+', actual_task)
                 if url_match:
                     url = url_match.group(0).rstrip(".,;:)")
-                    print(f"[Desktop] Downloading wallpaper from URL")
+                    log.info(f"[Desktop] Downloading wallpaper from URL")
                     return set_wallpaper_from_url(url)
 
-            print(f"[Desktop] Asking Gemini: {actual_task}")
+            log.info(f"[Desktop] Asking Gemini: {actual_task}")
             if player:
                 player.write_log("[Desktop] Generating action...")
 
@@ -500,7 +506,7 @@ def desktop_control(
             return "No action or task specified."
 
     except Exception as e:
-        print(f"[Desktop] Error: {e}")
+        log.error(f"[Desktop] Error: {e}")
         return f"Desktop control error: {e}"
 
 
@@ -537,4 +543,11 @@ TOOL = {
         ]
     },
     "handler": desktop_control,
+}
+
+VALIDATOR = {
+    "action": [{"type": str, "required": True, "max_len": 200}],
+    "path":   [{"type": str, "max_len": 500, "safe_path": True}],
+    "url":    [{"type": str, "max_len": 2000}],
+    "task":   [{"type": str, "max_len": 2000}],
 }

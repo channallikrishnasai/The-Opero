@@ -1,48 +1,27 @@
-import platform as _platform
-import subprocess as _subprocess
-
 # ── Nuclear: force CREATE_NO_WINDOW on EVERY subprocess call on Windows ───────
-# This patches Popen itself, so no per-file flag is needed anywhere.
-if _platform.system() == "Windows":
-    _OrigPopen = _subprocess.Popen
-
-    class _Popen(_OrigPopen):
-        def __init__(self, args, **kw):
-            kw["creationflags"] = kw.get("creationflags", 0) | _subprocess.CREATE_NO_WINDOW
-            kw.pop("startupinfo", None)   # drop any stale/shared STARTUPINFO
-            super().__init__(args, **                       kw)
-
-    _subprocess.Popen = _Popen
-
+# Applied via core.patches (imported for side effects, must come first).
+import core.patches
 
 # ── Console must survive non-UTF-8 code pages ────────────────────────────────
-# Every status line in this file carries an emoji, and on a legacy Windows
-# console the active code page is the system one — cp1254 in Turkey, cp1251 in
-# Russia, cp932 in Japan. Printing an emoji there raises UnicodeEncodeError, and
-# because most of these prints sit inside the receive loop it takes the session
-# down on startup. Reconfiguring to UTF-8 with a replacement fallback costs
-# nothing and makes the app launch the same way in every locale.
-import sys as _sys
-
-for _stream in ("stdout", "stderr"):
-    try:
-        _s = getattr(_sys, _stream, None)
-        if _s is not None and hasattr(_s, "reconfigure"):
-            _s.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass          # pythonw / redirected pipes / anything exotic — never fatal
+# Handled by core.patches.
 
 # ─────────────────────────────────────────────────────────────────────────────
 
 import asyncio
-import re
+import signal
+import atexit
 import threading
 import time
 import json
+import platform as _platform
+import re
 import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
+
+from core.logger import get_logger
+log = get_logger(__name__)
 
 import sounddevice as sd
 import numpy as np
@@ -491,6 +470,30 @@ TOOL_DECLARATIONS = [
     },
 ]
 
+class _ShutdownHandler:
+    """Coordinates graceful cleanup of all resources on exit."""
+    def __init__(self):
+        self._cleanups: list[tuple[str, callable]] = []
+        self._done = False
+        self._lock = threading.Lock()
+
+    def register(self, name: str, fn):
+        self._cleanups.append((name, fn))
+
+    def run(self):
+        with self._lock:
+            if self._done:
+                return
+            self._done = True
+        for name, fn in reversed(self._cleanups):
+            try:
+                fn()
+            except Exception:
+                pass  # best-effort cleanup
+
+_shutdown = _ShutdownHandler()
+
+
 class _ReconnectSignal(Exception):
     """Raised inside the session TaskGroup to force a clean, voluntary reconnect
     (e.g. the user picked a new voice — the voice is fixed at connect time, so
@@ -616,7 +619,7 @@ class OperaLive:
         self._action_registry = discover_actions(
             actions_dir=_base_dir / "actions",
             reserved_names=_inline_names,
-            logger=lambda msg: print(f"[Actions] {msg}"),
+            logger=lambda msg: log.info(f"[Actions] {msg}"),
         )
 
         # Plugins must not collide with either an inline tool or a discovered action.
@@ -627,7 +630,7 @@ class OperaLive:
             # Console gets the full boot transcript; the activity log gets only
             # what the user has to know about. Every plugin loading correctly is
             # the expected case and does not belong in their conversation.
-            logger=lambda msg: print(f"[Plugins] {msg}"),
+            logger=lambda msg: log.info(f"[Plugins] {msg}"),
             notify=lambda msg: self.ui.write_log(f"SYS: {msg}"),
         )
         self.ui.get_plugins = self._plugin_registry.list_for_ui
@@ -649,7 +652,7 @@ class OperaLive:
             try:
                 self.set_push_to_talk(True)
             except Exception as e:
-                print(f"[OPERO] ⚠ Push-to-talk unavailable: {e}")
+                log.warning("Push-to-talk unavailable: %s", e)
         # UI control surface for the Wake Word settings section.
         self.ui.wake_is_ready    = wake_is_ready          # () -> bool
         self.ui.wake_get_state   = self._wake_state       # () -> dict
@@ -657,6 +660,20 @@ class OperaLive:
         self.ui.on_wake_manual   = self._ui_wake_manual   # () -> toggle awake/asleep
         self.ui.on_wake_install  = self._ui_wake_install  # () -> (ok, msg)
         self._call_manager = None
+        self._stop = False
+
+    def shutdown(self):
+        """Graceful shutdown: stop listening and close the session."""
+        self._stop = True
+        sess = self.session
+        loop = self._loop
+        if sess and loop and loop.is_running():
+            async def _close():
+                try:
+                    await sess.close()
+                except Exception:
+                    pass
+            asyncio.run_coroutine_threadsafe(_close(), loop)
 
     # ── WhatsApp calling ──────────────────────────────────────────────────
 
@@ -730,7 +747,7 @@ class OperaLive:
         if self._wake_detector is None:
             self._wake_detector = WakeWordDetector(
                 on_detect=self._on_wake_detected,
-                logger=lambda m: print(f"[Wake] {m}"),
+                logger=lambda m: log.info("[Wake] %s", m),
                 notify=lambda m: self.ui.write_log(f"SYS: {m}"),
             )
         if not self._wake_detector.ready:
@@ -803,7 +820,7 @@ class OperaLive:
         """Download openwakeword + the model (runs in a UI worker thread)."""
         # Triggered by the user pressing the button, so its progress is exactly
         # what they are waiting to see.
-        return wake_install(logger=lambda m: print(f"[Wake] {m}"),
+        return wake_install(logger=lambda m: log.info("[Wake] %s", m),
                             notify=lambda m: self.ui.write_log(f"SYS: {m}"))
 
     def plugin_say(self, instruction: str) -> None:
@@ -826,12 +843,12 @@ class OperaLive:
                     turn_complete=True,
                 )
             except Exception as e:
-                print(f"[PluginSay] {e}")
+                log.warning("[PluginSay] %s", e)
 
         try:
             asyncio.run_coroutine_threadsafe(_say(), loop)
         except Exception as e:
-            print(f"[PluginSay] {e}")
+            log.warning("[PluginSay] %s", e)
 
     def request_reconnect(self, keep_context: bool = True, reason: str = ""):
         """Thread-safe: ask the run loop to tear down and rebuild the Live
@@ -958,8 +975,8 @@ class OperaLive:
             send_audio(indata.tobytes())
             try:
                 self.ui.set_audio_level(_pcm_level(indata))
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("{}", e)
 
     async def _watch_reconnect(self):
         """Session-scoped task: when a voluntary reconnect is requested, raise a
@@ -1053,8 +1070,8 @@ class OperaLive:
                 f"SYS: Push-to-talk on — hold {self._ptt.label}"
                 + ("." if scope == "global"
                    else " (works while this window is focused)."))
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
         return scope
 
     def _on_ptt(self, held: bool) -> None:
@@ -1068,8 +1085,8 @@ class OperaLive:
                 self._last_user_speech = time.monotonic()
         try:
             self.ui.set_state("LISTENING" if held else "SLEEPING")
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
 
     def interrupt(self) -> None:
         """Stop OPERO mid-speech: drain queued audio and open mic immediately."""
@@ -1084,7 +1101,7 @@ class OperaLive:
                 except Exception:
                     break
             if drained:
-                print(f"[OPERO] ✋ Interrupted — {drained} audio chunks discarded")
+                log.info(f"[OPERO] ✋ Interrupted — {drained} audio chunks discarded")
         self.set_speaking(False)
         # The words we were about to mouth are never going to be spoken now.
         self._visemes.reset()
@@ -1274,7 +1291,7 @@ class OperaLive:
         name = fc.name
         args = dict(fc.args or {})
 
-        print(f"[OPERO] 🔧 {name}  {args}")
+        log.info("🔧 %s  %s", name, args)
         self.ui.set_state("THINKING")
 
 
@@ -1284,7 +1301,7 @@ class OperaLive:
             value    = args.get("value", "")
             if key and value:
                 update_memory({category: {key: {"value": value}}})
-                print(f"[Memory] 💾 save_memory: {category}/{key} = {value}")
+                log.info(f"[Memory] 💾 save_memory: {category}/{key} = {value}")
             if not self.ui.muted:
                 self.ui.set_state("LISTENING")
             return types.FunctionResponse(
@@ -1318,7 +1335,7 @@ class OperaLive:
                 _cooldown = 4.0  # seconds — covers echo window after speaking ends
                 if self._vision_busy or (_now - self._vision_last_time) < _cooldown:
                     _wait = max(0, _cooldown - (_now - self._vision_last_time))
-                    print(f"[Vision] ⏳ Cooldown active ({_wait:.1f}s remaining) — ignoring duplicate call")
+                    log.debug(f"[Vision] ⏳ Cooldown active ({_wait:.1f}s remaining) — ignoring duplicate call")
                     result = "Vision is still processing the previous request. I will not call this again."
                 else:
                     self._vision_busy      = True
@@ -1329,11 +1346,11 @@ class OperaLive:
                         img_b, mime_t = await loop.run_in_executor(None, _capture_camera)
                         self.ui.start_camera_stream()
                         self._vision_cam_active = True
-                        print(f"[Vision] 📷 Camera: {len(img_b):,} bytes")
+                        log.info(f"[Vision] 📷 Camera: {len(img_b):,} bytes")
                         _stall = "camera"
                     else:
                         img_b, mime_t = await loop.run_in_executor(None, _capture_screen)
-                        print(f"[Vision] 🖥️  Screen: {len(img_b):,} bytes")
+                        log.info(f"[Vision] 🖥️  Screen: {len(img_b):,} bytes")
                         _stall = "screen"
                     self._pending_vision = (img_b, mime_t, user_text, angle)
                     # The image is attached to this same exchange, so there is
@@ -1379,8 +1396,8 @@ class OperaLive:
                                 turns={"role": "user", "parts": [{"text": "Say a brief natural goodbye to the user."}]},
                                 turn_complete=True,
                             )
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            log.debug("{}", e)
                     await asyncio.sleep(1.5)
                     import os as _os
                     _os._exit(0)
@@ -1421,7 +1438,7 @@ class OperaLive:
         if not self.ui.muted:
             self.ui.set_state("LISTENING")
 
-        print(f"[OPERO] 📤 {name} → {str(result)[:80]}")
+        log.info(f"[OPERO] 📤 {name} → {str(result)[:80]}")
 
         # A tool that declared itself NON_BLOCKING also says when its answer may
         # re-enter the conversation. Without this the model finishes whatever it
@@ -1454,7 +1471,7 @@ class OperaLive:
             )
 
     async def _listen_audio(self):
-        print("[OPERO] 🎤 Mic started")
+        log.info("[OPERO] 🎤 Mic started")
         loop = asyncio.get_event_loop()
 
         def callback(indata, frames, time_info, status):
@@ -1519,17 +1536,19 @@ class OperaLive:
 
             if not self.ui.muted and not self._phone_active:
                 data = indata.tobytes()
-                loop.call_soon_threadsafe(
-                    self.out_queue.put_nowait,
-                    {"data": data, "mime_type": "audio/pcm"}
-                )
+                def _safe_put():
+                    try:
+                        self.out_queue.put_nowait({"data": data, "mime_type": "audio/pcm"})
+                    except asyncio.QueueFull as e:
+                        log.debug("{}", e)
+                loop.call_soon_threadsafe(_safe_put)
                 # Feed the live mic level to the HUD so the waveform reacts to
                 # the user's actual voice while listening. Purely cosmetic — any
                 # failure here must never disturb the mic.
                 try:
                     self.ui.set_audio_level(_pcm_level(indata))
-                except Exception:
-                    pass
+                except Exception as e:
+                    log.debug("{}", e)
 
         try:
             def _open_mic(dev):
@@ -1549,7 +1568,7 @@ class OperaLive:
             _mic_name = get_input_device()
             _mic_dev  = audio_devices.resolve(_mic_name, "input")
             if _mic_dev is not None:
-                print(f"[OPERO] 🎤 Input device: {_mic_name}")
+                log.info(f"[OPERO] 🎤 Input device: {_mic_name}")
             try:
                 _mic_stream = _open_mic(_mic_dev)
             except Exception as _e:
@@ -1559,18 +1578,18 @@ class OperaLive:
                 # mean the assistant cannot hear at all.
                 if _mic_dev is None:
                     raise
-                print(f"[OPERO] ⚠️  Mic '{_mic_name}' failed: {_e} — using default")
+                log.warning(f"[OPERO] ⚠️  Mic '{_mic_name}' failed: {_e} — using default")
                 self.ui.write_log(
                     f"SYS: Microphone '{_mic_name}' unavailable — using system default."
                 )
                 _mic_stream = _open_mic(None)
 
             with _mic_stream:
-                print("[OPERO] 🎤 Mic stream open")
-                while True:
+                log.info("[OPERO] 🎤 Mic stream open")
+                while not self._stop:
                     await asyncio.sleep(0.1)
         except Exception as e:
-            print(f"[OPERO] ❌ Mic: {e}")
+            log.error(f"[OPERO] ❌ Mic: {e}")
             raise
 
     async def _flush_pending_vision(self) -> bool:
@@ -1591,7 +1610,7 @@ class OperaLive:
         img_b, mime_t, question, angle = self._pending_vision
         self._pending_vision = None
         b64 = _b64.b64encode(img_b).decode("ascii")
-        print(f"[Vision] 📤 {len(img_b):,} bytes (angle={angle}) → main session")
+        log.info(f"[Vision] 📤 {len(img_b):,} bytes (angle={angle}) → main session")
 
         # Label the source. Without it the image arrives carrying nothing but
         # the user's own sentence, and a screenshot of this app — which has a
@@ -1617,7 +1636,7 @@ class OperaLive:
         return True
 
     async def _receive_audio(self):
-        print("[OPERO] 👂 Recv started")
+        log.info("[OPERO] 👂 Recv started")
         out_buf, in_buf = [], []
 
         try:
@@ -1634,7 +1653,7 @@ class OperaLive:
                     if _sru is not None:
                         if getattr(_sru, "resumable", False) and getattr(_sru, "new_handle", None):
                             if self._resume_handle is None:
-                                print("[OPERO] 🔗 Session resumption armed")
+                                log.info("[OPERO] 🔗 Session resumption armed")
                             self._resume_handle = _sru.new_handle
 
                     if response.data:
@@ -1648,7 +1667,10 @@ class OperaLive:
                             _audio_data = response.data
                             _SLICE = 2400
                             for _i in range(0, len(_audio_data), _SLICE):
-                                self.audio_in_queue.put_nowait(_audio_data[_i : _i + _SLICE])
+                                try:
+                                    self.audio_in_queue.put_nowait(_audio_data[_i : _i + _SLICE])
+                                except asyncio.QueueFull as e:
+                                    log.debug("{}", e)
 
                     if response.server_content:
                         sc = response.server_content
@@ -1733,7 +1755,7 @@ class OperaLive:
                     if response.tool_call:
                         fn_responses = []
                         for fc in response.tool_call.function_calls:
-                            print(f"[OPERO] 📞 {fc.name}")
+                            log.info(f"[OPERO] 📞 {fc.name}")
                             fr = await self._execute_tool(fc)
                             fn_responses.append(fr)
                         await self.session.send_tool_response(
@@ -1741,17 +1763,17 @@ class OperaLive:
                         )
                         await self._flush_pending_vision()
         except Exception as e:
-            print(f"[OPERO] ❌ Recv: {e}")
+            log.error(f"[OPERO] ❌ Recv: {e}")
             traceback.print_exc()
             raise
 
     async def _play_audio(self):
-        print("[OPERO] 🔊 Play started")
+        log.info("[OPERO] 🔊 Play started")
 
         _spk_name = get_output_device()
         _spk_dev  = audio_devices.resolve(_spk_name, "output")
         if _spk_dev is not None:
-            print(f"[OPERO] 🔊 Output device: {_spk_name}")
+            log.info(f"[OPERO] 🔊 Output device: {_spk_name}")
 
         def _open_spk(dev):
             st = sd.RawOutputStream(
@@ -1772,7 +1794,7 @@ class OperaLive:
             # cost the user their voice. Fall back to the default and say so.
             if _spk_dev is None:
                 raise
-            print(f"[OPERO] ⚠️  Output device '{_spk_name}' failed: {_e} — using default")
+            log.warning(f"[OPERO] ⚠️  Output device '{_spk_name}' failed: {_e} — using default")
             self.ui.write_log(f"SYS: Speaker '{_spk_name}' unavailable — using system default.")
             stream = _open_spk(None)
 
@@ -1784,10 +1806,10 @@ class OperaLive:
             lat = float(getattr(stream, "latency", 0.0) or 0.0)
             if 0.0 < lat < 1.0:
                 self._out_latency = lat
-            print(f"[OPERO] 🔊 Output latency {self._out_latency*1000:.0f} ms "
+            log.info(f"[OPERO] 🔊 Output latency {self._out_latency*1000:.0f} ms "
                   f"→ echo tail {(self._out_latency + _TAIL_MARGIN)*1000:.0f} ms")
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
 
         try:
             while True:
@@ -1865,15 +1887,15 @@ class OperaLive:
                         self.ui.set_audio_level(lvl)
                         self._out_level = lvl
                         self._echo.note_output(pcm, RECEIVE_SAMPLE_RATE, lvl)
-                except Exception:
-                    pass
+                except Exception as e:
+                    log.debug("{}", e)
 
                 try:
                     await asyncio.to_thread(stream.write, bytes(batch))
                 except (RuntimeError, asyncio.CancelledError):
                     break   # executor shutting down — exit cleanly
         except Exception as e:
-            print(f"[OPERO] ❌ Play: {e}")
+            log.error(f"[OPERO] ❌ Play: {e}")
             raise
         finally:
             self.set_speaking(False)
@@ -1945,7 +1967,7 @@ class OperaLive:
             turns={"role": "user", "parts": [{"text": p1}]},
             turn_complete=True,
         )
-        print("[OPERO] Briefing phase 1 (greeting) sent.")
+        log.info("[OPERO] Briefing phase 1 (greeting) sent.")
 
         # ── Phase 2: fire as soon as Phase 1 audio is done ───────────────────
         async def _deliver_news():
@@ -1962,8 +1984,8 @@ class OperaLive:
                     try:
                         await asyncio.wait_for(self._turn_done_event.wait(), timeout=6.0)
                         turn_waited = True
-                    except asyncio.TimeoutError:
-                        pass
+                    except asyncio.TimeoutError as e:
+                        log.debug("{}", e)
 
                 # Extra buffer: turn_complete fires when Gemini finishes *generating*
                 # Phase 1, but audio may still be playing.  Waiting a beat here
@@ -2008,10 +2030,10 @@ class OperaLive:
                     turns={"role": "user", "parts": [{"text": p2}]},
                     turn_complete=True,
                 )
-                print("[OPERO] Briefing phase 2 (news) sent.")
+                log.info("[OPERO] Briefing phase 2 (news) sent.")
             except Exception as e:
-                print(f"[Briefing] Phase 2 error: {e}")
-                print(f"[OPERO] Briefing phase 2 failed: {e}")
+                log.error(f"[Briefing] Phase 2 error: {e}")
+                log.info(f"[OPERO] Briefing phase 2 failed: {e}")
                 self.ui.write_log("SYS: Could not fetch the news for the briefing.")
 
         asyncio.create_task(_deliver_news())
@@ -2044,7 +2066,7 @@ class OperaLive:
             if summary:
                 save_session_summary(summary, lang)
         except Exception as e:
-            print(f"[Memory] ⚠️ Session summary failed: {e}")
+            log.warning(f"[Memory] ⚠️ Session summary failed: {e}")
 
     # ── System monitor ──────────────────────────────────────────────────────────
 
@@ -2066,7 +2088,7 @@ class OperaLive:
                     turn_complete=True,
                 )
             except Exception as e:
-                print(f"[Monitor] ⚠️ Could not send alert: {e}")
+                log.warning(f"[Monitor] ⚠️ Could not send alert: {e}")
 
     # ── Background monitor ──────────────────────────────────────────────────────
 
@@ -2095,10 +2117,10 @@ class OperaLive:
                                 turns={"role": "user", "parts": [{"text": msg}]},
                                 turn_complete=True,
                             )
-                            print("[OPERO] Monitor alert sent.")
+                            log.info("[OPERO] Monitor alert sent.")
                             await asyncio.sleep(6)   # gap between consecutive alerts
                     except Exception as e:
-                        print(f"[Monitor] ⚠️ Background check error: {e}")
+                        log.warning(f"[Monitor] ⚠️ Background check error: {e}")
             await asyncio.sleep(1800)     # check every 30 minutes
 
     # ── Proactive mode ──────────────────────────────────────────────────────────
@@ -2138,9 +2160,9 @@ class OperaLive:
                     turns={"role": "user", "parts": [{"text": prompt}]},
                     turn_complete=True,
                 )
-                print("[OPERO] Proactive check-in.")
+                log.info("[OPERO] Proactive check-in.")
             except Exception as e:
-                print(f"[Proactive] ⚠️ {e}")
+                log.warning(f"[Proactive] ⚠️ {e}")
 
     # ── Phone audio relay ────────────────────────────────────────────────────────
 
@@ -2160,8 +2182,8 @@ class OperaLive:
             if not speaking and not self.ui.muted:
                 try:
                     self.out_queue.put_nowait(chunk)
-                except asyncio.QueueFull:
-                    pass
+                except asyncio.QueueFull as e:
+                    log.debug("{}", e)
 
     def _on_phone_connected(self) -> None:
         self.ui.write_log("SYS: Phone connected via Remote Dashboard.")
@@ -2193,11 +2215,11 @@ class OperaLive:
                     )
                     self.ui.write_log(f"[Web]: {text}")
                 else:
-                    print(f"[Dashboard] Dropped command (no session): {text}")
-            except asyncio.TimeoutError:
-                pass
+                    log.info(f"[Dashboard] Dropped command (no session): {text}")
+            except asyncio.TimeoutError as e:
+                log.debug("{}", e)
             except Exception as e:
-                print(f"[Dashboard] Command error: {e}")
+                log.error(f"[Dashboard] Command error: {e}")
                 await asyncio.sleep(0.5)
 
     # ── main loop ───────────────────────────────────────────────────────────
@@ -2259,12 +2281,12 @@ class OperaLive:
                 asyncio.create_task(self._dashboard.serve())
                 asyncio.create_task(self._process_dashboard_commands())
             except Exception as e:
-                print(f"[Dashboard] Disabled: {e}")
+                log.info(f"[Dashboard] Disabled: {e}")
                 self._dashboard = None
 
         while True:
             try:
-                print("[OPERO] Connecting...")
+                log.info("[OPERO] Connecting...")
                 self.ui.set_state("THINKING")
                 _resumed_with = self._resume_handle is not None
                 config = self._build_config()
@@ -2294,7 +2316,7 @@ class OperaLive:
                     self._vision_last_time     = 0.0
                     self._interrupted          = False
 
-                    print("[OPERO] Connected.")
+                    log.info("[OPERO] Connected.")
                     if _resumed_with:
                         # Say it plainly: the difference between "it reconnected"
                         # and "it reconnected and still knows what we were doing"
@@ -2359,7 +2381,7 @@ class OperaLive:
                 # Voluntary reconnect (voice change) — not an error. Rebuild the
                 # session immediately with no backoff and no scary logs.
                 if _is_reconnect_signal(e):
-                    print("[OPERO] Voluntary reconnect requested.")
+                    log.info("[OPERO] Voluntary reconnect requested.")
                     if not _keep_context_of(e):
                         # A deliberate clean slate (voice change) — drop the
                         # handle so the next connect really does start empty.
@@ -2385,14 +2407,14 @@ class OperaLive:
                     or "INVALID_ARGUMENT" in str(e)
                     or "NOT_FOUND" in str(e)
                 ):
-                    print("[OPERO] 🔗 Resumption handle rejected — starting a fresh session")
+                    log.info("[OPERO] 🔗 Resumption handle rejected — starting a fresh session")
                     self.ui.write_log("SYS: Could not restore the conversation — starting fresh.")
                     self._resume_handle = None
                     self._conn_backoff = 0
                     continue
 
                 err_str = str(e)
-                print(f"[OPERO] Error ({type(e).__name__}): {e}")
+                log.info(f"[OPERO] Error ({type(e).__name__}): {e}")
                 traceback.print_exc()
 
                 # Turn-taking / media / thinking knobs rejected by the server
@@ -2408,7 +2430,7 @@ class OperaLive:
                     or "thinking" in err_str.lower()
                 ):
                     self._tuned_live = False
-                    print("[OPERO] Live tuning rejected — reconnecting without it.")
+                    log.info("[OPERO] Live tuning rejected — reconnecting without it.")
                     continue
 
                 # Proactive audio rejected by the server (preview API drift) —
@@ -2426,13 +2448,14 @@ class OperaLive:
                     continue
 
                 # Invalid API key — stop hammering the API, prompt re-configuration
-                if "API key not valid" in err_str or "1007" in err_str:
+                if ("API key not valid" in err_str or "1007" in err_str
+                        or "No API key was provided" in err_str):
                     self.ui.write_log("ERR: API key invalid — please re-enter your key.")
                     self.ui.set_state("SLEEPING")
                     self.ui.prompt_reconfig()
                     while not self.ui._win._ready:
                         await asyncio.sleep(1)
-                    print("[OPERO] New API key saved — reconnecting...")
+                    log.info("[OPERO] New API key saved — reconnecting...")
                     _conn_backoff = 3
                     continue
 
@@ -2466,7 +2489,7 @@ class OperaLive:
                 await self._dashboard.broadcast({"type": "status", "state": "sleeping"})
 
             delay = getattr(self, "_conn_backoff", 3)
-            print(f"[OPERO] Reconnecting in {delay}s...")
+            log.info(f"[OPERO] Reconnecting in {delay}s...")
             await asyncio.sleep(delay)
 
 def main():
@@ -2475,10 +2498,23 @@ def main():
     def runner():
         ui.wait_for_api_key()
         opero = OperaLive(ui)
+        _shutdown.register("stop_listening", lambda: setattr(opero, '_stop', True))
+        _shutdown.register("close_session", lambda: opero.shutdown())
         try:
             asyncio.run(opero.run())
         except KeyboardInterrupt:
-            print("\n🔴 Shutting down...")
+            log.info("\n🔴 Shutting down...")
+        finally:
+            _shutdown.run()
+
+    def _signal_handler(sig, frame):
+        log.info("Shutdown signal received — cleaning up...")
+        _shutdown.run()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+    atexit.register(_shutdown.run)
 
     threading.Thread(target=runner, daemon=True).start()
     ui.root.mainloop()

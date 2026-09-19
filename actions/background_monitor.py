@@ -9,6 +9,9 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 
 # ── Blocked categories (never monitor regardless of what user says) ────────────
 
@@ -73,7 +76,7 @@ def add_monitor(topic: str) -> str:
         "last_hash":  "",
     }
     _save(monitors)
-    print(f"[Monitor] ➕ Added: {topic}")
+    log.info(f"[Monitor] ➕ Added: {topic}")
     return f"Now monitoring: {topic}"
 
 
@@ -148,10 +151,10 @@ def check_all() -> list[str]:
             if source:
                 parts.append(f"Source: {source}")
             alerts.append("\n".join(parts))
-            print(f"[Monitor] 🔔 New headline for '{topic}': {title[:60]}")
+            log.info(f"[Monitor] 🔔 New headline for '{topic}': {title[:60]}")
 
         except Exception as e:
-            print(f"[Monitor] ⚠️ Check failed for '{topic}': {e}")
+            log.error(f"[Monitor] ⚠️ Check failed for '{topic}': {e}")
 
     if changed:
         _save(monitors)

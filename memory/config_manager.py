@@ -3,6 +3,9 @@ import sys
 import time
 from pathlib import Path
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 def get_base_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent
@@ -41,7 +44,7 @@ def load_api_keys() -> dict:
     try:
         return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
     except Exception as e:
-        print(f"❌ Failed to load api_keys.json: {e}")
+        log.error(f"❌ Failed to load api_keys.json: {e}")
         return {}
 
 def get_gemini_key() -> str | None:
@@ -149,6 +152,24 @@ def get_hud_style() -> str:
 def save_hud_style(style: str) -> None:
     s = str(style or "").strip().lower()
     _save_flag("hud_style", s if s in HUD_STYLES else "face")
+
+
+# ── Theme mode (dark / light) ─────────────────────────────────────────────────
+
+THEME_MODES = ("dark", "light")
+DEFAULT_THEME_MODE = "dark"
+
+
+def get_theme_mode() -> str:
+    """Return the stored theme mode, falling back to 'dark'."""
+    v = str(load_api_keys().get("theme_mode", DEFAULT_THEME_MODE)).strip().lower()
+    return v if v in THEME_MODES else DEFAULT_THEME_MODE
+
+
+def save_theme_mode(mode: str) -> None:
+    """Persist the chosen theme mode."""
+    v = str(mode or "").strip().lower()
+    _save_flag("theme_mode", v if v in THEME_MODES else DEFAULT_THEME_MODE)
 
 
 # ── Live-session tuning ──────────────────────────────────────────────────────

@@ -34,6 +34,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 _NAME_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,63}$")
 _DEFAULT_PARAMS = {"type": "OBJECT", "properties": {}}
 _CTX_KEYS = ("player", "speak", "response", "session_memory")

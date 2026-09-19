@@ -64,6 +64,9 @@ THE LADDER, MEASURED
 """
 from __future__ import annotations
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 import asyncio
 import json
 import sys
@@ -304,14 +307,14 @@ async def _live_turn(parts: list, system: str, key: str, timeout_s: float) -> st
         # the same way and for the same reason.
         try:
             await asyncio.wait_for(drain(), timeout=1.5)
-        except asyncio.TimeoutError:
-            pass
+        except asyncio.TimeoutError as e:
+            log.debug("{}", e)
         return "".join(chunks).strip()
     finally:
         try:
             await cm.__aexit__(None, None, None)
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
 
 
 def _live_call(contents, config, timeout_ms: int, key: str):
@@ -382,7 +385,7 @@ def call(contents, tier: str = FAST, config=None,
 
     resolved_key = key or api_key()
     if not resolved_key:
-        print("[Gemini] no Gemini API key is configured")
+        log.info("[Gemini] no Gemini API key is configured")
         return None
 
     cl = None
@@ -404,10 +407,10 @@ def call(contents, tier: str = FAST, config=None,
             msg = str(e)
             if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
                 _cool(model)
-                print(f"[Gemini] {model}: out of quota — skipping it for "
+                log.debug(f"[Gemini] {model}: out of quota — skipping it for "
                       f"{_COOLDOWN_SECONDS // 60} minutes")
             else:
-                print(f"[Gemini] {model}: {type(e).__name__}: {msg[:140]}")
+                log.info(f"[Gemini] {model}: {type(e).__name__}: {msg[:140]}")
     return None
 
 
@@ -435,5 +438,5 @@ def as_json(contents, tier: str = FAST, config=None,
     try:
         return json.loads(raw)
     except Exception as e:
-        print(f"[Gemini] reply was not JSON: {e}")
+        log.info(f"[Gemini] reply was not JSON: {e}")
         return default

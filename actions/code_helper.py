@@ -20,6 +20,11 @@ MAX_BUILD_ATTEMPTS = 3
 # forever whenever that one alias was unwell.
 from core import gemini
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
+
 
 def _get_api_key() -> str:
     with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -103,10 +108,10 @@ def _take_screenshot() -> Path | None:
         screenshot_path = Path.home() / "Desktop" / f"opero_debug_{int(time.time())}.png"
         screenshot = pyautogui.screenshot()
         screenshot.save(str(screenshot_path))
-        print(f"[Code] 📸 Screenshot: {screenshot_path}")
+        log.info(f"[Code] 📸 Screenshot: {screenshot_path}")
         return screenshot_path
     except Exception as e:
-        print(f"[Code] ⚠️ Screenshot failed: {e}")
+        log.error(f"[Code] ⚠️ Screenshot failed: {e}")
         return None
 
 
@@ -155,7 +160,7 @@ def _detect_intent(description: str, file_path: str, code: str) -> str:
             if ans in _VALID_INTENTS:
                 return ans
         except Exception as e:
-            print(f"[Code] Intent classification failed ({e}) — structural fallback")
+            log.error(f"[Code] Intent classification failed ({e}) — structural fallback")
 
     # Structural fallback — not tied to any language
     if file_exists:
@@ -255,7 +260,7 @@ def _build(description, language, output_path, args, timeout, speak=None, player
 
     try:
         code, path = _write(description, lang, output_path, player)
-        print(f"[Code] ✅ Written: {path}")
+        log.info(f"[Code] ✅ Written: {path}")
     except Exception as e:
         msg = f"Could not write initial code: {e}"
         if speak: speak(msg)
@@ -263,7 +268,7 @@ def _build(description, language, output_path, args, timeout, speak=None, player
 
     last_output = ""
     for attempt in range(1, MAX_BUILD_ATTEMPTS + 1):
-        print(f"[Code] 🔄 Attempt {attempt}/{MAX_BUILD_ATTEMPTS}")
+        log.info(f"[Code] 🔄 Attempt {attempt}/{MAX_BUILD_ATTEMPTS}")
         if player:
             player.write_log(f"[Code] Attempt {attempt}...")
 
@@ -278,7 +283,7 @@ def _build(description, language, output_path, args, timeout, speak=None, player
             if speak: speak(msg)
             return f"{msg}\n\nOutput:\n{last_output}"
 
-        print(f"[Code] ⚠️ Error on attempt {attempt}, fixing...")
+        log.error(f"[Code] ⚠️ Error on attempt {attempt}, fixing...")
         if player:
             player.write_log(f"[Code] Fixing (attempt {attempt})...")
 
@@ -304,7 +309,7 @@ def _write_action(description, language, output_path, player) -> str:
         player.write_log("[Code] Writing code...")
     try:
         code, path = _write(description, language, output_path, player)
-        print(f"[Code] ✅ Written: {path}")
+        log.info(f"[Code] ✅ Written: {path}")
         return f"Code written. Saved to: {path}\n\nPreview:\n{_preview(code)}"
     except Exception as e:
         return f"Could not generate code: {e}"
@@ -342,7 +347,7 @@ Updated code:"""
         return f"Could not edit code: {e}"
 
     status = _save_file(Path(file_path), edited)
-    print(f"[Code] ✅ Edited: {file_path}")
+    log.info(f"[Code] ✅ Edited: {file_path}")
     return f"File edited. {status}\n\nPreview:\n{_preview(edited)}"
 
 
@@ -427,7 +432,7 @@ Optimized code:"""
         save_path = _resolve_save_path(output_path, lang)
 
     status = _save_file(save_path, optimized)
-    print(f"[Code] ✅ Optimized: {save_path}")
+    log.info(f"[Code] ✅ Optimized: {save_path}")
 
     original_lines  = len(code.splitlines())
     optimized_lines = len(optimized.splitlines())
@@ -446,7 +451,7 @@ def _screen_debug_action(description, file_path, player, speak=None) -> str:
     if player:
         player.write_log("[Code] Taking screenshot for analysis...")
 
-    print("[Code] 📸 Capturing screen for debug...")
+    log.debug("[Code] 📸 Capturing screen for debug...")
 
 
     screenshot_path = _take_screenshot()
@@ -458,7 +463,7 @@ def _screen_debug_action(description, file_path, player, speak=None) -> str:
     if file_path:
         file_content, err = _read_file(file_path)
         if err:
-            print(f"[Code] ⚠️ Could not read file: {err}")
+            log.info(f"[Code] ⚠️ Could not read file: {err}")
 
     try:
         from google.genai import types
@@ -494,12 +499,12 @@ Be specific and actionable. If you see an error message, quote it exactly."""
             return "Sir, I couldn't reach Gemini to analyse that screenshot."
 
         analysis = (response.text or "").strip()
-        print(f"[Code] ✅ Screen analysis complete")
+        log.info(f"[Code] ✅ Screen analysis complete")
 
         try:
             screenshot_path.unlink()
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
         if file_path and file_content:
 
@@ -509,7 +514,7 @@ Be specific and actionable. If you see an error message, quote it exactly."""
                 save_path  = Path(file_path)
                 _save_file(save_path, fixed_code)
                 analysis += f"\n\n✅ Fixed code has been saved to: {file_path}"
-                print(f"[Code] ✅ Fixed code saved: {file_path}")
+                log.info(f"[Code] ✅ Fixed code saved: {file_path}")
 
         return analysis
 
@@ -517,8 +522,8 @@ Be specific and actionable. If you see an error message, quote it exactly."""
 
         try:
             screenshot_path.unlink()
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
         return f"Screen analysis failed: {e}"
 
 
@@ -543,6 +548,7 @@ def code_helper(
         timeout     : Execution timeout in seconds (default: 30)
     """
     p           = parameters or {}
+    p           = validate_params(p, VALIDATOR, tool_name="code_helper")
     action      = p.get("action", "auto").lower().strip()
     description = p.get("description", "").strip()
     language    = p.get("language", "python").strip()
@@ -554,7 +560,7 @@ def code_helper(
 
     if action == "auto":
         action = _detect_intent(description, file_path, code)
-        print(f"[Code] 🤖 Auto-detected: {action}")
+        log.info(f"[Code] 🤖 Auto-detected: {action}")
 
     if action == "write":
         return _write_action(description, language, output_path, player)
@@ -630,4 +636,11 @@ TOOL = {
         ]
     },
     "handler": code_helper,
+}
+
+VALIDATOR = {
+    "action":      [{"type": str, "max_len": 50}],
+    "description": [{"type": str, "max_len": 5000}],
+    "language":    [{"type": str, "max_len": 30}],
+    "code":        [{"type": str, "max_len": 50000}],
 }

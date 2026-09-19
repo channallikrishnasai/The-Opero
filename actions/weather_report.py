@@ -1,12 +1,18 @@
 import webbrowser
 from urllib.parse import quote_plus
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
+
 
 def weather_action(
     parameters: dict,
     player=None,
     session_memory=None,
 ) -> str:
+    parameters = validate_params(parameters, VALIDATOR, tool_name="weather_report")
     city     = parameters.get("city")
     when     = parameters.get("time", "today")  
 
@@ -36,19 +42,19 @@ def weather_action(
     if session_memory:
         try:
             session_memory.set_last_search(query=search_query, response=msg)
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
     return msg
 
 
 def _log(message: str, player=None) -> None:
-    print(f"[Weather] {message}")
+    log.info(f"[Weather] {message}")
     if player:
         try:
             player.write_log(f"OPERO: {message}")
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
 
 # ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
@@ -68,4 +74,8 @@ TOOL = {
         ]
     },
     "handler": weather_action,
+}
+
+VALIDATOR = {
+    "city": [{"type": str, "required": True, "max_len": 200}],
 }

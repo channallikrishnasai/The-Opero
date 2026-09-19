@@ -93,7 +93,7 @@ class AssemblyAIVoice:
                 report_failure("AssemblyAI streaming connection closed unexpectedly.")
 
         self._transcriber = aai.RealtimeTranscriber(
-            api_key=get_assemblyai_key(), sample_rate=SAMPLE_RATE,
+            token=get_assemblyai_key(), sample_rate=SAMPLE_RATE,
             on_data=on_data, on_error=on_error, on_close=on_close,
         )
         self._running = True

@@ -16,6 +16,9 @@ import numpy as np
 from pathlib import Path
 from typing import Optional, Callable
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 try:
     import requests
 except ImportError:
@@ -120,8 +123,8 @@ class WhatsAppCallManager:
             except Exception:
                 try:
                     self._proc.kill()
-                except Exception:
-                    pass
+                except Exception as e:
+                    log.debug("%s", e)
             self._proc = None
         self._log("🛑 Bridge stopped")
 
@@ -135,8 +138,8 @@ class WhatsAppCallManager:
                 if line and ("connected" in line.lower() or "incoming" in line.lower()
                              or "fatal" in line.lower() or "error" in line.lower()):
                     self._log(f"Bridge: {line}")
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
     def _start_polling(self):
         """Start polling the bridge for calls in a background thread."""
@@ -278,6 +281,14 @@ class WhatsAppCallManager:
         except Exception:
             return ""
 
+    def refresh_qr(self) -> bool:
+        """Force the bridge to log out and generate a new QR code."""
+        try:
+            resp = requests.post(f"{BRIDGE_URL}/qr/refresh", timeout=10)
+            return resp.json().get("ok", False)
+        except Exception:
+            return False
+
     def start_outgoing_call(self, receiver: str, call_type: str = "voice") -> str:
         """Start a desktop WhatsApp call through the supported action layer.
 
@@ -303,8 +314,8 @@ class WhatsAppCallManager:
         # Mark in bridge
         try:
             requests.post(f"{BRIDGE_URL}/calls/{call_id}/answer", timeout=3)
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
         # Try to click answer in WhatsApp Desktop
         self._log("🖱️ Clicking answer button in WhatsApp Desktop...")
@@ -346,8 +357,8 @@ class WhatsAppCallManager:
         # Mark in bridge
         try:
             requests.post(f"{BRIDGE_URL}/calls/{call_id}/reject", timeout=3)
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
         # Try to click reject (red phone) in WhatsApp Desktop
         self._log("🖱️ Clicking reject button...")

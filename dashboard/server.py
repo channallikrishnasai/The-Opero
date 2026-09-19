@@ -16,24 +16,30 @@ import secrets
 import socket
 import string
 import time
+from collections import defaultdict
 from pathlib import Path
+
+from core.logger import get_logger
+log = get_logger(__name__)
 
 _DEPS_OK = False
 try:
     from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+    from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+    from starlette.middleware.base import BaseHTTPMiddleware
     import uvicorn
     _DEPS_OK = True
-except ImportError:
-    pass
+except ImportError as e:
+    log.debug("{}", e)
 
 # python-multipart is required for file uploads — optional dependency
 _UPLOAD_OK = False
 try:
     from fastapi import UploadFile, File as FastAPIFile
     _UPLOAD_OK = True
-except Exception:
-    pass
+except Exception as _e:
+    log.debug("{}", _e)
 
 BASE_DIR    = Path(__file__).resolve().parent.parent
 STATIC_DIR  = Path(__file__).parent / "static"
@@ -51,12 +57,66 @@ def _make_uploads_dir() -> Path:
         try:
             candidate.mkdir(parents=True, exist_ok=True)
             return candidate
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
     return BASE_DIR / "uploads"
 
 
 UPLOADS_DIR = _make_uploads_dir()
+
+
+# ── Security middleware ──────────────────────────────────────────────────────
+
+class _RateLimiter:
+    """Simple in-memory sliding-window rate limiter."""
+    def __init__(self, max_requests: int = 60, window_seconds: int = 60):
+        self._max = max_requests
+        self._window = window_seconds
+        self._hits: dict[str, list[float]] = defaultdict(list)
+
+    def is_allowed(self, key: str) -> bool:
+        now = time.time()
+        cutoff = now - self._window
+        self._hits[key] = [t for t in self._hits[key] if t > cutoff]
+        if len(self._hits[key]) >= self._max:
+            return False
+        self._hits[key].append(now)
+        return True
+
+
+_rate_limiter = _RateLimiter(max_requests=120, window_seconds=60)
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "unknown"
+        if not _rate_limiter.is_allowed(client_ip):
+            return JSONResponse({"error": "Rate limit exceeded"}, status_code=429)
+        return await call_next(request)
+
+
+class RequestSizeMiddleware(BaseHTTPMiddleware):
+    _MAX_BODY = 10 * 1024 * 1024  # 10 MB
+
+    async def dispatch(self, request: Request, call_next):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > self._MAX_BODY:
+            return JSONResponse({"error": "Request too large"}, status_code=413)
+        return await call_next(request)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+
+_WS_MAX_CONNECTIONS = 5
+
 
 def _get_gemini_key() -> str | None:
     try:
@@ -176,8 +236,8 @@ def _ensure_network_access(port: int) -> None:
         except Exception:
             try:
                 os.close(fd)
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("{}", e)
             return
 
         # ── Try running directly (succeeds when already admin) ────────────────
@@ -186,20 +246,20 @@ def _ensure_network_access(port: int) -> None:
                 [bat_path], capture_output=True, timeout=8, shell=True
             )
             if r.returncode == 0:
-                print(f"[Dashboard] Firewall configured for port {port}.")
+                log.info(f"[Dashboard] Firewall configured for port {port}.")
                 try:
                     os.unlink(bat_path)
-                except Exception:
-                    pass
+                except Exception as e:
+                    log.debug("{}", e)
                 return
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
 
         # ── ShellExecuteW: native UAC elevation (most reliable on Windows) ────
         # ShellExecuteW with verb "runas" always shows the UAC dialog regardless
         # of UAC level settings. Non-blocking — uvicorn is already running.
-        print("[Dashboard] One-time network setup required.")
-        print("[Dashboard] >>> A Windows security dialog will appear — click 'Yes' <<<")
+        log.info("[Dashboard] One-time network setup required.")
+        log.info("[Dashboard] >>> A Windows security dialog will appear — click 'Yes' <<<")
         try:
             ret = ctypes.windll.shell32.ShellExecuteW(
                 None,       # hwnd  (no parent window)
@@ -213,21 +273,21 @@ def _ensure_network_access(port: int) -> None:
                 # ShellExecuteW returns immediately; bat finishes in ~1 second.
                 # Sleep briefly so the rules are in place before the first retry.
                 time.sleep(2)
-                print(f"[Dashboard] Network setup complete — port {port} is open.")
-                print("[Dashboard] Refresh your phone browser to connect.")
+                log.info(f"[Dashboard] Network setup complete — port {port} is open.")
+                log.info("[Dashboard] Refresh your phone browser to connect.")
             else:
-                print("[Dashboard] Setup was not allowed.")
-                print("[Dashboard] Phone connections may fail until OPERO is run as Administrator.")
+                log.info("[Dashboard] Setup was not allowed.")
+                log.info("[Dashboard] Phone connections may fail until OPERO is run as Administrator.")
         except Exception as e:
-            print(f"[Dashboard] Firewall setup error: {e}")
+            log.error("[Dashboard] Firewall setup error: {}", e)
         finally:
             # Cleanup after the bat has had time to run
             def _cleanup(path: str) -> None:
                 time.sleep(5)
                 try:
                     os.unlink(path)
-                except Exception:
-                    pass
+                except Exception as e:
+                    log.debug("{}", e)
             threading.Thread(target=_cleanup, args=(bat_path,), daemon=True).start()
         return
 
@@ -248,15 +308,15 @@ def _ensure_network_access(port: int) -> None:
             if py in listed.stdout:
                 return  # already allowed
 
-            print("[Dashboard] One-time network setup — enter your password in the macOS dialog.")
+            log.info("[Dashboard] One-time network setup — enter your password in the macOS dialog.")
             subprocess.run(
                 ["osascript", "-e",
                  f'do shell script "{fw_ctl} --add {py} && {fw_ctl} --unblockapp {py}"'
                  f' with administrator privileges'],
                 timeout=60,
             )
-        except Exception:
-            pass  # macOS firewall is off by default — silent failure is fine
+        except Exception as e:
+            log.debug("{}", e)
         return
 
     # ── Linux ─────────────────────────────────────────────────────────────────
@@ -266,20 +326,20 @@ def _ensure_network_access(port: int) -> None:
                 r = subprocess.run(prefix + cmd, capture_output=True, timeout=30)
                 if r.returncode == 0:
                     return True
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("{}", e)
         return False
 
     try:  # ufw
         r = subprocess.run(["ufw", "status"], capture_output=True, text=True, timeout=5)
         if "active" in r.stdout.lower():
             if _privileged(["ufw", "allow", f"{port}/tcp"]):
-                print(f"[Dashboard] ufw: port {port} allowed.")
+                log.info(f"[Dashboard] ufw: port {port} allowed.")
             else:
-                print(f"[Dashboard] Run manually:  sudo ufw allow {port}/tcp")
+                log.info(f"[Dashboard] Run manually:  sudo ufw allow {port}/tcp")
             return
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as e:
+        log.debug("{}", e)
 
     try:  # firewalld
         r = subprocess.run(
@@ -289,22 +349,22 @@ def _ensure_network_access(port: int) -> None:
             ok = (_privileged(["firewall-cmd", "--add-port", f"{port}/tcp", "--permanent"])
                   and _privileged(["firewall-cmd", "--reload"]))
             if ok:
-                print(f"[Dashboard] firewalld: port {port} allowed.")
+                log.info(f"[Dashboard] firewalld: port {port} allowed.")
             else:
-                print(f"[Dashboard] Run manually:  sudo firewall-cmd --add-port={port}/tcp --permanent && sudo firewall-cmd --reload")
+                log.info(f"[Dashboard] Run manually:  sudo firewall-cmd --add-port={port}/tcp --permanent && sudo firewall-cmd --reload")
             return
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as e:
+        log.debug("{}", e)
 
     try:  # iptables (not persistent but works until reboot)
         r = subprocess.run(["iptables", "-L", "INPUT", "-n"], capture_output=True, timeout=5)
         if r.returncode == 0:
             if _privileged(["iptables", "-A", "INPUT", "-p", "tcp", "--dport", str(port), "-j", "ACCEPT"]):
-                print(f"[Dashboard] iptables: port {port} opened.")
+                log.info(f"[Dashboard] iptables: port {port} opened.")
             else:
-                print(f"[Dashboard] Run manually:  sudo iptables -A INPUT -p tcp --dport {port} -j ACCEPT")
-    except FileNotFoundError:
-        pass  # no iptables means firewall is probably off — nothing to do
+                log.info(f"[Dashboard] Run manually:  sudo iptables -A INPUT -p tcp --dport {port} -j ACCEPT")
+    except FileNotFoundError as e:
+        log.debug("{}", e)
 
 
 def _ensure_crypto_js() -> None:
@@ -312,12 +372,12 @@ def _ensure_crypto_js() -> None:
         return
     try:
         import urllib.request
-        print("[Dashboard] Downloading CryptoJS (one-time setup)…")
+        log.info("[Dashboard] Downloading CryptoJS (one-time setup)…")
         urllib.request.urlretrieve(_CRYPTOJS_CDN, str(_CRYPTOJS_FILE))
-        print("[Dashboard] CryptoJS cached — will serve locally from now on.")
+        log.info("[Dashboard] CryptoJS cached — will serve locally from now on.")
     except Exception as e:
-        print(f"[Dashboard] CryptoJS download failed: {e}")
-        print(f"[Dashboard] Encryption will fall back to CDN load on client.")
+        log.info(f"[Dashboard] CryptoJS download failed: {e}")
+        log.info("[Dashboard] Encryption will fall back to CDN load on client.")
 
 
 _ensure_crypto_js()
@@ -337,16 +397,16 @@ def _local_ip() -> str:
             s.close()
             if not ip.startswith("127."):
                 return ip
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
 
     # Method 2: hostname resolution (works offline on most systems)
     try:
         ip = socket.gethostbyname(socket.gethostname())
         if not ip.startswith("127."):
             return ip
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("{}", e)
 
     # Method 3: enumerate all interfaces (fully offline, no external deps)
     try:
@@ -354,8 +414,8 @@ def _local_ip() -> str:
             ip = info[4][0]
             if not ip.startswith("127.") and not ip.startswith("169.254."):
                 return ip
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("{}", e)
 
     return "127.0.0.1"
 
@@ -387,8 +447,8 @@ def _ensure_certs() -> bool:
         from cryptography.hazmat.primitives.asymmetric import rsa
         from cryptography.x509.oid import NameOID
     except ImportError:
-        print("[Dashboard] cryptography not installed — serving over plain HTTP.")
-        print("[Dashboard] For HTTPS run:  pip install cryptography")
+        log.info("[Dashboard] cryptography not installed — serving over plain HTTP.")
+        log.info("[Dashboard] For HTTPS run:  pip install cryptography")
         return False
 
     try:
@@ -408,8 +468,8 @@ def _ensure_certs() -> bool:
             lan = _local_ip()
             if not lan.startswith("127."):
                 alt.append(x509.IPAddress(ipaddress.IPv4Address(lan)))
-        except Exception:
-            pass          # no LAN address resolvable — localhost entries still work
+        except Exception as e:
+            log.debug("{}", e)
 
         # Timezone-aware UTC: datetime.utcnow() is deprecated from Python 3.12 on,
         # and the builder normalises aware values to UTC itself.
@@ -437,13 +497,13 @@ def _ensure_certs() -> bool:
         try:
             import os as _os
             _os.chmod(key_p, 0o600)   # best effort — largely a no-op on Windows
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
 
-        print(f"[Dashboard] Generated a self-signed certificate for this machine: {certs}")
+        log.info(f"[Dashboard] Generated a self-signed certificate for this machine: {certs}")
         return True
     except Exception as e:
-        print(f"[Dashboard] Certificate generation failed ({e}) — serving over plain HTTP.")
+        log.info(f"[Dashboard] Certificate generation failed ({e}) — serving over plain HTTP.")
         return False
 
 
@@ -461,6 +521,7 @@ class DashboardServer:
         self._token_keys: dict[str, str]  = {}   # auth_token → session_key
         self._aes_cache:  dict[str, bytes]= {}   # session_key → AES bytes
         self._clients: set[WebSocket]     = set()
+        self._ws_count: int              = 0
         self._history: list[dict]         = []
         self._command_queue               = asyncio.Queue()
         self._wake_callback               = None
@@ -538,9 +599,24 @@ class DashboardServer:
     def _build_app(self) -> "FastAPI":
         app = FastAPI(docs_url=None, redoc_url=None)
 
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PUT", "DELETE"],
+            allow_headers=["*"],
+        )
+        app.add_middleware(SecurityHeadersMiddleware)
+        app.add_middleware(RequestSizeMiddleware)
+        app.add_middleware(RateLimitMiddleware)
+
         def _auth(req: Request) -> bool:
             tok = req.headers.get("authorization", "").removeprefix("Bearer ").strip()
             return bool(tok) and tok in self._tokens
+
+        @app.get("/health")
+        async def health():
+            return {"status": "ok", "version": "1.0.0"}
 
         # serve CryptoJS from local cache, fallback to CDN redirect
         @app.get("/static/crypto.js")
@@ -549,6 +625,7 @@ class DashboardServer:
                 return FileResponse(str(_CRYPTOJS_FILE),
                                     media_type="application/javascript")
             from fastapi.responses import RedirectResponse
+
             return RedirectResponse(_CRYPTOJS_CDN)
 
         @app.get("/login", response_class=HTMLResponse)
@@ -699,7 +776,17 @@ class DashboardServer:
             if not tok or tok not in self._tokens:
                 await websocket.close(code=4001)
                 return
+            origin = websocket.headers.get("origin", "")
+            if origin and not any(origin.startswith(a) for a in ("http://127.0.0.1", "http://localhost", "http://[::1]")):
+                log.warning("WebSocket origin rejected: {}", origin)
+                await websocket.close(code=4003)
+                return
+            if len(self._clients) + self._ws_count >= _WS_MAX_CONNECTIONS:
+                log.warning("WebSocket connection limit reached, rejecting phone-audio")
+                await websocket.close(code=4002)
+                return
             await websocket.accept()
+            self._ws_count += 1
             asyncio.create_task(self.broadcast(
                 {"type": "sys", "text": "Phone microphone live."}
             ))
@@ -710,11 +797,12 @@ class DashboardServer:
                         self._phone_audio_queue.put_nowait(
                             {"data": data, "mime_type": "audio/pcm"}
                         )
-                    except asyncio.QueueFull:
-                        pass  # drop frame rather than block
-            except WebSocketDisconnect:
-                pass
+                    except asyncio.QueueFull as e:
+                        log.debug("{}", e)
+            except WebSocketDisconnect as e:
+                log.debug("{}", e)
             finally:
+                self._ws_count = max(0, self._ws_count - 1)
                 asyncio.create_task(self.broadcast(
                     {"type": "sys", "text": "Phone microphone stopped."}
                 ))
@@ -758,11 +846,12 @@ class DashboardServer:
                                 )
                             fout.write(chunk)
                 except Exception as exc:
+                    log.error("Upload failed: {}", exc)
                     try:
                         dest.unlink(missing_ok=True)
-                    except Exception:
-                        pass
-                    return JSONResponse({"error": str(exc)}, status_code=500)
+                    except Exception as e:
+                        log.debug("{}", e)
+                    return JSONResponse({"error": "Upload failed"}, status_code=500)
 
                 asyncio.create_task(self.broadcast({
                     "type": "file_received",
@@ -791,8 +880,8 @@ class DashboardServer:
                     reverse=True,
                 ):
                     files.append({"name": f.name, "size": f.stat().st_size})
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("{}", e)
             return JSONResponse({"files": files})
 
         @app.get("/uploads/{filename}")
@@ -813,7 +902,17 @@ class DashboardServer:
             if not tok or tok not in self._tokens:
                 await websocket.close(code=4001)
                 return
+            origin = websocket.headers.get("origin", "")
+            if origin and not any(origin.startswith(a) for a in ("http://127.0.0.1", "http://localhost", "http://[::1]")):
+                log.warning("WebSocket origin rejected: {}", origin)
+                await websocket.close(code=4003)
+                return
+            if len(self._clients) + self._ws_count >= _WS_MAX_CONNECTIONS:
+                log.warning("WebSocket connection limit reached, rejecting ws")
+                await websocket.close(code=4002)
+                return
             await websocket.accept()
+            self._ws_count += 1
             self._clients.add(websocket)
             for entry in self._history[-50:]:
                 try:
@@ -830,9 +929,10 @@ class DashboardServer:
                             await self._command_queue.put(t)
                             if self._wake_callback:
                                 self._wake_callback()
-            except WebSocketDisconnect:
-                pass
+            except WebSocketDisconnect as e:
+                log.debug("{}", e)
             finally:
+                self._ws_count = max(0, self._ws_count - 1)
                 self._clients.discard(websocket)
 
         return app
@@ -850,13 +950,13 @@ class DashboardServer:
             self.app, host="0.0.0.0", port=PORT + 1, log_level="warning",
             ssl_keyfile=str(ssl_key), ssl_certfile=str(ssl_cert),
         )
-        print(f"[Dashboard] Manual entry:  {self._ip}:{PORT + 1}  (type in browser, accept cert once)")
+        log.info(f"[Dashboard] Manual entry:  {self._ip}:{PORT + 1}  (type in browser, accept cert once)")
         await uvicorn.Server(cfg).serve()
 
     async def serve(self) -> None:
         if not _DEPS_OK:
-            print("[Dashboard] fastapi/uvicorn not installed — dashboard disabled.")
-            print("[Dashboard] Run:  pip install fastapi 'uvicorn[standard]' cryptography")
+            log.info("[Dashboard] fastapi/uvicorn not installed — dashboard disabled.")
+            log.info("[Dashboard] Run:  pip install fastapi 'uvicorn[standard]' cryptography")
             return
 
         # Firewall setup runs in a thread — uvicorn starts immediately,
@@ -879,6 +979,6 @@ class DashboardServer:
         )
 
         proto = "https" if use_ssl else "http"
-        print(f"[Dashboard] {proto}://{self._ip}:{PORT}")
-        print("[Dashboard] Press 'Remote Control' in OPERO UI to get the QR code.")
+        log.info(f"[Dashboard] {proto}://{self._ip}:{PORT}")
+        log.info("[Dashboard] Press 'Remote Control' in OPERO UI to get the QR code.")
         await uvicorn.Server(cfg).serve()

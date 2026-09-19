@@ -34,6 +34,9 @@ from PyQt6.QtGui import QBrush, QColor, QPainter, QPen, QPolygonF, QRadialGradie
 
 from core.avatar_mesh import JAW_MAX, JAW_PIVOT, get_head_mesh
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 # Perspective camera distance in head-half-heights. Large enough that the nose
 # does not balloon, small enough to keep a sense of depth.
 _CAM_D = 4.6

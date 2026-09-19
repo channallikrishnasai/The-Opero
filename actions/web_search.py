@@ -5,6 +5,11 @@ import threading
 import time
 from pathlib import Path
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
+
 # ── Gemini grounding quota circuit breaker ────────────────────────────────────
 # The google_search grounding tool has its own small quota, separate from plain
 # generation.  Once it is spent every call returns 429 — so retrying it at the
@@ -29,10 +34,8 @@ def _note_gemini_error(exc: Exception) -> None:
             already = time.monotonic() < _quota_blocked_until
             _quota_blocked_until = time.monotonic() + _QUOTA_COOLDOWN_SEC
         if not already:
-            print(
-                "[WebSearch] Gemini grounding quota exhausted — skipping it for "
-                f"{_QUOTA_COOLDOWN_SEC // 60} min and serving results from DDG."
-            )
+            log.info("[WebSearch] Gemini grounding quota exhausted — skipping it for "
+                f"{_QUOTA_COOLDOWN_SEC // 60} min and serving results from DDG.")
 
 
 class _QuotaCooldown(RuntimeError):
@@ -43,7 +46,7 @@ def _log_gemini_failure(context: str, exc: Exception) -> None:
     """Log a Gemini failure — silently when it is just the expected cooldown."""
     if isinstance(exc, _QuotaCooldown):
         return          # announced once when the breaker tripped; not a warning
-    print(f"[WebSearch] \u26a0\ufe0f {context} failed ({exc}) — using DDG instead")
+    log.error(f"[WebSearch] \u26a0\ufe0f {context} failed ({exc}) — using DDG instead")
 
 
 def _run_bounded(fn, timeout: float, label: str = "task"):
@@ -60,7 +63,7 @@ def _run_bounded(fn, timeout: float, label: str = "task"):
     t.start()
     t.join(timeout)
     if t.is_alive():
-        print(f"[WebSearch] {label} exceeded {timeout:.0f}s — moving on")
+        log.info(f"[WebSearch] {label} exceeded {timeout:.0f}s — moving on")
     return box[0]
 
 def _get_base_dir() -> Path:
@@ -119,11 +122,9 @@ def _get_ddgs():
         return DDGS
     except ImportError:
         from duckduckgo_search import DDGS
-        print(
-            "[WebSearch] ⚠️ Using the deprecated 'duckduckgo-search' package — "
+        log.info("[WebSearch] ⚠️ Using the deprecated 'duckduckgo-search' package — "
             "DuckDuckGo blocks its endpoints, so every search will come back "
-            "empty.  Fix with:  pip install -U ddgs"
-        )
+            "empty.  Fix with:  pip install -U ddgs")
         return DDGS
 
 
@@ -139,7 +140,7 @@ def _ddg_search(query: str, max_results: int = 6) -> list[dict]:
                     "url":     r.get("href",   ""),
                 })
     except Exception as e:
-        print(f"[WebSearch] ⚠️ DDG text() failed: {e}")
+        log.error(f"[WebSearch] ⚠️ DDG text() failed: {e}")
     return results
 
 
@@ -157,7 +158,7 @@ def _ddg_news(query: str, max_results: int = 8) -> list[dict]:
                     "source":  r.get("source", ""),
                 })
     except Exception as e:
-        print(f"[WebSearch] ⚠️ DDG news() failed ({e}) — falling back to text search")
+        log.error(f"[WebSearch] ⚠️ DDG news() failed ({e}) — falling back to text search")
     # Also covers the legacy-package case, where news() returns an empty list
     # instead of raising.
     if not results:
@@ -349,6 +350,7 @@ def web_search(
     session_memory=None,
 ) -> str:
     params = parameters or {}
+    params = validate_params(params, VALIDATOR, tool_name="web_search")
     query  = params.get("query", "").strip()
     mode   = params.get("mode",  "search").lower().strip()
     items  = params.get("items", [])
@@ -363,7 +365,7 @@ def web_search(
     if player:
         player.write_log(f"[Search:{mode}] {query or ', '.join(items)}")
 
-    print(f"[WebSearch] 🔍 mode={mode!r}  query={query!r}")
+    log.info(f"[WebSearch] 🔍 mode={mode!r}  query={query!r}")
 
     try:
         if mode == "compare" and items:
@@ -377,7 +379,7 @@ def web_search(
         return _search(query)
 
     except Exception as e:
-        print(f"[WebSearch] ❌ All backends failed: {e}")
+        log.error(f"[WebSearch] ❌ All backends failed: {e}")
         return f"Search failed: {e}"
 
 
@@ -413,4 +415,9 @@ TOOL = {
         ]
     },
     "handler": web_search,
+}
+
+VALIDATOR = {
+    "query": [{"type": str, "required": True, "max_len": 500}],
+    "mode":  [{"type": str, "max_len": 50}],
 }

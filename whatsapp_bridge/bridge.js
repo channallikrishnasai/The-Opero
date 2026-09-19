@@ -176,6 +176,24 @@ app.get('/qr', (req, res) => {
   }
 });
 
+// Force a new QR code by logging out and reconnecting
+app.post('/qr/refresh', async (req, res) => {
+  try {
+    if (client) {
+      await client.logout();
+      qrCode = null;
+      bridgeStatus = 'scanning';
+      // Client will reconnect and emit a new 'qr' event automatically
+      console.log('[Bridge] 🔄 Logged out — new QR will be generated');
+      res.json({ ok: true });
+    } else {
+      res.status(503).json({ error: 'Client not running' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // List incoming calls
 app.get('/calls', (req, res) => {
   res.json({ calls: incomingCalls });

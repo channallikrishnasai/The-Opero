@@ -28,6 +28,11 @@ from datetime import datetime
 # Model choice, timeout and fallback ladder all live in core/gemini.py.
 from core import gemini
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
+
 def _get_api_key() -> str:
     config_path = Path(__file__).resolve().parent.parent / "config" / "api_keys.json"
     with open(config_path, "r", encoding="utf-8") as f:
@@ -782,6 +787,7 @@ def _process_pptx(path: Path, action: str, params: dict, speak=None) -> str:
     return f"Unknown PPTX action: '{action}'. Try: summarize, extract_text, analyze"
 
 def file_processor(parameters: dict, player=None, speak=None) -> str:
+    parameters = validate_params(parameters or {}, VALIDATOR, tool_name="file_processor")
     file_path_str = parameters.get("file_path", "").strip()
     if not file_path_str:
         return "No file path provided."
@@ -798,7 +804,7 @@ def file_processor(parameters: dict, player=None, speak=None) -> str:
     params      = {**parameters, "instruction": instruction}
 
     log_msg = f"[FileProcessor] {file_type.upper()} | {path.name} | action={action or 'auto'}"
-    print(log_msg)
+    log.info(log_msg)
     if player:
         player.write_log(log_msg)
 
@@ -920,4 +926,10 @@ TOOL = {
         "required": []
     },
     "handler": file_processor,
+}
+
+VALIDATOR = {
+    "file_path":  [{"type": str, "required": True, "max_len": 500, "safe_path": True}],
+    "action":     [{"type": str, "max_len": 100}],
+    "instruction": [{"type": str, "max_len": 2000}],
 }

@@ -40,6 +40,9 @@ import time
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 # A pending confirmation is abandoned after this long. Chosen to outlast a
 # normal "hang on, let me look at the screen" pause without leaving a live
 # shutdown button sitting on the HUD for the rest of the day.
@@ -75,8 +78,8 @@ def _log(msg: str) -> None:
     if _log_cb:
         try:
             _log_cb(msg)
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
 
 
 def request(key: str, title: str, detail: str, run: Callable[[], str]) -> str:
@@ -126,8 +129,8 @@ def resolve(accepted: bool) -> None:
     if _hide_cb:
         try:
             _hide_cb()
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
 
     if p is None:
         return

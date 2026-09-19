@@ -20,6 +20,9 @@ import zipfile
 import base64
 from pathlib import Path
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 _BASE = Path(__file__).resolve().parent.parent
 _CFG  = _BASE / "config" / "api_keys.json"
 
@@ -136,8 +139,8 @@ def _moss_upload(user_id: str, files: list[tuple[str, str]],
             response += chunk
             if b"\n" in response:
                 break
-    except socket.timeout:
-        pass
+    except socket.timeout as e:
+        log.debug("%s", e)
     finally:
         sock.close()
 

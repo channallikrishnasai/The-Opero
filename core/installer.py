@@ -12,6 +12,9 @@ import subprocess
 import sys
 from typing import Callable
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 # ── Package lists ─────────────────────────────────────────────────────────
 # Each entry: (import_name, pip_package_name)
 

@@ -15,6 +15,11 @@ import time
 import random
 from pathlib import Path
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
+
 try:
     import pyautogui
     pyautogui.FAILSAFE = True
@@ -71,8 +76,8 @@ def _safe_screenshot_path(requested: str | None) -> Path:
             if p.is_relative_to(root.resolve()):
                 p.parent.mkdir(parents=True, exist_ok=True)
                 return p
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
     return fallback
 
 def _require_pyautogui():
@@ -150,8 +155,8 @@ def _user_profile() -> dict:
             data     = json.loads(_MEMORY_PATH.read_text(encoding="utf-8"))
             identity = data.get("identity", {})
             return {k: v.get("value", "") for k, v in identity.items()}
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
     return {}
 
 def _type(text: str, interval: float = 0.03) -> str:
@@ -294,8 +299,8 @@ def _focus_window(title: str) -> str:
             if result.returncode == 0:
                 time.sleep(0.3)
                 return f"Focused window: {title}"
-        except FileNotFoundError:
-            pass
+        except FileNotFoundError as e:
+            log.debug("%s", e)
         try:
             result = subprocess.run(
                 ["xdotool", "search", "--name", title, "windowactivate"],
@@ -313,7 +318,7 @@ def _focus_window(title: str) -> str:
 def _screen_find(description: str) -> tuple[int, int] | None:
     api_key = _get_api_key()
     if not api_key:
-        print("[ComputerControl] ⚠️ No API key for screen_find")
+        log.info("[ComputerControl] ⚠️ No API key for screen_find")
         return None
 
     try:
@@ -351,7 +356,7 @@ def _screen_find(description: str) -> tuple[int, int] | None:
             return int(match.group(1)), int(match.group(2))
 
     except Exception as e:
-        print(f"[ComputerControl] ⚠️ screen_find failed: {e}")
+        log.error(f"[ComputerControl] ⚠️ screen_find failed: {e}")
 
     return None
 
@@ -404,6 +409,7 @@ def computer_control(
       user_data     — pull real data from memory
     """
     params = parameters or {}
+    params = validate_params(params, VALIDATOR, tool_name="computer_control")
     action = params.get("action", "").lower().strip()
 
     if not action:
@@ -412,7 +418,7 @@ def computer_control(
     if player:
         player.write_log(f"[Computer] {action}")
 
-    print(f"[ComputerControl] ▶ {action}  {params}")
+    log.info(f"[ComputerControl] ▶ {action}  {params}")
 
     try:
 
@@ -494,7 +500,7 @@ def computer_control(
         if action == "random_data":
             dt     = params.get("type", "name")
             result = _random_data(dt)
-            print(f"[ComputerControl] 🎲 random {dt} → {result}")
+            log.info(f"[ComputerControl] 🎲 random {dt} → {result}")
             return result
 
         if action == "user_data":
@@ -503,13 +509,13 @@ def computer_control(
             value   = profile.get(field, "")
             if not value:
                 value = _random_data(field)
-                print(f"[ComputerControl] ⚠️ No '{field}' in memory, using random: {value}")
+                log.info(f"[ComputerControl] ⚠️ No '{field}' in memory, using random: {value}")
             return value
 
         return f"Unknown action: '{action}'"
 
     except Exception as e:
-        print(f"[ComputerControl] ❌ {action}: {e}")
+        log.info(f"[ComputerControl] ❌ {action}: {e}")
         return f"computer_control '{action}' failed: {e}"
 
 
@@ -586,4 +592,9 @@ TOOL = {
         ]
     },
     "handler": computer_control,
+}
+
+VALIDATOR = {
+    "action": [{"type": str, "required": True, "max_len": 200, "no_shell": True}],
+    "text":   [{"type": str, "max_len": 10000}],
 }

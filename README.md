@@ -9,11 +9,12 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-55c8ff?style=for-the-badge&logo=python&logoColor=white)
 ![Desktop](https://img.shields.io/badge/Desktop-PyQt6-20d67a?style=for-the-badge)
 ![Voice](https://img.shields.io/badge/Voice-Gemini%20Live-e0ad36?style=for-the-badge)
-![Automation](https://img.shields.io/badge/Automation-Local-9d7bff?style=for-the-badge)
+![Tests](https://img.shields.io/badge/Tests-84%20passed-4CAF50?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-9d7bff?style=for-the-badge)
 
 <sub>OPERO listens, reasons, acts, and reports the verified result.</sub>
 
-[**BOOT SYSTEM**](#quick-start) · [**CAPABILITIES**](#capabilities) · [**AUTOMATION STUDIO**](#automation-studio) · [**WHATSAPP LINK**](#whatsapp-call-assistant) · [**DEMO RUNBOOK**](#demo-runbook)
+[**GET STARTED**](#-quick-start) · [**CAPABILITIES**](#-capabilities) · [**ARCHITECTURE**](#-system-architecture) · [**DEVELOPMENT**](#-development) · [**WHATSAPP**](#-whatsapp-call-assistant)
 
 </div>
 
@@ -36,36 +37,61 @@ Most assistants stop at advice. OPERO is designed to turn a spoken or typed requ
 
 OPERO is a **local desktop application**. Its interface, audio devices, files, browser automation, and WhatsApp Desktop controls remain on the machine. Cloud services are used only for capabilities you configure, such as Gemini or AssemblyAI.
 
-## ◈ // SYSTEM MAP
+---
 
-| Area | What OPERO provides | Primary component |
+## ◈ // QUICK START
+
+### Prerequisites
+
+| Requirement | Needed for | Notes |
 | --- | --- | --- |
-| Voice | Gemini Live conversation, interruption, push-to-talk, wake word, animated speech feedback | `main.py`, `ui.py` |
-| Alternative voice stack | AssemblyAI streaming STT with TTS output | `core/assemblyai_voice.py` |
-| Desktop | App launch, wallpaper, file tasks, common system controls, screen/camera assistance | `actions/` |
-| Browser | Search, navigation, page reading, form filling, screenshots, tab control | `actions/browser_control.py` |
-| Files | Documents, PDFs, images, spreadsheets, audio, video, archives, and code | `actions/file_processor.py` |
-| WhatsApp | QR pairing, bridge events, visible Desktop-call detection, answer/decline flow | `whatsapp_call.py`, `whatsapp_bridge/` |
-| Automation | Visual trigger → logic → action maps for core OPERO flows | `ui.py` |
-| Remote access | Optional phone dashboard with encrypted pairing | `dashboard/` |
-| Extensibility | Auto-discovered actions and plugins | `core/action_loader.py`, `plugins/` |
+| Python 3.11–3.13 | Core application | Python 3.12 is recommended |
+| Gemini API key | Default live voice experience | Enter on first launch or in OPERO settings |
+| Node.js 18+ | WhatsApp bridge | Required only for WhatsApp pairing/call detection |
+| Chrome or Edge | WhatsApp bridge runtime | The bridge discovers installed browsers; use `WA_CHROME_PATH` to override |
 
-<a id="capabilities"></a>
+### Install
+
+```powershell
+git clone <your-repository-url>
+cd "The Opero"
+python setup.py
+```
+
+### Start
+
+```powershell
+python main.py
+```
+
+On first launch, OPERO guides you through API key configuration. All secrets stay local — `config/api_keys.json` is gitignored by default.
+
+### Run Tests
+
+```powershell
+pip install -e ".[dev]"
+python -m pytest tests/ -v
+```
+
+---
+
 ## ◈ // CAPABILITIES
 
 | Capability | Typical request | Outcome |
 | --- | --- | --- |
-| Live web research | “Find internships matching my Python and AI experience.” | Current links, ranked options, concise comparison |
-| Application preparation | “Use my resume to fill this internship form.” | Extracts known details and fills fields; pauses before final submission |
-| Desktop control | “Set this image as my wallpaper.” | Applies a local image or downloads and retains a URL-based wallpaper |
-| File processing | “Summarize this PDF” / “Convert this spreadsheet.” | Reads, analyzes, transforms, or exports supported files |
-| Vision | “What is on my screen?” | On-demand screen or camera analysis |
-| Browser operation | “Open the docs and find the API section.” | Browser navigation and page interaction |
-| Call assistance | “Answer WhatsApp calls and say I’m busy.” | Optional QR pairing, bridge detection, and Desktop-call handling |
-| Code similarity | “Run MOSS on this submissions folder.” | Submits authorized source code and returns a MOSS report link |
+| Live web research | "Find internships matching my Python and AI experience." | Current links, ranked options, concise comparison |
+| Application preparation | "Use my resume to fill this internship form." | Extracts details and fills fields; pauses before submission |
+| Desktop control | "Set this image as my wallpaper." | Applies a local image or downloads a URL-based wallpaper |
+| File processing | "Summarize this PDF" / "Convert this spreadsheet." | Reads, analyzes, transforms, or exports supported files |
+| Vision | "What is on my screen?" | On-demand screen or camera analysis |
+| Browser operation | "Open the docs and find the API section." | Browser navigation and page interaction |
+| Call assistance | "Answer WhatsApp calls and say I'm busy." | QR pairing, bridge detection, and Desktop-call handling |
+| Mini mode | Press F10 or click ◱ | Small draggable avatar widget (cat, face, emoji, Spider-Man) |
+| Voice engines | Switch between Gemini Live and AssemblyAI | Real-time voice with multiple STT/TTS backends |
+| Plugin system | Drop a Python file in `plugins/` | Auto-discovered, hot-loadable, with enable/disable |
 
 > [!NOTE]
-> **Operator rule:** OPERO should report verified tool results, not claim an action occurred when it did not.
+> **Operator rule:** OPERO reports verified tool results — it never claims an action occurred when it did not.
 
 ---
 
@@ -85,7 +111,6 @@ flowchart LR
     AR --> SEARCH[Live web research]
     AR --> WA[WhatsApp call manager]
     WA <--> BRIDGE[WhatsApp Web bridge]
-    WA --> WAD[WhatsApp Desktop]
     R <--> DASH[Optional phone dashboard]
 ```
 
@@ -111,72 +136,138 @@ sequenceDiagram
     HUD-->>User: Result
 ```
 
-<a id="automation-studio"></a>
-## ◈ // AUTOMATION STUDIO
+---
 
-Open **⚙ Controls → Automation Studio** to inspect OPERO’s node-based workflow maps. It follows the actual operating model: a trigger enters a decision stage, eligible actions run, and consequential steps pause for review.
+## ◈ // REPOSITORY MAP
 
-```mermaid
-flowchart LR
-    T([Trigger]) --> C{Eligible now?}
-    C -- Yes --> A[Run OPERO action]
-    C -- Needs review --> H[Hold for user review]
-    A --> O([Show / speak verified outcome])
-    H --> A
+```text
+opero/
+├── main.py                 # Entry point, OperaLive session, audio pipeline
+├── ui.py                   # PyQt6 HUD, overlays, Automation Studio
+├── whatsapp_call.py        # Bridge coordination and Desktop call detection
+├── whatsapp_bridge/        # Node.js WhatsApp Web bridge and QR endpoint
+│
+├── core/                   # Voice, audio, vision, infrastructure
+│   ├── gemini.py           # Gemini Live API client with model fallback
+│   ├── llm_client.py       # Local LLM support (Ollama, OpenAI-compatible)
+│   ├── action_loader.py    # Tool discovery, validation, and dispatch
+│   ├── validator.py        # Input validation for tool parameters
+│   ├── echo.py             # Content-based echo cancellation
+│   ├── viseme.py           # Lip-sync viseme generation
+│   ├── tts.py              # Multi-engine TTS (EdgeTTS, Kokoro, ElevenLabs)
+│   ├── stt.py              # Multi-engine STT (Whisper, Vosk)
+│   ├── wake_word.py        # Local "Hey opero" wake word detection
+│   ├── confirm.py          # Human confirmation gate (forge-resistant token)
+│   ├── logger.py           # Centralized logging configuration
+│   ├── installer.py        # Auto-dependency installer
+│   ├── avatar.py           # Avatar rendering (holographic orb)
+│   └── prompt.txt          # AI behavior specification
+│
+├── actions/                # Self-registering tool modules (21+)
+│   ├── browser_control.py  # Search, navigate, screenshot, form fill
+│   ├── send_message.py     # WhatsApp, email, messaging
+│   ├── file_ops.py         # Read, write, move, copy, delete
+│   ├── computer_control.py # System commands, app control
+│   ├── code_helper.py      # Code analysis and generation
+│   ├── dev_agent.py        # Development task automation
+│   └── ...                 # weather, reminders, flight finder, etc.
+│
+├── memory/
+│   ├── config_manager.py   # Settings persistence (JSON + AES encryption)
+│   └── memory_manager.py   # Long-term memory with search
+│
+├── dashboard/              # Local HTTP dashboard (FastAPI + WebSocket)
+├── plugins/                # Drop-in extensions with hot-load
+├── config/                 # Runtime config (gitignored)
+├── tests/                  # Test suite (84 tests, pytest)
+├── pyproject.toml          # Modern Python packaging
+└── CONTRIBUTING.md         # Development guide
 ```
-
-| Flow | Trigger | Nodes shown | Boundary |
-| --- | --- | --- | --- |
-| WhatsApp busy reply | Incoming call | Detect → auto-answer window → answer Desktop → speak message | Requires pairing, visible Desktop, and tested audio route |
-| Internship application | Resume uploaded | Extract → research → rank → fill → review | OPERO never makes the final submission itself |
-| Smart reminder | Reminder due | Trigger → availability check → alert | Uses configured reminder pathway |
-| Desktop command | Voice or typed intent | Resolve tool → run action → report result | Requires an available local action |
 
 ---
 
-<a id="quick-start"></a>
-## ◈ // QUICK START
+## ◈ // SYSTEM MAP
 
-### Prerequisites
-
-| Requirement | Needed for | Notes |
+| Area | What OPERO provides | Primary component |
 | --- | --- | --- |
-| Python 3.11–3.13 | Core application | Python 3.12 is supported in development |
-| Gemini API key | Default live voice experience | Enter on first launch or in OPERO settings |
-| Node.js 18+ | WhatsApp bridge | Required only for WhatsApp pairing/call detection |
-| Google Chrome or Microsoft Edge | WhatsApp bridge runtime | The bridge discovers installed Chrome/Edge; use `WA_CHROME_PATH` to override |
-| WhatsApp Desktop | Desktop call controls | Keep it open and visible for call automation |
-| VB-CABLE or equivalent | Speaking into WhatsApp calls | Required if the remote caller must hear OPERO TTS |
+| Voice | Gemini Live conversation, interruption, push-to-talk, wake word | `main.py`, `core/session.py` |
+| Alternative voice | AssemblyAI streaming STT with TTS output | `core/assemblyai_voice.py` |
+| Desktop | App launch, wallpaper, file tasks, system controls | `actions/` |
+| Browser | Search, navigation, page reading, screenshots | `actions/browser_control.py` |
+| Files | Documents, PDFs, images, spreadsheets, audio, video | `actions/file_processor.py` |
+| WhatsApp | QR pairing, bridge events, call detection | `whatsapp_call.py`, `whatsapp_bridge/` |
+| Automation | Visual trigger → logic → action maps | `ui.py` Automation Studio |
+| Remote access | Optional phone dashboard with encrypted pairing | `dashboard/` |
+| Mini mode | Draggable avatar widget (4 styles) | `ui.py` MiniModeWidget |
+| Extensibility | Auto-discovered actions and plugins | `core/action_loader.py`, `plugins/` |
 
-### Install
+---
 
-```powershell
-git clone <your-repository-url>
-cd "The Opero"
-python setup.py
-```
+<a id="development"></a>
+## ◈ // DEVELOPMENT
 
-`setup.py` installs Python dependencies and attempts to install Playwright browsers. If browser automation is unavailable afterwards:
-
-```powershell
-python -m playwright install chromium firefox
-```
-
-### Enable WhatsApp support
+### Setup
 
 ```powershell
-cd whatsapp_bridge
-npm install
-cd ..
+git clone <repo-url> && cd "The Opero"
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+pip install -e ".[dev]"
 ```
 
-### Start OPERO
+### Code Quality
 
 ```powershell
-python main.py
+# Run all tests
+python -m pytest tests/ -v
+
+# Lint
+ruff check .
+
+# Type check
+mypy .
 ```
 
-On first launch, configure your Gemini key. API keys, paired sessions, and personal data are intentionally ignored by Git.
+### Adding a New Action
+
+1. Create `actions/my_action.py`
+2. Define a `TOOL` dict (name, description, JSON Schema parameters)
+3. Optionally add a `VALIDATOR` dict for input validation
+4. Implement `execute(params: dict) -> str`
+5. The action is auto-discovered on next startup
+
+```python
+# actions/example.py
+from core.logger import get_logger
+from core.validator import validate_params
+
+log = get_logger(__name__)
+
+TOOL = {
+    "name": "example_action",
+    "description": "Does something useful",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string", "description": "What to search for"},
+        },
+        "required": ["query"],
+    },
+}
+
+VALIDATOR = {
+    "query": [{"type": str, "required": True, "max_len": 500}],
+}
+
+def execute(params: dict) -> str:
+    params = validate_params(params, VALIDATOR, "example_action")
+    log.info("Running example_action with query=%s", params["query"])
+    return f"Result for: {params['query']}"
+```
+
+### Adding a Plugin
+
+Drop a Python file in `plugins/` following the template in `plugins/_template.py`. Plugins are hot-loaded — enable/disable without restart.
 
 ---
 
@@ -194,155 +285,79 @@ flowchart TD
     E --> F[Scan QR]
     F --> G[Bridge reports connected]
     C -- Yes --> G
-    G --> H[Monitor bridge + WhatsApp Desktop call surface]
+    G --> H[Monitor bridge + WhatsApp Desktop]
 ```
 
-1. Start OPERO.
-2. When **LINK WHATSAPP** appears, open WhatsApp on your phone.
-3. Go to **Settings → Linked devices → Link a device**.
-4. Scan the QR code shown inside OPERO.
-5. Keep WhatsApp Desktop open and visible while using automated call controls.
+1. Start OPERO
+2. Click **💬 LINK WHATSAPP** in the controls drawer (or wait for auto-prompt)
+3. On your phone: **WhatsApp → Settings → Linked devices → Link a device**
+4. Scan the QR code shown inside OPERO
+5. Keep WhatsApp Desktop open for automated call controls
 
 ### Incoming call flow
 
 ```mermaid
 flowchart LR
-    I([Incoming call]) --> B{Bridge event received?}
-    B -- Yes --> D[Create incoming-call event]
-    B -- No --> V[Inspect visible WhatsApp Desktop window]
-    V --> G{Green answer control found?}
-    G -- Yes --> D
-    G -- No --> W[Keep monitoring]
-    D --> A{Auto-answer enabled and window active?}
-    A -- No --> P[Show Answer / Decline panel]
-    A -- Yes --> Q[Click detected answer control]
-    Q --> S[Speak configured busy message]
+    I([Incoming call]) --> B{Bridge event?}
+    B -- Yes --> D[Create call event]
+    B -- No --> V[Inspect WhatsApp Desktop UI]
+    D --> A{Auto-answer enabled?}
+    A -- No --> P[Show Answer / Decline]
+    A -- Yes --> Q[Click answer + speak message]
 ```
 
-### Real-call verification checklist
-
-| Check | Why it matters |
-| --- | --- |
-| QR pairing completes | Gives the bridge a linked WhatsApp session |
-| WhatsApp Desktop is visible | The visual fallback must see and click the call UI |
-| A real caller rings you | Required to validate the current WhatsApp interface layout |
-| Virtual microphone selected in WhatsApp | Required for the remote caller to hear OPERO TTS |
-
 > [!WARNING]
-> WhatsApp does not provide a supported public API to answer personal calls or inject audio. OPERO uses a linked local session and Desktop UI automation, which must be tested on the target machine and may need recalibration after WhatsApp UI changes.
+> WhatsApp does not provide a public API for personal calls. OPERO uses a linked local session and Desktop UI automation, which must be tested on your machine.
 
 ---
 
 ## ◈ // VOICE ENGINES
 
-| Engine | Use it when | Setup |
+| Engine | Use case | Setup |
 | --- | --- | --- |
-| OPERO / Gemini Live | You want low-latency bidirectional voice and native tool use | Configure Gemini key and choose a voice in the UI |
-| AssemblyAI | You want AssemblyAI real-time transcription with OPERO’s alternate voice pipeline | Add `assemblyai_api_key`, then switch **VOICE ENGINE** |
+| Gemini Live | Low-latency bidirectional voice + native tool use | Configure Gemini key, choose a voice |
+| AssemblyAI | Real-time transcription with alternate pipeline | Add `assemblyai_api_key`, switch engine in UI |
 
-If AssemblyAI cannot initialize, OPERO falls back to the default engine and records the reason in the activity log.
-
-## ◈ // RESUME & INTERNSHIP WORKFLOW
-
-```mermaid
-flowchart LR
-    R[Drop resume] --> X[Extract profile details]
-    X --> S[Research current internships]
-    S --> K[Rank by role, skills, location, eligibility]
-    K --> U[User chooses listing]
-    U --> F[Fill known application fields]
-    F --> V[Review completed form]
-    V --> Z([User submits])
-```
-
-Provide a resume plus preferences such as target role, location, graduation date, work authorization, and companies to avoid or prioritize. OPERO can research listings and fill details you supplied. It must not invent qualifications or submit an application without your review.
-
-## ◈ // MOSS SIMILARITY CHECKS
-
-OPERO’s `moss_check` action uploads selected source code to Stanford MOSS and returns a report URL.
-
-| Step | Requirement |
-| --- | --- |
-| 1 | Register for Stanford MOSS access |
-| 2 | Add your **numeric** `moss_user_id` to local configuration |
-| 3 | Ask OPERO to check an authorized source file or folder |
-| 4 | Open the returned MOSS report link |
-
-Only upload code you are authorized to share with Stanford MOSS.
+If AssemblyAI fails, OPERO falls back to the default engine automatically.
 
 ---
 
 ## ◈ // LOCAL CONFIGURATION
 
-Configuration is stored at `config/api_keys.json` and should never be committed.
+Configuration is stored at `config/api_keys.json` (gitignored):
 
 ```json
 {
-  "gemini_api_key": "...",
-  "assemblyai_api_key": "...",
+  "gemini_api_key": "",
+  "assemblyai_api_key": "",
   "voice_engine": "opero",
   "whatsapp_auto_answer": false,
-  "whatsapp_busy_message": "I am kind of busy right now.",
+  "whatsapp_busy_message": "I am busy right now.",
   "moss_user_id": "123456"
 }
 ```
 
-| Key | Purpose |
-| --- | --- |
-| `gemini_api_key` | Default Gemini Live runtime |
-| `assemblyai_api_key` | Optional AssemblyAI voice mode |
-| `voice_engine` | `opero` or `assemblyai` |
-| `whatsapp_auto_answer` | Enables automatic answer behavior when configured |
-| `whatsapp_busy_message` | Exact line OPERO should deliver after answering |
-| `moss_user_id` | Numeric identifier issued by Stanford MOSS |
-
-## ◈ // REPOSITORY MAP
-
-```text
-.
-├── main.py                 # Runtime, live voice session, action dispatch
-├── ui.py                   # PyQt6 HUD, overlays, Automation Studio
-├── whatsapp_call.py        # Bridge coordination and Desktop call detection
-├── whatsapp_bridge/        # Node.js WhatsApp Web bridge and QR endpoint
-├── actions/                # Auto-discovered tools
-├── core/                   # Voice, audio, vision, action/plugin infrastructure
-├── dashboard/              # Optional phone dashboard
-├── memory/                 # Configuration and local memory helpers
-├── plugins/                # Drop-in extensions
-├── config/                 # Local runtime configuration (ignored)
-└── requirements.txt        # Python dependencies
-```
-
-<a id="demo-runbook"></a>
-## ◈ // DEMO RUNBOOK
-
-1. **Launch:** run `python main.py`; confirm the HUD is ready and the microphone meter moves.
-2. **Voice:** ask for a current web result and confirm the response arrives through the selected speaker.
-3. **Desktop:** set a test image as wallpaper or open a local application.
-4. **File:** drop a PDF or resume and ask OPERO to summarize it.
-5. **Browser:** ask for internship research and inspect the ranked links.
-6. **Automation Studio:** open **⚙ Controls → Automation Studio** and show a workflow graph.
-7. **WhatsApp:** confirm QR pairing, place a real test call, and verify answer control plus audio routing.
-8. **AssemblyAI (optional):** switch engines and confirm streaming transcription starts.
+---
 
 ## ◈ // TROUBLESHOOTING
 
-| Symptom | Likely cause | Fix |
-| --- | --- | --- |
-| Browser actions fail | Playwright browser runtime missing | Run `python -m playwright install chromium firefox` |
-| AssemblyAI falls back | Missing/invalid API key or unavailable audio device | Re-enter key and check microphone selection |
-| QR panel never appears | Bridge cannot start or is already paired | Check Node.js, run `npm install` in `whatsapp_bridge`, inspect OPERO’s log |
-| Bridge cannot find Chrome | Browser executable not discovered | Set `WA_CHROME_PATH` to Chrome or Edge executable |
-| WhatsApp answers but caller hears nothing | TTS reaches speakers, not WhatsApp microphone | Configure a virtual audio device and select it as WhatsApp’s microphone |
-| Wallpaper from URL reverts | Image was not retained locally | Use the current `desktop_control` action; it stores downloads locally |
-| MOSS rejects a submission | Invalid MOSS ID | Use the numeric ID from Stanford MOSS registration |
+| Symptom | Fix |
+| --- | --- |
+| Browser actions fail | Run `python -m playwright install chromium firefox` |
+| AssemblyAI falls back | Re-enter API key and check microphone selection |
+| QR panel never appears | Run `npm install` in `whatsapp_bridge/`, check Node.js |
+| Caller hears nothing | Configure virtual audio device as WhatsApp's microphone |
+| MOSS rejects submission | Use the numeric ID from Stanford MOSS registration |
+
+---
 
 ## ◈ // SECURITY & RESPONSIBLE USE
 
-- Keep `config/api_keys.json`, OAuth tokens, linked WhatsApp sessions, and browser profiles private.
-- Review recipients, form fields, attachments, and final submissions before they leave your machine.
-- Only pair accounts, answer calls, and automate workflows you are authorized to control.
-- Do not use OPERO to impersonate someone, invent application credentials, or bypass service security controls.
+- API keys, OAuth tokens, and WhatsApp sessions stay on your machine (`config/` is gitignored)
+- Review recipients, form fields, and submissions before they leave your machine
+- Dashboard is localhost-only with CORS, rate limiting, and security headers
+- All tool parameters are validated before execution
+- Human confirmation gate prevents irreversible actions
 
 ## ◈ // LICENSE
 

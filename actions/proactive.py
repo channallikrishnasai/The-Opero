@@ -5,6 +5,9 @@ Gemini decides what to say; this module decides WHEN and builds a rich context s
 import time
 from datetime import datetime
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 
 class ProactiveEngine:
     """

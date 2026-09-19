@@ -17,6 +17,9 @@ CPU. The pretrained wake phrase used here is "Hey opero".
 """
 from __future__ import annotations
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 import queue
 import subprocess
 import sys
@@ -154,8 +157,8 @@ class WakeWordDetector:
         # unblock the thread if it's waiting on the queue
         try:
             self._queue.put_nowait(None)
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)
         self._model = None
         self._ready = False
 
@@ -172,13 +175,14 @@ class WakeWordDetector:
             # frame_int16 is a numpy int16 array (possibly 2-D mono) — flatten to 1-D
             data = frame_int16[:, 0].copy() if getattr(frame_int16, "ndim", 1) > 1 else frame_int16.copy()
             self._queue.put_nowait(data)
-        except queue.Full:
-            pass
-        except Exception:
-            pass
+        except queue.Full as e:
+            log.debug("{}", e)
+        except Exception as e:
+            log.debug("{}", e)
 
     def _loop(self) -> None:
         import numpy as np
+
         while self._running:
             try:
                 frame = self._queue.get()
@@ -207,5 +211,5 @@ class WakeWordDetector:
         try:
             while True:
                 self._queue.get_nowait()
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("{}", e)

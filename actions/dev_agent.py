@@ -19,6 +19,11 @@ MAX_FIX_ATTEMPTS = 5
 # Model choice, timeout and fallback ladder all live in core/gemini.py.
 from core import gemini
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
+
 MODEL_PLANNER    = gemini.SMART
 MODEL_WRITER     = gemini.SMART
 
@@ -231,7 +236,7 @@ Code for {file_path}:"""
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_text(code, encoding="utf-8")
 
-        print(f"[DevAgent] ✅ Written: {file_path} ({len(code)} chars)")
+        log.info(f"[DevAgent] ✅ Written: {file_path} ({len(code)} chars)")
         return code
 
     except Exception as e:
@@ -253,12 +258,12 @@ def _install_dependencies(dependencies: list[str], project_dir: Path) -> str:
         if result.returncode != 0:
             to_install.append(dep)
         else:
-            print(f"[DevAgent] ✓ Already installed: {pkg_name}")
+            log.info(f"[DevAgent] ✓ Already installed: {pkg_name}")
 
     if not to_install:
         return f"All dependencies already installed: {', '.join(dependencies)}"
 
-    print(f"[DevAgent] 📦 Installing: {to_install}")
+    log.info(f"[DevAgent] 📦 Installing: {to_install}")
     try:
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install"] + to_install,
@@ -289,14 +294,14 @@ def _open_vscode(project_dir: Path) -> bool:
                 stderr=subprocess.DEVNULL
             )
             time.sleep(1.5)
-            print(f"[DevAgent] 💻 VSCode opened: {project_dir}")
+            log.info(f"[DevAgent] 💻 VSCode opened: {project_dir}")
             return True
         except Exception:
             continue
     return False
 
 def _run_project(run_command: str, project_dir: Path, timeout: int = 30) -> str:
-    print(f"[DevAgent] 🚀 Running: {run_command}")
+    log.info(f"[DevAgent] 🚀 Running: {run_command}")
     try:
         parts = run_command.split()
         if parts[0].lower() == "python":
@@ -338,7 +343,7 @@ def _try_auto_install(error_output: str, project_dir: Path) -> bool:
         return False
 
     pkg = match.group(1).replace("_", "-").split(".")[0]
-    print(f"[DevAgent] 🔧 Auto-installing missing package: {pkg}")
+    log.info(f"[DevAgent] 🔧 Auto-installing missing package: {pkg}")
     try:
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install", pkg],
@@ -430,12 +435,12 @@ Fixed code for {fix_path}:"""
             full_path.write_text(fixed, encoding="utf-8")
 
             updated_codes[fix_path] = fixed
-            print(f"[DevAgent] 🔧 Fixed: {fix_path}")
+            log.info(f"[DevAgent] 🔧 Fixed: {fix_path}")
 
         except Exception as e:
             if _is_rate_limit(e):
                 raise RateLimitError(str(e))
-            print(f"[DevAgent] ⚠️ Could not fix {fix_path}: {e}")
+            log.info(f"[DevAgent] ⚠️ Could not fix {fix_path}: {e}")
 
     return updated_codes
 
@@ -449,7 +454,7 @@ def _build_project(
 ) -> str:
 
     def log(msg: str):
-        print(f"[DevAgent] {msg}")
+        log.info(f"[DevAgent] {msg}")
         if player:
             player.write_log(f"[DevAgent] {msg}")
 
@@ -589,6 +594,7 @@ def dev_agent(
     speak=None,
 ) -> str:
     p            = parameters or {}
+    p            = validate_params(p, VALIDATOR, tool_name="dev_agent")
     description  = p.get("description", "").strip()
     language     = p.get("language", "python").strip()
     project_name = p.get("project_name", "").strip()
@@ -636,4 +642,9 @@ TOOL = {
         ]
     },
     "handler": dev_agent,
+}
+
+VALIDATOR = {
+    "description": [{"type": str, "required": True, "max_len": 2000}],
+    "language":    [{"type": str, "max_len": 30}],
 }

@@ -4,6 +4,11 @@ import sys
 import time
 from pathlib import Path
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
+
 try:
     import pyautogui
     pyautogui.FAILSAFE = True
@@ -110,7 +115,7 @@ def _open_app(app_name: str) -> bool:
             return launched
 
     except Exception as e:
-        print(f"[SendMessage] ⚠️ Could not open {app_name}: {e}")
+        log.info(f"[SendMessage] ⚠️ Could not open {app_name}: {e}")
         return False
 
 
@@ -121,7 +126,7 @@ def _open_browser_url(url: str) -> bool:
         time.sleep(4.0) 
         return True
     except Exception as e:
-        print(f"[SendMessage] ⚠️ Could not open browser: {e}")
+        log.info(f"[SendMessage] ⚠️ Could not open browser: {e}")
         return False
 
 def _search_in_app(query: str) -> None:
@@ -313,6 +318,7 @@ def send_message(
     session_memory=None,
 ) -> str:
     params       = parameters or {}
+    params       = validate_params(params, VALIDATOR, tool_name="send_message")
     receiver     = params.get("receiver", "").strip()
     message_text = params.get("message_text", "").strip()
     platform     = params.get("platform", "whatsapp").strip()
@@ -326,7 +332,7 @@ def send_message(
         if not receiver:
             return "Please specify who to call."
         call_type = "video" if action == "video_call" else "voice"
-        print(f"[SendMessage] 📞 WhatsApp {call_type} call → {receiver}")
+        log.info(f"[SendMessage] 📞 WhatsApp {call_type} call → {receiver}")
         if player:
             player.write_log(f"[msg] WhatsApp {call_type} call → {receiver}")
         try:
@@ -345,13 +351,13 @@ def send_message(
                 )
         except Exception as e:
             result = f"Could not start call: {e}"
-        print(f"[SendMessage] {'✅' if 'started' in result.lower() else '❌'} {result}")
+        log.info(f"[SendMessage] {'✅' if 'started' in result.lower() else '❌'} {result}")
         if player:
             player.write_log(f"[msg] {result}")
         return result
 
     if action == "end_call":
-        print("[SendMessage] 📞 Ending call")
+        log.info("[SendMessage] 📞 Ending call")
         if player:
             player.write_log("[msg] Ending call")
         try:
@@ -367,7 +373,7 @@ def send_message(
         return "Please specify the message content."
 
     preview = message_text[:50] + ("…" if len(message_text) > 50 else "")
-    print(f"[SendMessage] 📨 {platform} → {receiver}: {preview}")
+    log.info(f"[SendMessage] 📨 {platform} → {receiver}: {preview}")
     if player:
         player.write_log(f"[msg] {platform} → {receiver}")
 
@@ -377,7 +383,7 @@ def send_message(
     except Exception as e:
         result = f"Could not send message: {e}"
 
-    print(f"[SendMessage] {'✅' if 'sent' in result.lower() else '❌'} {result}")
+    log.info(f"[SendMessage] {'✅' if 'sent' in result.lower() else '❌'} {result}")
     if player:
         player.write_log(f"[msg] {result}")
 
@@ -419,4 +425,11 @@ TOOL = {
         "required": ["receiver", "platform"],
     },
     "handler": send_message,
+}
+
+VALIDATOR = {
+    "receiver":     [{"type": str, "required": True, "max_len": 100}],
+    "message_text": [{"type": str, "max_len": 4000}],
+    "platform":     [{"type": str, "required": True, "max_len": 50}],
+    "action":       [{"type": str, "max_len": 50}],
 }

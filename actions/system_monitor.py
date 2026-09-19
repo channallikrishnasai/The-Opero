@@ -8,6 +8,9 @@ import time
 
 import psutil
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
 
 DEFAULT_THRESHOLDS = {
@@ -76,8 +79,8 @@ def _get_gpu_usage() -> float:
         pynvml.nvmlInit()
         h = pynvml.nvmlDeviceGetHandleByIndex(0)
         return float(pynvml.nvmlDeviceGetUtilizationRates(h).gpu)
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
 
     return _nvml_gpu()
 
@@ -93,8 +96,8 @@ def _get_cpu_temp() -> float:
         for entries in temps.values():
             if entries:
                 return entries[0].current
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
 
     # Windows: wmi module (pure Python COM, zero subprocess)
     if _OS == "Windows":
@@ -104,8 +107,8 @@ def _get_cpu_temp() -> float:
             tz = w.MSAcpi_ThermalZoneTemperature()
             if tz:
                 return (tz[0].CurrentTemperature / 10.0) - 273.15
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
     return -1.0
 

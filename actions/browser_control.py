@@ -19,6 +19,11 @@ from playwright.async_api import (
     Playwright,
     TimeoutError as PlaywrightTimeout,
 )
+
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
 _OS = platform.system()   # "Windows" | "Darwin" | "Linux"
 
 def _normalize_url(url: str) -> str:
@@ -104,12 +109,12 @@ def _real_profile_dir(browser: str) -> str:
 
     for p in candidates:
         if p.exists():
-            print(f"[Browser] ✅ Real profile found for {browser}: {p}")
+            log.info(f"[Browser] ✅ Real profile found for {browser}: {p}")
             return str(p)
 
     fallback = home / ".opero_profiles" / browser
     fallback.mkdir(parents=True, exist_ok=True)
-    print(f"[Browser] ⚠️  Real profile not found for {browser}, using: {fallback}")
+    log.info(f"[Browser] ⚠️  Real profile not found for {browser}, using: {fallback}")
     return str(fallback)
 
 def _firefox_profile_dir() -> Optional[str]:
@@ -147,7 +152,7 @@ def _firefox_profile_dir() -> Optional[str]:
         default_path = str(base / p) if is_rel else p
 
     if default_path and Path(default_path).exists():
-        print(f"[Browser] Firefox real profile: {default_path}")
+        log.info(f"[Browser] Firefox real profile: {default_path}")
         return default_path
     return None
 
@@ -164,7 +169,7 @@ def _find_opera_windows() -> Optional[str]:
     ]
     for p in candidates:
         if p.exists():
-            print(f"[Browser] Opera found at: {p}")
+            log.info(f"[Browser] Opera found at: {p}")
             return str(p)
 
     try:
@@ -183,12 +188,12 @@ def _find_opera_windows() -> Optional[str]:
                     winreg.CloseKey(k)
                     exe = val.strip().strip('"').split('"')[0].split(" --")[0].strip()
                     if exe and Path(exe).exists():
-                        print(f"[Browser] Opera found via registry: {exe}")
+                        log.info(f"[Browser] Opera found via registry: {exe}")
                         return exe
                 except Exception:
                     continue
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
 
     return shutil.which("opera") or None
 
@@ -210,8 +215,8 @@ def _find_exe_windows(prog_name: str) -> Optional[str]:
                         return exe
                 except Exception:
                     continue
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
     return None
 
 _BROWSER_SPECS: dict[str, dict] = {
@@ -276,7 +281,7 @@ def _resolve_browser(name: str) -> dict | None:
     if spec.get("special") == "opera_windows":
         exe = _find_opera_windows()
         if not exe:
-            print(f"[Browser] ⚠️  Opera executable not found on Windows.")
+            log.info(f"[Browser] ⚠️  Opera executable not found on Windows.")
         return {"engine": engine, "exe": exe, "channel": channel}
 
     for b in bins:
@@ -340,8 +345,8 @@ def _detect_default_browser() -> str:
             for kw in ("firefox", "opera", "brave", "vivaldi", "chrome", "edge"):
                 if kw in out:
                     return kw
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
     return "chrome"
 
 
@@ -397,7 +402,7 @@ def _open_native(url: str, browser_name: Optional[str]) -> str:
                     subprocess.run(cmd, check=True, timeout=10)
                     return f"Opened in {name}: {url}" if url else f"Opened {name}."
                 except Exception as e:
-                    print(f"[Browser] 'open -a {app}' failed ({e}), trying binary…")
+                    log.error(f"[Browser] 'open -a {app}' failed ({e}), trying binary…")
 
         spec = _resolve_browser(name)
         exe  = spec.get("exe") if spec else None
@@ -414,8 +419,8 @@ def _open_native(url: str, browser_name: Optional[str]) -> str:
                 )
                 return f"Opened in {name}: {url}" if url else f"Opened {name}."
             except Exception as e:
-                print(f"[Browser] Native launch failed for {name}: {e}")
-        print(f"[Browser] '{name}' not found — falling back to default browser.")
+                log.error(f"[Browser] Native launch failed for {name}: {e}")
+        log.info(f"[Browser] '{name}' not found — falling back to default browser.")
 
     if not url:
         return "Could not find a browser to open."
@@ -436,8 +441,8 @@ def _open_native(url: str, browser_name: Optional[str]) -> str:
         try:
             if webbrowser.open(url):
                 return f"Opened in your default browser: {url}"
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
         return f"Could not open a browser for: {url}"
 
 
@@ -494,13 +499,13 @@ class _BrowserSession:
         if self._context:
             try:
                 await self._context.close()
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("%s", e)
         if self._pw:
             try:
                 await self._pw.stop()
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("%s", e)
         self._context = self._page = None
 
     async def _adopt_page(self) -> Page:
@@ -547,13 +552,13 @@ class _BrowserSession:
             try:
                 self._context = await engine_obj.launch_persistent_context(profile, **kwargs)
             except Exception as e:
-                print(f"[Browser] Firefox real profile failed ({e}), using OPERO profile")
+                log.error(f"[Browser] Firefox real profile failed ({e}), using OPERO profile")
                 opero = str(Path.home() / ".opero_profiles" / "firefox_opero")
                 Path(opero).mkdir(parents=True, exist_ok=True)
                 self._context = await engine_obj.launch_persistent_context(opero, **kwargs)
 
             self._page = await self._adopt_page()
-            print(f"[Browser] ✅ Firefox launched")
+            log.info(f"[Browser] ✅ Firefox launched")
             return
 
         if engine_name == "webkit":
@@ -568,7 +573,7 @@ class _BrowserSession:
             }
             self._context = await engine_obj.launch_persistent_context(safari_profile, **kwargs)
             self._page = await self._adopt_page()
-            print(f"[Browser] ✅ Safari launched")
+            log.info(f"[Browser] ✅ Safari launched")
             return
 
         profile = _real_profile_dir(self.browser_name)
@@ -602,10 +607,10 @@ class _BrowserSession:
         try:
             self._context = await engine_obj.launch_persistent_context(profile, **kwargs)
             self._page = await self._adopt_page()
-            print(f"[Browser] ✅ Launched [{label}] profile={profile}")
+            log.info(f"[Browser] ✅ Launched [{label}] profile={profile}")
             return
         except Exception as e:
-            print(f"[Browser] ⚠️  Real profile failed for {label}: {e}")
+            log.error(f"[Browser] ⚠️  Real profile failed for {label}: {e}")
 
         # The real profile could not be opened (browser already open / locked
         # profile / newer Chrome versions block the real profile under
@@ -613,12 +618,12 @@ class _BrowserSession:
         # accounts logged in here once stay logged in on later sessions too.
         opero_profile = str(Path.home() / ".opero_profiles" / self.browser_name)
         Path(opero_profile).mkdir(parents=True, exist_ok=True)
-        print(f"[Browser] Retrying with OPERO profile: {opero_profile}")
+        log.info(f"[Browser] Retrying with OPERO profile: {opero_profile}")
 
         try:
             self._context = await engine_obj.launch_persistent_context(opero_profile, **kwargs)
             self._page = await self._adopt_page()
-            print(f"[Browser] ✅ Launched [{label}] with OPERO profile "
+            log.info(f"[Browser] ✅ Launched [{label}] with OPERO profile "
                   f"(sign-ins persist across sessions)")
         except Exception as e2:
             raise RuntimeError(f"Could not launch {self.browser_name}: {e2}") from e2
@@ -646,19 +651,19 @@ class _BrowserSession:
             except PlaywrightTimeout:
                 pass   # page may have partially loaded — check URL below
             except Exception as e:
-                print(f"[Browser] goto exception (non-fatal): {e}")
+                log.warning(f"[Browser] goto exception (non-fatal): {e}")
             return p.url
 
         result_url = await _do_goto(page)
 
         if result_url in ("about:blank", "", None, prev_url) and prev_url in ("about:blank", "", None):
-            print(f"[Browser] Still blank after goto — retrying on new tab: {url}")
+            log.info(f"[Browser] Still blank after goto — retrying on new tab: {url}")
             try:
                 new_page   = await self._context.new_page()
                 self._page = new_page
                 result_url = await _do_goto(new_page)
             except Exception as e:
-                print(f"[Browser] New-tab retry failed: {e}")
+                log.error(f"[Browser] New-tab retry failed: {e}")
 
         if result_url and result_url not in ("about:blank", "", None):
             return f"Opened: {result_url}"
@@ -745,8 +750,8 @@ class _BrowserSession:
                 if await loc.count() > 0:
                     await loc.first.click(timeout=5_000)
                     return f"Clicked ({role}): '{description}'"
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("%s", e)
         for attempt in (
             lambda: page.get_by_text(description, exact=False).first.click(timeout=5_000),
             lambda: page.get_by_placeholder(description, exact=False).first.click(timeout=5_000),
@@ -758,8 +763,8 @@ class _BrowserSession:
             try:
                 await attempt()
                 return f"Clicked: '{description}'"
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("%s", e)
         return f"Could not find element: '{description}'"
 
     async def smart_type(self, description: str, text: str) -> str:
@@ -870,7 +875,7 @@ class _SessionRegistry:
                 sess = _BrowserSession(browser_name)
                 sess.start()
                 self._sessions[browser_name] = sess
-                print(f"[Registry] New session: {browser_name}")
+                log.info(f"[Registry] New session: {browser_name}")
             return self._sessions[browser_name]
 
     def get(self, browser_name: str | None = None) -> _BrowserSession:
@@ -906,8 +911,8 @@ class _SessionRegistry:
         for s in sessions:
             try:
                 s.close()
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("%s", e)
         return "All browsers closed: " + (", ".join(names) if names else "none")
 
     def list_sessions(self) -> str:
@@ -930,6 +935,7 @@ def browser_control(
     session_memory=None,
 ) -> str:
     params  = parameters or {}
+    params = validate_params(params, VALIDATOR, tool_name="browser_control")
     action  = params.get("action", "").lower().strip()
     browser = params.get("browser", "").lower().strip() or None
     result  = "Unknown action."
@@ -1010,7 +1016,7 @@ def browser_control(
             try:
                 sess.run(sess.go_to(last))
             except Exception as e:
-                print(f"[Browser] Could not resume last page ({last}): {e}")
+                log.info(f"[Browser] Could not resume last page ({last}): {e}")
 
         if action == "click":
             result = sess.run(sess.click(params.get("selector"), params.get("text")))
@@ -1055,7 +1061,7 @@ def browser_control(
 
 def _log(player, text: str):
     short = str(text)[:80]
-    print(f"[Browser] {short}")
+    log.info(f"[Browser] {short}")
     if player:
         player.write_log(f"[browser] {short[:60]}")
 
@@ -1129,4 +1135,10 @@ TOOL = {
         ]
     },
     "handler": browser_control,
+}
+
+VALIDATOR = {
+    "action": [{"type": str, "required": True, "max_len": 200}],
+    "query":  [{"type": str, "max_len": 500}],
+    "url":    [{"type": str, "max_len": 2000}],
 }

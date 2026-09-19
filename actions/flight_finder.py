@@ -8,6 +8,10 @@ from pathlib import Path
 
 from config import is_windows, is_mac, is_linux
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+log = get_logger(__name__)
+
 def _get_base_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent
@@ -48,8 +52,8 @@ def _parse_date(raw: str) -> str:
     for fmt in ("%d/%m/%Y", "%m/%d/%Y", "%d.%m.%Y", "%d-%m-%Y"):
         try:
             return datetime.strptime(raw, fmt).strftime("%Y-%m-%d")
-        except ValueError:
-            pass
+        except ValueError as e:
+            log.debug("%s", e)
 
     relative = {
         "today": today,
@@ -70,7 +74,7 @@ def _parse_date(raw: str) -> str:
         if re.match(r"\d{4}-\d{2}-\d{2}", result):
             return result
     except Exception as e:
-        print(f"[FlightFinder] ⚠️ Gemini date parse failed: {e}")
+        log.error(f"[FlightFinder] ⚠️ Gemini date parse failed: {e}")
 
     for month_name, month_num in _MONTH_MAP.items():
         if month_name in lower:
@@ -81,7 +85,7 @@ def _parse_date(raw: str) -> str:
                 return f"{year}-{month_num:02d}-{day:02d}"
 
     # Last resort: today
-    print(f"[FlightFinder] ⚠️ Could not parse date '{raw}' — using today.")
+    log.info(f"[FlightFinder] ⚠️ Could not parse date '{raw}' — using today.")
     return today.strftime("%Y-%m-%d")
 
 _CABIN_CODE: dict[str, str] = {
@@ -135,7 +139,7 @@ def _search_flights_browser(
         origin, destination, date, return_date, passengers, cabin
     )
 
-    print(f"[FlightFinder] 🌐 Opening: {url}")
+    log.info(f"[FlightFinder] 🌐 Opening: {url}")
     browser_control({"action": "go_to", "url": url})
     time.sleep(5)
 
@@ -178,7 +182,7 @@ def _parse_flights_with_gemini(
         flights  = json.loads(text)
         return flights if isinstance(flights, list) else []
     except Exception as e:
-        print(f"[FlightFinder] ⚠️ Gemini parse failed: {e}")
+        log.error(f"[FlightFinder] ⚠️ Gemini parse failed: {e}")
         return []
 
 def _format_spoken(
@@ -278,7 +282,7 @@ def _save_to_desktop(content: str, origin: str, destination: str) -> str:
     filepath = desktop / filename
 
     filepath.write_text(content, encoding="utf-8")
-    print(f"[FlightFinder] 💾 Saved: {filepath}")
+    log.info(f"[FlightFinder] 💾 Saved: {filepath}")
 
     try:
         if is_windows():
@@ -288,13 +292,14 @@ def _save_to_desktop(content: str, origin: str, destination: str) -> str:
         else:
             subprocess.Popen(["xdg-open", str(filepath)])
     except Exception as e:
-        print(f"[FlightFinder] ⚠️ Could not open text editor: {e}")
+        log.info(f"[FlightFinder] ⚠️ Could not open text editor: {e}")
 
     return str(filepath)
 
 
 def flight_finder(parameters: dict, player=None, speak=None) -> str:
     params = parameters or {}
+    params = validate_params(params, VALIDATOR, tool_name="flight_finder")
 
     origin      = params.get("origin",      "").strip()
     destination = params.get("destination", "").strip()
@@ -322,11 +327,9 @@ def flight_finder(parameters: dict, player=None, speak=None) -> str:
     if speak:
         speak(f"Searching flights from {origin} to {destination} on {date}, sir.")
 
-    print(
-        f"[FlightFinder] ▶️ {origin} → {destination} | {date}"
+    log.info(f"[FlightFinder] ▶️ {origin} → {destination} | {date}"
         f"{' → ' + return_date if return_date else ''}"
-        f" | {cabin} | {passengers} pax"
-    )
+        f" | {cabin} | {passengers} pax")
 
     try:
         raw_text, page_url = _search_flights_browser(
@@ -355,7 +358,7 @@ def flight_finder(parameters: dict, player=None, speak=None) -> str:
         return result
 
     except Exception as e:
-        print(f"[FlightFinder] ❌ {e}")
+        log.info(f"[FlightFinder] ❌ {e}")
         return f"Flight search failed, sir: {e}"
 
 
@@ -402,4 +405,13 @@ TOOL = {
         ]
     },
     "handler": flight_finder,
+}
+
+VALIDATOR = {
+    "origin":      [{"type": str, "required": True, "max_len": 10}],
+    "destination": [{"type": str, "required": True, "max_len": 10}],
+    "date":        [{"type": str, "required": True, "max_len": 20}],
+    "return_date": [{"type": str, "max_len": 20}],
+    "passengers":  [{"type": int, "min": 1, "max": 9}],
+    "cabin":       [{"type": str, "max_len": 20}],
 }

@@ -3,6 +3,11 @@ import subprocess
 import platform
 import shutil
 
+from core.logger import get_logger
+from core.validator import validate_params, ValidationError
+
+log = get_logger(__name__)
+
 try:
     import psutil
     _PSUTIL = True
@@ -90,15 +95,15 @@ def _launch_windows(app_name: str) -> bool:
             time.sleep(1.5)
             return True
         except Exception as e:
-            print(f"[open_app] subprocess failed: {e}")
+            log.error(f"[open_app] subprocess failed: {e}")
 
     if ":" in app_name:
         try:
             subprocess.Popen(f"start {app_name}", shell=True)
             time.sleep(1.0)
             return True
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
     try:
         import pyautogui
@@ -111,7 +116,7 @@ def _launch_windows(app_name: str) -> bool:
         time.sleep(2.5)
         return True
     except Exception as e:
-        print(f"[open_app] Start Menu search failed: {e}")
+        log.error(f"[open_app] Start Menu search failed: {e}")
 
     return False
 
@@ -126,8 +131,8 @@ def _launch_macos(app_name: str) -> bool:
         if result.returncode == 0:
             time.sleep(1.0)
             return True
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
 
     try:
         result = subprocess.run(
@@ -137,8 +142,8 @@ def _launch_macos(app_name: str) -> bool:
         if result.returncode == 0:
             time.sleep(1.0)
             return True
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
 
     binary = shutil.which(app_name) or shutil.which(app_name.lower())
     if binary:
@@ -150,8 +155,8 @@ def _launch_macos(app_name: str) -> bool:
             )
             time.sleep(1.0)
             return True
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
     try:
         import pyautogui
@@ -163,7 +168,7 @@ def _launch_macos(app_name: str) -> bool:
         time.sleep(1.5)
         return True
     except Exception as e:
-        print(f"[open_app] Spotlight failed: {e}")
+        log.error(f"[open_app] Spotlight failed: {e}")
 
     return False
 
@@ -201,8 +206,8 @@ def _launch_linux(app_name: str) -> bool:
             )
             time.sleep(1.0)
             return True
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
     try:
         subprocess.run(
@@ -210,8 +215,8 @@ def _launch_linux(app_name: str) -> bool:
             capture_output=True, timeout=5
         )
         return True
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("%s", e)
 
     for desktop_name in [
         app_name.lower(),
@@ -225,8 +230,8 @@ def _launch_linux(app_name: str) -> bool:
             )
             if result.returncode == 0:
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("%s", e)
 
     return False
 
@@ -243,7 +248,8 @@ def open_app(
     player=None,
     session_memory=None,
 ) -> str:
-    app_name = (parameters or {}).get("app_name", "").strip()
+    params = validate_params(parameters or {}, VALIDATOR, tool_name="open_app")
+    app_name = params.get("app_name", "").strip()
 
     if not app_name:
         return "No application name provided."
@@ -253,7 +259,7 @@ def open_app(
         return f"Unsupported operating system: {_SYSTEM}"
 
     normalized = _normalize(app_name)
-    print(f"[open_app] Launching: '{app_name}' → '{normalized}' ({_SYSTEM})")
+    log.info(f"[open_app] Launching: '{app_name}' → '{normalized}' ({_SYSTEM})")
 
     if player:
         player.write_log(f"[open_app] {app_name}")
@@ -269,7 +275,7 @@ def open_app(
             f"It may still be loading, or it might not be installed."
         )
     except Exception as e:
-        print(f"[open_app] Error: {e}")
+        log.error(f"[open_app] Error: {e}")
         return f"Failed to open {app_name}: {e}"
 
 
@@ -290,4 +296,8 @@ TOOL = {
         ]
     },
     "handler": open_app,
+}
+
+VALIDATOR = {
+    "app_name": [{"type": str, "required": True, "max_len": 50, "no_shell": True}],
 }

@@ -12,6 +12,9 @@ except ImportError:
 
 from core.undo import push_undo
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
 
 # Undo keeps a file's previous contents in memory so `write` can be reversed.
@@ -85,7 +88,7 @@ def _restore_from_trash(original: Path) -> str:
                         item.InvokeVerb("UNDELETE")
                         return f"'{original.name}' restored from the Recycle Bin."
         except Exception as e:
-            print(f"[file] Recycle Bin restore failed: {e}")
+            log.error(f"[file] Recycle Bin restore failed: {e}")
     return (f"'{original.name}' is in the Recycle Bin — I could not pull it back "
             f"automatically, but it is there and can be restored by hand.")
 
@@ -595,15 +598,15 @@ def organize_desktop() -> str:
                             shutil.move(str(moved_to), str(origin))
                             restored += 1
                     except Exception as e:
-                        print(f"[file] undo organize: {moved_to.name}: {e}")
+                        log.info(f"[file] undo organize: {moved_to.name}: {e}")
                 # Clear away the folders we created, but only while they are
                 # empty — anything the user put in since stays.
                 for folder in {m.parent for _o, m in entries}:
                     try:
                         if folder.exists() and folder.is_dir() and not any(folder.iterdir()):
                             folder.rmdir()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        log.debug("%s", e)
                 return f"{restored} file(s) put back on the desktop."
             push_undo(f"organized the desktop ({len(journal)} files)", _undo_organize)
 

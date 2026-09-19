@@ -35,6 +35,9 @@ from __future__ import annotations
 import unicodedata
 from collections import deque
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
 # (openness 0..1, width -1..+1, closure 0..1)
 #   closure forces the lips together regardless of loudness — it is the whole
 #   reason the transcript is worth consulting.
