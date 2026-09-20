@@ -1,162 +1,142 @@
+# actions/background_monitor.py
 """
-BackgroundMonitor — user-configured topic watching.
-Checks DDG news once per day per topic; alerts OPERO when a new headline appears.
-No crypto, no finance, no uninvited tracking.
+Background Monitor Action for Brahma AI.
+
+Allows the AI to schedule background polling for system health, crypto prices, or website uptime.
 """
-import hashlib
+
+import threading
+import time
+import requests
 import json
-import re
 from datetime import datetime
-from pathlib import Path
+from actions.system_manager import get_system_health
 
-from core.logger import get_logger
-log = get_logger(__name__)
+_monitors = {}
+_monitor_lock = threading.Lock()
+_speech_sink = None
 
+# The daemon below runs on its own thread, so a triggered alert is parked here
+# until the assistant loop drains it with check_all() and speaks it in its own
+# voice.  (Before, the alert was handed to an unset sink and dropped, while
+# check_all() returned None — which the caller iterated, logging
+# "'NoneType' object is not iterable" every cycle.)
+_pending_alerts: list[str] = []
+_alert_lock = threading.Lock()
 
-# ── Blocked categories (never monitor regardless of what user says) ────────────
+def set_monitor_speech_sink(sink_fn):
+    global _speech_sink
+    _speech_sink = sink_fn
 
-_BLOCKED = {
-    # Brand / asset names — spelled the same in every language
-    "bitcoin", "ethereum", "dogecoin", "solana", "binance",
-    "nft", "blockchain", "defi", "altcoin", "memecoin", "coin", "token",
-    # spellings of the "crypto" root across different languages
-    "crypto", "kripto", "cripto", "krypto", "крипто", "仮想通貨", "暗号資産",
-    "cryptocurrency",
-}
+def _monitor_loop():
+    while True:
+        time.sleep(10)
+        with _monitor_lock:
+            current_time = time.time()
+            for m_id, m in list(_monitors.items()):
+                if current_time - m['last_check'] >= m['interval']:
+                    m['last_check'] = current_time
+                    _run_check(m_id, m)
 
-def _is_blocked(topic: str) -> bool:
-    t = topic.lower()
-    return any(word in t for word in _BLOCKED)
+def _run_check(m_id, m):
+    try:
+        alert_msg = None
+        
+        if m['type'] == 'system':
+            health = get_system_health()
+            if m['target'] == 'ram' and health['ram_usage_percent'] > m['threshold']:
+                alert_msg = f"Alert: RAM usage has exceeded {m['threshold']}%. Currently at {health['ram_usage_percent']}%."
+            elif m['target'] == 'cpu' and health['cpu_usage_percent'] > m['threshold']:
+                alert_msg = f"Alert: CPU usage has exceeded {m['threshold']}%. Currently at {health['cpu_usage_percent']}%."
+                
+        elif m['type'] == 'crypto':
+            # Target should be a coin id like 'bitcoin'
+            url = f"https://api.coingecko.com/api/v3/simple/price?ids={m['target']}&vs_currencies=usd"
+            resp = requests.get(url, timeout=5).json()
+            if m['target'] in resp:
+                price = resp[m['target']]['usd']
+                # Condition: "above" or "below"
+                if m['condition'] == 'above' and price > m['threshold']:
+                    alert_msg = f"Alert: {m['target'].capitalize()} has gone above ${m['threshold']}. Current price is ${price}."
+                elif m['condition'] == 'below' and price < m['threshold']:
+                    alert_msg = f"Alert: {m['target'].capitalize()} has dropped below ${m['threshold']}. Current price is ${price}."
+                    
+        elif m['type'] == 'website':
+            try:
+                resp = requests.get(m['target'], timeout=5)
+                if resp.status_code >= 400:
+                    alert_msg = f"Alert: Website {m['target']} is returning status code {resp.status_code}."
+            except Exception:
+                alert_msg = f"Alert: Website {m['target']} appears to be down or unreachable."
 
+        if alert_msg:
+            # Alert triggered! Queue it, then drop the monitor so a threshold
+            # that stays tripped cannot re-alert on every single cycle.
+            with _alert_lock:
+                _pending_alerts.append(alert_msg)
+            if _speech_sink:
+                _speech_sink(alert_msg)
+            del _monitors[m_id]
+            
+    except Exception as e:
+        print(f"[Monitor] Error checking {m_id}: {e}")
 
-# ── Slug / hash helpers ────────────────────────────────────────────────────────
+# Start the daemon loop
+threading.Thread(target=_monitor_loop, daemon=True).start()
 
-def _slug(topic: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", topic.lower().strip())[:40].strip("_")
+def add_monitor(monitor_type: str, target: str, threshold: float, condition: str = "above", interval_sec: int = 60) -> str:
+    m_id = f"{monitor_type}_{target}_{int(time.time())}"
+    with _monitor_lock:
+        _monitors[m_id] = {
+            "type": monitor_type,
+            "target": target.lower(),
+            "threshold": threshold,
+            "condition": condition,
+            "interval": interval_sec,
+            "last_check": time.time()
+        }
+    return f"Started monitoring {monitor_type} ({target}) every {interval_sec} seconds."
 
-def _title_hash(title: str) -> str:
-    return hashlib.md5(title.encode("utf-8", errors="ignore")).hexdigest()[:12]
+def get_monitors() -> str:
+    with _monitor_lock:
+        if not _monitors:
+            return "No active background monitors."
+        return json.dumps(_monitors, indent=2)
 
-
-# ── Memory I/O ─────────────────────────────────────────────────────────────────
-
-def _load() -> dict:
-    from memory.memory_manager import load_memory
-    data = load_memory().get("monitors", {})
-    return data if isinstance(data, dict) else {}
-
-def _save(monitors: dict) -> None:
-    from memory.memory_manager import load_memory, MEMORY_PATH, _lock
-    memory = load_memory()
-    memory["monitors"] = monitors
-    with _lock:
-        MEMORY_PATH.parent.mkdir(parents=True, exist_ok=True)
-        MEMORY_PATH.write_text(
-            json.dumps(memory, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-
-
-# ── Public API ─────────────────────────────────────────────────────────────────
-
-def add_monitor(topic: str) -> str:
-    topic = topic.strip()
-    if not topic:
-        return "Please specify a topic to monitor."
-    if _is_blocked(topic):
-        return "I don't monitor crypto or financial topics."
-    monitors = _load()
-    slug = _slug(topic)
-    if slug in monitors:
-        return f"Already monitoring: {monitors[slug]['topic']}"
-    monitors[slug] = {
-        "topic":      topic,
-        "added":      datetime.now().strftime("%Y-%m-%d"),
-        "last_check": "",
-        "last_hash":  "",
-    }
-    _save(monitors)
-    log.info(f"[Monitor] ➕ Added: {topic}")
-    return f"Now monitoring: {topic}"
-
-
-def remove_monitor(topic: str) -> str:
-    topic = topic.strip().lower()
-    monitors = _load()
-    # exact slug match first
-    slug = _slug(topic)
-    if slug in monitors:
-        label = monitors.pop(slug)["topic"]
-        _save(monitors)
-        return f"Stopped monitoring: {label}"
-    # partial match fallback
-    for key, val in list(monitors.items()):
-        if topic in val.get("topic", "").lower():
-            label = monitors.pop(key)["topic"]
-            _save(monitors)
-            return f"Stopped monitoring: {label}"
-    return f"Not found in monitored topics: {topic}"
-
+def run(parameters: dict, player=None, session_memory=None) -> str:
+    action = parameters.get("action", "add")
+    if action == "list":
+        return get_monitors()
+    
+    m_type = parameters.get("type")
+    target = parameters.get("target")
+    threshold = parameters.get("threshold", 0.0)
+    condition = parameters.get("condition", "above")
+    interval = parameters.get("interval", 60)
+    
+    if not m_type or not target:
+        return "You must provide a 'type' (system/crypto/website) and a 'target' (ram/cpu/bitcoin/url)."
+        
+    res = add_monitor(m_type, target, float(threshold), condition, int(interval))
+    if player:
+        player.write_log(f"SYS: {res}")
+    return res
+def remove_monitor(target: str) -> str:
+    with _monitor_lock:
+        keys_to_remove = [k for k, v in _monitors.items() if v['target'] == target.lower()]
+        for k in keys_to_remove:
+            del _monitors[k]
+        if keys_to_remove:
+            return f"Removed monitor for {target}."
+        return f"No monitor found for {target}."
 
 def list_monitors() -> list[str]:
-    return [v.get("topic", k) for k, v in _load().items()]
-
+    with _monitor_lock:
+        return [f"{v['type']} - {v['target']}" for v in _monitors.values()]
 
 def check_all() -> list[str]:
-    """
-    Run all pending topic checks (once per day per topic).
-    Returns a list of [MONITOR_ALERT] strings — empty if nothing new.
-    """
-    from actions.web_search import _ddg_news
-
-    monitors = _load()
-    if not monitors:
-        return []
-
-    today   = datetime.now().strftime("%Y-%m-%d")
-    alerts  = []
-    changed = False
-
-    for slug, data in monitors.items():
-        if data.get("last_check") == today:
-            continue                     # already checked today
-
-        topic = data.get("topic", slug)
-        try:
-            results = _ddg_news(topic, max_results=5)
-            if not results:
-                monitors[slug]["last_check"] = today
-                changed = True
-                continue
-
-            top   = results[0]
-            title = top.get("title", "").strip()
-            if not title:
-                continue
-
-            h = _title_hash(title)
-            monitors[slug]["last_check"] = today
-            changed = True
-
-            if h == data.get("last_hash"):
-                continue                 # same headline as last check — no alert
-
-            monitors[slug]["last_hash"] = h
-
-            snippet = top.get("snippet", "")[:150]
-            source  = top.get("source", "")
-            parts   = [f"[MONITOR_ALERT] {topic}", f"Headline: {title}"]
-            if snippet:
-                parts.append(snippet)
-            if source:
-                parts.append(f"Source: {source}")
-            alerts.append("\n".join(parts))
-            log.info(f"[Monitor] 🔔 New headline for '{topic}': {title[:60]}")
-
-        except Exception as e:
-            log.error(f"[Monitor] ⚠️ Check failed for '{topic}': {e}")
-
-    if changed:
-        _save(monitors)
-
+    """Return every alert raised since the last call, and clear the queue."""
+    with _alert_lock:
+        alerts = list(_pending_alerts)
+        _pending_alerts.clear()
     return alerts

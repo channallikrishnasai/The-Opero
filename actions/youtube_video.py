@@ -9,17 +9,8 @@ from pathlib import Path
 from datetime import datetime
 from urllib.parse import quote_plus
 
-try:
-    import pyautogui
-    _PYAUTOGUI = True
-except ImportError:
-    _PYAUTOGUI = False
-
-try:
-    import numpy as np
-    _NUMPY = True
-except ImportError:
-    _NUMPY = False
+import pyautogui
+import numpy as np
 
 try:
     import requests
@@ -34,11 +25,6 @@ except ImportError:
     _TRANSCRIPT_OK = False
 
 from config import get_os, is_windows, is_mac, is_linux
-
-from core.logger import get_logger
-from core.validator import validate_params, ValidationError
-
-log = get_logger(__name__)
 
 
 def _get_base_dir() -> Path:
@@ -61,12 +47,6 @@ HEADERS = {
 
 _YT_VIDEO_FILTER = "EgIQAQ%3D%3D"
 
-
-def _get_api_key() -> str:
-    with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)["gemini_api_key"]
-
-
 def _open_url(url: str) -> None:
     try:
         if is_mac():
@@ -76,7 +56,7 @@ def _open_url(url: str) -> None:
         else:
             subprocess.Popen(["cmd", "/c", "start", "", url], shell=False)
     except Exception as e:
-        log.error(f"[YouTube] ⚠️ open_url failed: {e}")
+        print(f"[YouTube] ⚠️ open_url failed: {e}")
 
 def _scrape_first_video_url(query: str) -> str | None:
 
@@ -106,7 +86,7 @@ def _scrape_first_video_url(query: str) -> str | None:
             return f"https://www.youtube.com/watch?v={vid}"
 
     except Exception as e:
-        log.error(f"[YouTube] ⚠️ scrape_first_video_url failed: {e}")
+        print(f"[YouTube] ⚠️ scrape_first_video_url failed: {e}")
 
     return None
 
@@ -134,7 +114,7 @@ def _ask_for_url(prompt_text: str = "YouTube video URL:") -> str | None:
         url = simpledialog.askstring("J.A.R.V.I.S", prompt_text, parent=root)
         return url.strip() if url else None
     except Exception as e:
-        log.error(f"[YouTube] ⚠️ URL dialog failed: {e}")
+        print(f"[YouTube] ⚠️ URL dialog failed: {e}")
         return None
 
 
@@ -149,8 +129,8 @@ def _get_transcript(video_id: str) -> str | None:
 
         try:
             transcript = transcript_list.find_manually_created_transcript(lang_priority)
-        except Exception as e:
-            log.debug("%s", e)
+        except Exception:
+            pass
 
         if transcript is None:
             try:
@@ -167,35 +147,27 @@ def _get_transcript(video_id: str) -> str | None:
         return " ".join(entry["text"] for entry in fetched)
 
     except Exception as e:
-        log.error(f"[YouTube] ⚠️ Transcript fetch failed: {e}")
+        print(f"[YouTube] ⚠️ Transcript fetch failed: {e}")
         return None
 
 
 def _summarize_with_gemini(transcript: str, video_url: str) -> str:
-    from google.genai import types
-    from core import gemini
+    from llm_client import client
 
     max_chars = 80000
     truncated = transcript[:max_chars] + ("..." if len(transcript) > max_chars else "")
-    # A whole transcript can be 80k characters, hence the long deadline — but a
-    # deadline there is, and the ladder in core/gemini.py picks the model.
-    response = gemini.call(
+
+    return client.chat(
         f"Please summarize this YouTube video transcript:\n\n{truncated}",
-        tier=gemini.SMART,
-        timeout_ms=60_000,
-        config=types.GenerateContentConfig(
-            system_instruction=(
-                "You are OPERO, an AI assistant. "
-                "Summarize YouTube video transcripts clearly and concisely. "
-                "Structure: 1-sentence overview, then 3-5 key points. "
-                "Be direct. Address the user as 'sir'. "
-                "Match the language of the transcript."
-            )
-        )
+        system=(
+            "You are Brahma AI - Lite, an AI assistant. "
+            "Summarize YouTube video transcripts clearly and concisely. "
+            "Structure: 1-sentence overview, then 3-5 key points. "
+            "Be direct. Address the user as 'sir'. "
+            "Match the language of the transcript."
+        ),
+        max_tokens=2048,
     )
-    if response is None:
-        return "I couldn't reach Gemini to summarise that transcript, sir."
-    return (response.text or "").strip()
 
 
 def _save_summary(content: str, video_url: str) -> str:
@@ -206,7 +178,7 @@ def _save_summary(content: str, video_url: str) -> str:
     filepath = desktop / filename
 
     header = (
-        f"OPERO — YouTube Summary\n"
+        f"Brahma AI - YouTube Summary\n"
         f"{'─' * 50}\n"
         f"URL    : {video_url}\n"
         f"Date   : {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
@@ -222,7 +194,7 @@ def _save_summary(content: str, video_url: str) -> str:
         else:
             subprocess.Popen(["xdg-open", str(filepath)])
     except Exception as e:
-        log.info(f"[YouTube] ⚠️ Could not open text editor: {e}")
+        print(f"[YouTube] ⚠️ Could not open text editor: {e}")
 
     return str(filepath)
 
@@ -256,7 +228,7 @@ def _scrape_video_info(video_id: str) -> dict:
 
         return info
     except Exception as e:
-        log.error(f"[YouTube] ⚠️ Info scrape failed: {e}")
+        print(f"[YouTube] ⚠️ Info scrape failed: {e}")
         return {}
 
 
@@ -283,7 +255,7 @@ def _scrape_trending(region: str = "TR", max_results: int = 8) -> list[dict]:
 
         return results
     except Exception as e:
-        log.error(f"[YouTube] ⚠️ Trending scrape failed: {e}")
+        print(f"[YouTube] ⚠️ Trending scrape failed: {e}")
         return []
 
 def _handle_play(parameters: dict, player) -> str:
@@ -294,16 +266,16 @@ def _handle_play(parameters: dict, player) -> str:
     if player:
         player.write_log(f"[YouTube] Searching: {query}")
 
-    log.info(f"[YouTube] 🔍 Scraping first non-Shorts video for: {query}")
+    print(f"[YouTube] 🔍 Scraping first non-Shorts video for: {query}")
 
     video_url = _scrape_first_video_url(query)
 
     if video_url:
-        log.info(f"[YouTube] ▶️ Opening: {video_url}")
+        print(f"[YouTube] ▶️ Opening: {video_url}")
         _open_url(video_url)
         return f"Playing: {query}"
 
-    log.error(f"[YouTube] ⚠️ Scrape failed, opening filtered search page")
+    print(f"[YouTube] ⚠️ Scrape failed, opening filtered search page")
     fallback_url = (
         f"https://www.youtube.com/results"
         f"?search_query={quote_plus(query)}"
@@ -424,12 +396,11 @@ def youtube_video(
     speak=None,
 ) -> str:
     params = parameters or {}
-    params = validate_params(params, VALIDATOR, tool_name="youtube_video")
     action = params.get("action", "play").lower().strip()
 
     if player:
         player.write_log(f"[YouTube] Action: {action}")
-    log.info(f"[YouTube] ▶️  Action: {action}  Params: {params}")
+    print(f"[YouTube] ▶️  Action: {action}  Params: {params}")
 
     handler = _ACTION_MAP.get(action)
     if handler is None:
@@ -443,46 +414,5 @@ def youtube_video(
             return handler(params, player) or "Done."
         return handler(params, player, speak) or "Done."
     except Exception as e:
-        log.error(f"[YouTube] ❌ Error in {action}: {e}")
+        print(f"[YouTube] ❌ Error in {action}: {e}")
         return f"YouTube {action} failed, sir: {e}"
-
-
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
-TOOL = {
-    "name": "youtube_video",
-    "description": "Controls YouTube. Use for: playing videos, summarizing a video's content, getting video info, or showing trending videos.",
-    "parameters": {
-        "type": "OBJECT",
-        "properties": {
-            "action": {
-                "type": "STRING",
-                "description": "play | summarize | get_info | trending (default: play)"
-            },
-            "query": {
-                "type": "STRING",
-                "description": "Search query for play action"
-            },
-            "save": {
-                "type": "BOOLEAN",
-                "description": "Save summary to Notepad (summarize only)"
-            },
-            "region": {
-                "type": "STRING",
-                "description": "Country code for trending e.g. TR, US"
-            },
-            "url": {
-                "type": "STRING",
-                "description": "Video URL for get_info action"
-            }
-        },
-        "required": []
-    },
-    "handler": youtube_video,
-}
-
-VALIDATOR = {
-    "action": [{"type": str, "max_len": 50}],
-    "query":  [{"type": str, "max_len": 500}],
-    "url":    [{"type": str, "max_len": 500}],
-    "region": [{"type": str, "max_len": 5}],
-}

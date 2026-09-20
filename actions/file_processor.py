@@ -1,5 +1,5 @@
 """
-file_processor.py — OPERO Universal File Processor
+file_processor.py — Brahma AI Universal File Processor
 
 Supported types:
   image   → describe, ocr, resize, convert, compress, crop
@@ -25,13 +25,16 @@ import tempfile
 from pathlib import Path
 from datetime import datetime
 
-# Model choice, timeout and fallback ladder all live in core/gemini.py.
-from core import gemini
+try:
+    from google import genai as _genai_new
+    _USE_NEW_SDK = True
+except ImportError:
+    _USE_NEW_SDK = False
+    try:
+        import google.generativeai as genai  # type: ignore
+    except ImportError:
+        genai = None  # type: ignore
 
-from core.logger import get_logger
-from core.validator import validate_params, ValidationError
-
-log = get_logger(__name__)
 
 def _get_api_key() -> str:
     config_path = Path(__file__).resolve().parent.parent / "config" / "api_keys.json"
@@ -39,17 +42,14 @@ def _get_api_key() -> str:
         return json.load(f)["gemini_api_key"]
 
 
-def _gemini_client(tier: str = gemini.SMART):
-    """Summarising documents and reading images — the reasoning tier, with a
-    long deadline because the input can be a whole file."""
-    class _W:
-        def generate_content(self, contents):
-            resp = gemini.call(contents, tier=tier, timeout_ms=90000)
-            if resp is None:
-                raise RuntimeError("every Gemini model on the ladder failed")
-            return resp
-
-    return _W()
+def _gemini_client():
+    key = _get_api_key()
+    if _USE_NEW_SDK:
+        return _genai_new.Client(api_key=key)
+    if genai is not None:
+        genai.configure(api_key=key)
+        return genai.GenerativeModel("gemini-2.5-flash")
+    raise RuntimeError("No Gemini SDK available. Run: pip install google-genai")
 
 
 def _detect_type(path: Path) -> str:
@@ -787,7 +787,6 @@ def _process_pptx(path: Path, action: str, params: dict, speak=None) -> str:
     return f"Unknown PPTX action: '{action}'. Try: summarize, extract_text, analyze"
 
 def file_processor(parameters: dict, player=None, speak=None) -> str:
-    parameters = validate_params(parameters or {}, VALIDATOR, tool_name="file_processor")
     file_path_str = parameters.get("file_path", "").strip()
     if not file_path_str:
         return "No file path provided."
@@ -804,7 +803,7 @@ def file_processor(parameters: dict, player=None, speak=None) -> str:
     params      = {**parameters, "instruction": instruction}
 
     log_msg = f"[FileProcessor] {file_type.upper()} | {path.name} | action={action or 'auto'}"
-    log.info(log_msg)
+    print(log_msg)
     if player:
         player.write_log(log_msg)
 
@@ -845,91 +844,3 @@ def file_processor(parameters: dict, player=None, speak=None) -> str:
         import traceback
         traceback.print_exc()
         return f"Processing failed: {e}"
-
-
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
-TOOL = {
-    "name": "file_processor",
-    "description": "Processes any file that the user has uploaded or dropped onto the interface. Use this when the user refers to an uploaded file and wants an action on it. Supports: images (describe/ocr/resize/compress/convert), PDFs (summarize/extract_text/to_word), Word docs & text files (summarize/fix/reformat/translate), CSV/Excel (analyze/stats/filter/sort/convert), JSON/XML (validate/format/analyze), code files (explain/review/fix/optimize/run/document/test), audio (transcribe/trim/convert/info), video (trim/extract_audio/extract_frame/compress/transcribe/info), archives (list/extract), presentations (summarize/extract_text). ALWAYS call this tool when a file has been uploaded and the user gives a command about it. If the user's command is ambiguous, pick the most logical action for that file type.",
-    "parameters": {
-        "type": "OBJECT",
-        "properties": {
-            "file_path": {
-                "type": "STRING",
-                "description": "Full path to the uploaded file. Leave empty to use the currently uploaded file."
-            },
-            "action": {
-                "type": "STRING",
-                "description": "What to do with the file. Examples by type:\nimage: describe | ocr | resize | compress | convert | info\npdf: summarize | extract_text | to_word | info\ndocx/txt: summarize | fix | reformat | translate_hint | word_count | to_bullet\ncsv/excel: analyze | stats | filter | sort | convert | info\njson: validate | format | analyze | to_csv\ncode: explain | review | fix | optimize | run | document | test\naudio: transcribe | trim | convert | info\nvideo: trim | extract_audio | extract_frame | compress | transcribe | info | convert\narchive: list | extract\npptx: summarize | extract_text | analyze"
-            },
-            "instruction": {
-                "type": "STRING",
-                "description": "Free-form instruction if action doesn't cover it. E.g. 'translate this to Turkish', 'find all email addresses'"
-            },
-            "format": {
-                "type": "STRING",
-                "description": "Target format for conversion. E.g. 'mp3', 'pdf', 'csv', 'png'"
-            },
-            "width": {
-                "type": "INTEGER",
-                "description": "Target width for image resize"
-            },
-            "height": {
-                "type": "INTEGER",
-                "description": "Target height for image resize"
-            },
-            "scale": {
-                "type": "NUMBER",
-                "description": "Scale factor for image resize (e.g. 0.5)"
-            },
-            "quality": {
-                "type": "INTEGER",
-                "description": "Quality 1-100 for image/video compress"
-            },
-            "start": {
-                "type": "STRING",
-                "description": "Start time for trim: seconds or HH:MM:SS"
-            },
-            "end": {
-                "type": "STRING",
-                "description": "End time for trim: seconds or HH:MM:SS"
-            },
-            "timestamp": {
-                "type": "STRING",
-                "description": "Timestamp for video frame extraction HH:MM:SS"
-            },
-            "column": {
-                "type": "STRING",
-                "description": "Column name for CSV filter/sort"
-            },
-            "value": {
-                "type": "STRING",
-                "description": "Filter value for CSV filter"
-            },
-            "condition": {
-                "type": "STRING",
-                "description": "Filter condition: equals|contains|gt|lt"
-            },
-            "ascending": {
-                "type": "BOOLEAN",
-                "description": "Sort order for CSV sort (default: true)"
-            },
-            "save": {
-                "type": "BOOLEAN",
-                "description": "Save result to file (default: true)"
-            },
-            "destination": {
-                "type": "STRING",
-                "description": "Output folder for archive extract"
-            }
-        },
-        "required": []
-    },
-    "handler": file_processor,
-}
-
-VALIDATOR = {
-    "file_path":  [{"type": str, "required": True, "max_len": 500, "safe_path": True}],
-    "action":     [{"type": str, "max_len": 100}],
-    "instruction": [{"type": str, "max_len": 2000}],
-}

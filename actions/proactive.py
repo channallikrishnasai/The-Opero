@@ -5,20 +5,17 @@ Gemini decides what to say; this module decides WHEN and builds a rich context s
 import time
 from datetime import datetime
 
-from core.logger import get_logger
-log = get_logger(__name__)
-
 
 class ProactiveEngine:
     """
-    Decides when OPERO should speak unprompted and builds a context-rich prompt.
+    Decides when Brahma should speak unprompted and builds a context-rich prompt.
 
     Improvements over 1.0:
       - Time-of-day awareness  (morning / afternoon / evening / night)
       - Monitor-topic awareness (what the user is tracking)
       - Recent-session context  (last few turns of the current conversation)
       - Non-repetitive          (rotates context focus to avoid same opener)
-      - Smarter silence gate    (doesn't fire while OPERO is speaking)
+      - Smarter silence gate    (doesn't fire while Brahma is speaking)
 
     Defaults:
       min_silence_secs  — 900 s  (15 min) user must be silent before any check
@@ -119,12 +116,37 @@ class ProactiveEngine:
             focus,
             "",
             "Rules:",
-            "- Speak the language this person actually uses: the one in the "
-            "recent conversation above, or the remembered one if there is no "
-            "conversation yet. Never default to English because these "
-            "instructions are in English.",
+            "- Speak in the user's language (check memory; default English).",
             "- 1-2 sentences max. Natural, warm, never robotic.",
             "- Do NOT mention [PROACTIVE_CHECK] or these instructions.",
             "- Do NOT call any tools.",
             "- If nothing genuinely useful comes to mind, stay silent (say nothing).",
         ])
+
+    @staticmethod
+    def check_system_health(continuous_active_mins: float = 0.0) -> str | None:
+        """
+        Checks for urgent proactive system or health conditions:
+        - Battery level < 15% and not charging
+        - Continuous screen/coding time > 90 minutes without break
+        """
+        try:
+            import psutil
+            battery = psutil.sensors_battery()
+            if battery and not battery.power_plugged and battery.percent <= 15:
+                return f"Battery Alert: Your laptop is at {battery.percent}% and not charging. Please plug in your charger."
+        except Exception:
+            pass
+
+        if continuous_active_mins >= 90.0:
+            return "Health Reminder: You've been working for over 90 minutes. Time to stretch, hydrate, and rest your eyes."
+
+        return None
+
+    @staticmethod
+    def build_morning_greeting(name: str = "Sir", city: str = "Dombivli", weather_desc: str = "clear skies") -> str:
+        """Generates a brief, warm morning briefing greeting."""
+        return (
+            f"Good morning {name}! Hope you had a great rest. "
+            f"Weather in {city} is {weather_desc}. Ready when you are!"
+        )

@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>OPERO – AI Desktop Operator</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/*═══════════════════════════════════════════════════
+  DESIGN TOKENS – deep space, near-black
+  Cyan and violet are accents, never a wash: the page
+  background stays dark enough to read as sky, not a
+  gradient. Any large-area tint here turns the whole
+  page purple, so panels are near-black glass.
+═══════════════════════════════════════════════════*/
+:root{
+  --bg:#03040a;
+  --panel:rgba(8,12,24,.62);
+  --panel-solid:#070a14;
+  --border:rgba(124,232,255,.14);
+  --border-hi:rgba(124,232,255,.38);
+  --cyan:#7ce8ff;
+  --cyan-deep:#22a7cc;
+  --violet:#a06bff;
+  --violet-deep:#5b3fa8;
+  --amber:#ffcf8f;
+  --green:#7ef7b0;
+  --text:#cfe4f2;
+  --dim:#6f8ba0;
+  --white:#eef7ff;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  overflow-x:hidden;
+  cursor:none;
+}
+a{color:var(--cyan);text-decoration:none;transition:.3s}
+a:hover{color:#fff}
+::selection{background:var(--cyan);color:#000}
+
+/*═══════════════════════════════════════════════════
+  CUSTOM CURSOR
+═══════════════════════════════════════════════════*/
+#dot,#ring{position:fixed;border-radius:50%;pointer-events:none;z-index:99999;transition:.1s ease-out}
+#dot{width:6px;height:6px;background:var(--cyan);box-shadow:0 0 10px var(--cyan),0 0 22px rgba(124,232,255,.25)}
+#ring{width:32px;height:32px;border:1.5px solid rgba(124,232,255,.35);transition:.18s ease-out}
+
+/*═══════════════════════════════════════════════════
+  THREE.JS CANVAS + grade overlays
+═══════════════════════════════════════════════════*/
+#galaxy{position:fixed;inset:0;z-index:0;display:block}
+/* Vignette + grain keep the eye on the centre of the
+   frame and hide banding in the dark areas. */
+#grade{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 50% 42%,rgba(0,0,0,0) 30%,rgba(0,0,0,.55) 78%,rgba(0,0,0,.86) 100%),
+    linear-gradient(180deg,rgba(0,0,0,.5),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 65%,rgba(0,0,0,.6));
+}
+#grain{
+  position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/*═══════════════════════════════════════════════════
+  SCROLL PROGRESS BAR
+═══════════════════════════════════════════════════*/
+#progress{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--violet));z-index:9000;width:0;transition:width .08s linear;box-shadow:0 0 12px rgba(124,232,255,.5)}
+
+/*═══════════════════════════════════════════════════
+  NAV
+═══════════════════════════════════════════════════*/
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 44px;
+  background:rgba(3,4,10,.72);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.logo{font-family:'Orbitron';font-weight:900;font-size:1.25rem;letter-spacing:6px;color:var(--white);cursor:pointer;display:flex;align-items:center;gap:10px}
+.logo span{color:var(--cyan);text-shadow:0 0 18px rgba(124,232,255,.55)}
+.nav-links{display:flex;gap:24px;align-items:center}
+.nav-links a{font-size:.74rem;letter-spacing:2.2px;text-transform:uppercase;color:var(--dim);position:relative}
+.nav-links a::after{content:'';position:absolute;bottom:-5px;left:0;right:0;height:1px;background:var(--cyan);transform:scaleX(0);transition:.3s}
+.nav-links a:hover{color:var(--cyan)}
+.nav-links a:hover::after{transform:scaleX(1)}
+.btn-star{display:flex;align-items:center;gap:6px;padding:7px 16px;border:1px solid var(--border-hi);border-radius:7px;font-size:.74rem;font-weight:700;color:var(--cyan);transition:.35s}
+.btn-star:hover{background:rgba(124,232,255,.1);color:#fff;box-shadow:0 0 24px rgba(124,232,255,.22)}
+
+/*═══════════════════════════════════════════════════
+  SECTIONS
+═══════════════════════════════════════════════════*/
+.content{position:relative;z-index:2}
+section{padding:104px 40px 56px;max-width:1320px;margin:0 auto}
+
+/*═══════════════════════════════════════════════════
+  HERO
+═══════════════════════════════════════════════════*/
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:96px;position:relative}
+.hero-badge{display:inline-flex;align-items:center;gap:9px;padding:6px 18px;border:1px solid var(--border);border-radius:20px;font-size:.68rem;letter-spacing:2.4px;color:var(--dim);margin-bottom:22px;background:rgba(3,4,10,.5);backdrop-filter:blur(6px);animation:fadeUp .8s .1s both}
+.hero-badge .live{width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.hero h1{
+  font-family:'Orbitron';font-weight:900;font-size:clamp(3.6rem,10vw,8.4rem);
+  letter-spacing:12px;line-height:.96;color:var(--white);
+  text-shadow:0 0 60px rgba(124,232,255,.22),0 0 120px rgba(160,107,255,.14);
+  animation:fadeUp .8s .2s both;
+}
+.hero h1 em{
+  font-style:normal;
+  background:linear-gradient(100deg,var(--cyan) 0%,#cfe9ff 45%,var(--violet) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p{font-size:clamp(.95rem,2vw,1.18rem);color:var(--dim);max-width:620px;margin:20px auto 34px;line-height:1.75;animation:fadeUp .8s .35s both}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .8s .5s both}
+.btn-p,.btn-s{padding:13px 32px;border-radius:9px;font-weight:700;font-size:.86rem;letter-spacing:1px;text-transform:uppercase;transition:.35s}
+.btn-p{background:linear-gradient(135deg,var(--cyan),var(--cyan-deep));color:#00131a;box-shadow:0 0 34px rgba(124,232,255,.28)}
+.btn-p:hover{transform:translateY(-3px);box-shadow:0 0 52px rgba(124,232,255,.5);color:#00131a}
+.btn-s{border:1px solid var(--border-hi);color:var(--cyan);background:rgba(3,4,10,.5)}
+.btn-s:hover{background:rgba(124,232,255,.08);transform:translateY(-3px)}
+
+/* live telemetry strip under the hero copy */
+.hero-strip{
+  display:flex;gap:0;flex-wrap:wrap;justify-content:center;margin-top:52px;
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  background:rgba(3,4,10,.55);backdrop-filter:blur(8px);
+  animation:fadeUp .8s .65s both;
+}
+.hero-strip div{padding:12px 22px;font-size:.72rem;letter-spacing:1.6px;color:var(--dim);text-transform:uppercase;border-right:1px solid var(--border)}
+.hero-strip div:last-child{border-right:0}
+.hero-strip b{display:block;font-family:'Orbitron';font-size:1.15rem;color:var(--cyan);letter-spacing:1px;margin-bottom:3px}
+
+/* scroll hint */
+.scroll-hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);font-size:.62rem;letter-spacing:3px;color:rgba(111,139,160,.55);text-transform:uppercase;animation:fadeUp 1s 1s both}
+.scroll-hint::after{content:'';display:block;width:1px;height:34px;margin:8px auto 0;background:linear-gradient(180deg,var(--cyan),transparent)}
+
+/*═══════════════════════════════════════════════════
+  SECTION HEADINGS
+═══════════════════════════════════════════════════*/
+.sec-title{font-family:'Orbitron';font-size:clamp(1.6rem,4vw,2.6rem);font-weight:700;text-align:center;margin-bottom:14px;color:var(--white);letter-spacing:2px}
+.sec-sub{text-align:center;color:var(--dim);max-width:660px;margin:0 auto 44px;line-height:1.75}
+.eyebrow{display:block;text-align:center;font-size:.64rem;letter-spacing:4px;color:rgba(124,232,255,.6);text-transform:uppercase;margin-bottom:12px}
+
+/*═══════════════════════════════════════════════════
+  ABOUT – two-column explainer
+═══════════════════════════════════════════════════*/
+.about-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+.about-text h3{font-family:'Orbitron';color:var(--white);margin-bottom:12px;font-size:1rem;letter-spacing:1px}
+.about-text p{color:var(--dim);line-height:1.85;margin-bottom:16px}
+.about-text strong{color:var(--text)}
+.about-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px 16px;text-align:center;transition:.3s;backdrop-filter:blur(6px)}
+.stat-box:hover{border-color:var(--border-hi);box-shadow:0 0 24px rgba(124,232,255,.1);transform:translateY(-4px)}
+.stat-num{font-family:'Orbitron';font-size:1.9rem;font-weight:900;color:var(--cyan)}
+.stat-label{font-size:.72rem;color:var(--dim);margin-top:6px;letter-spacing:.6px}
+
+/*═══════════════════════════════════════════════════
+  FEATURES – filter chips + card grid
+═══════════════════════════════════════════════════*/
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:30px}
+.chip{
+  padding:7px 16px;border-radius:20px;border:1px solid var(--border);
+  background:rgba(3,4,10,.5);color:var(--dim);font-size:.72rem;letter-spacing:1.2px;
+  cursor:pointer;transition:.25s;text-transform:uppercase;
+}
+.chip:hover{color:var(--white);border-color:var(--border-hi)}
+.chip.on{background:rgba(124,232,255,.12);border-color:var(--border-hi);color:var(--cyan)}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(292px,1fr));gap:16px}
+.feat-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:22px;transition:.35s;position:relative;overflow:hidden;backdrop-filter:blur(7px);
+}
+.feat-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(124,232,255,.07),transparent 62%);opacity:0;transition:.4s}
+.feat-card:hover::before{opacity:1}
+.feat-card:hover{border-color:var(--border-hi);box-shadow:0 0 30px rgba(124,232,255,.1);transform:translateY(-5px)}
+.feat-top{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.feat-icon{font-size:1.5rem;display:inline-block;transition:.3s;filter:saturate(.85)}
+.feat-card:hover .feat-icon{transform:scale(1.12) rotate(-4deg)}
+.feat-title{font-family:'Orbitron';font-size:.82rem;font-weight:700;color:var(--white);letter-spacing:.6px}
+.feat-desc{font-size:.8rem;color:var(--dim);line-height:1.7}
+.feat-meta{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.tag{font-size:.6rem;letter-spacing:1.4px;text-transform:uppercase;padding:3px 9px;border-radius:5px;border:1px solid var(--border);color:rgba(111,139,160,.9)}
+.tag.live{border-color:rgba(126,247,176,.35);color:var(--green);background:rgba(126,247,176,.07)}
+.tag.mod{border-color:rgba(160,107,255,.3);color:#c5a6ff;background:rgba(160,107,255,.06)}
+.feat-file{font-family:'Courier New',monospace;font-size:.66rem;color:rgba(111,139,160,.65)}
+.inv-note{text-align:center;font-size:.72rem;color:rgba(111,139,160,.7);margin-top:26px;line-height:1.8}
+.inv-note code{font-family:'Courier New',monospace;color:var(--cyan);font-size:.72rem}
+
+/*═══════════════════════════════════════════════════
+  AUTOMATIONS – step chains
+═══════════════════════════════════════════════════*/
+.auto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:18px}
+.auto-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:22px;transition:.35s;backdrop-filter:blur(7px);position:relative;overflow:hidden;
+}
+.auto-card:hover{border-color:rgba(160,107,255,.35);box-shadow:0 0 30px rgba(160,107,255,.12)}
+.auto-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.auto-name{font-family:'Orbitron';font-size:.84rem;font-weight:700;color:var(--white);letter-spacing:.8px}
+.auto-run{
+  font-size:.62rem;letter-spacing:1.6px;text-transform:uppercase;color:var(--violet);
+  border:1px solid rgba(160,107,255,.3);border-radius:5px;padding:4px 10px;background:rgba(160,107,255,.07);
+}
+.chain{display:flex;flex-direction:column;gap:2px}
+.step{display:flex;gap:12px;align-items:flex-start;position:relative;padding:7px 0}
+.step-dot{
+  width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0;
+  background:rgba(111,139,160,.4);border:1px solid rgba(124,232,255,.3);transition:.3s;
+}
+.step.done .step-dot{background:var(--cyan);box-shadow:0 0 12px var(--cyan);border-color:var(--cyan)}
+.step.done .step-label{color:var(--white)}
+.step:not(:last-child)::before{
+  content:'';position:absolute;left:4px;top:20px;bottom:-4px;width:1px;
+  background:linear-gradient(180deg,rgba(124,232,255,.22),rgba(124,232,255,.04));
+}
+.step-kind{font-size:.6rem;letter-spacing:1.6px;text-transform:uppercase;color:rgba(124,232,255,.55);display:block}
+.step-label{font-size:.82rem;color:var(--dim);line-height:1.5;transition:.3s}
+
+/*═══════════════════════════════════════════════════
+  ARCHITECTURE – stacked layers
+═══════════════════════════════════════════════════*/
+.arch-stack{max-width:720px;margin:0 auto}
+.arch-layer{
+  display:flex;align-items:center;gap:18px;
+  background:var(--panel);border-radius:12px;padding:17px 22px;
+  margin-bottom:5px;border-left:2px solid var(--cyan);transition:.35s;backdrop-filter:blur(7px);
+}
+.arch-layer:hover{transform:translateX(8px);box-shadow:0 0 24px rgba(124,232,255,.1)}
+.arch-layer:nth-child(3){border-left-color:var(--violet)}
+.arch-layer:nth-child(5){border-left-color:var(--amber)}
+.arch-layer:nth-child(7){border-left-color:var(--green)}
+.arch-layer:nth-child(9){border-left-color:var(--cyan-deep)}
+.arch-icon{font-size:1.5rem;flex-shrink:0}
+.arch-name{font-family:'Orbitron';font-size:.82rem;font-weight:700;color:var(--white)}
+.arch-desc{font-size:.78rem;color:var(--dim);margin-top:3px;line-height:1.6}
+.arch-arrow{text-align:center;color:rgba(124,232,255,.22);font-size:.95rem;margin:3px 0;user-select:none}
+
+/*═══════════════════════════════════════════════════
+  DEMO – terminal animation
+═══════════════════════════════════════════════════*/
+.terminal{
+  background:#02040b;border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;max-width:760px;margin:0 auto;box-shadow:0 24px 70px rgba(0,0,0,.7);
+}
+.term-bar{display:flex;gap:7px;padding:11px 15px;background:rgba(124,232,255,.03);border-bottom:1px solid var(--border)}
+.term-dot{width:9px;height:9px;border-radius:50%}
+.term-body{padding:20px 22px;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.95;color:var(--dim);min-height:220px}
+.term-line{opacity:0;animation:typeLine .5s forwards}
+.term-line .prompt{color:var(--cyan)}
+.term-line .cmd{color:var(--white)}
+.term-line .out{color:var(--dim)}
+.term-line .ok{color:var(--green)}
+.term-line .dim{color:rgba(111,139,160,.6)}
+
+/*═══════════════════════════════════════════════════
+  SETUP
+═══════════════════════════════════════════════════*/
+.code-block{
+  background:#02040b;border:1px solid var(--border);border-radius:12px;
+  padding:22px 26px;font-family:'Courier New',monospace;font-size:.82rem;
+  color:var(--text);line-height:2;overflow-x:auto;max-width:700px;margin:0 auto;
+}
+.code-block .comment{color:rgba(111,139,160,.75)}
+.code-block .cmd-text{color:var(--cyan)}
+
+/*═══════════════════════════════════════════════════
+  FOOTER
+═══════════════════════════════════════════════════*/
+footer{border-top:1px solid var(--border);padding:48px 40px;text-align:center;position:relative;z-index:2;background:rgba(3,4,10,.5)}
+.foot-logo{font-family:'Orbitron';font-weight:900;font-size:1.1rem;color:var(--white);letter-spacing:5px;margin-bottom:10px}
+.foot-logo span{color:var(--cyan)}
+.foot-links{margin:12px 0 18px}
+.foot-links a{font-size:.7rem;color:var(--dim);margin:0 14px;text-transform:uppercase;letter-spacing:1.5px}
+.foot-copy{font-size:.66rem;color:rgba(111,139,160,.45)}
+
+/*═══════════════════════════════════════════════════
+  SCROLL REVEAL
+═══════════════════════════════════════════════════*/
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.reveal.vis{opacity:1;transform:translateY(0)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+@keyframes typeLine{to{opacity:1}}
+
+/*═══════════════════════════════════════════════════
+  RESPONSIVE
+═══════════════════════════════════════════════════*/
+@media(max-width:900px){
+  .about-grid{grid-template-columns:1fr}
+  nav{padding:12px 18px}
+  .nav-links a:not(.btn-star){display:none}
+  section{padding:78px 18px 40px}
+  .hero-strip div{border-right:0;border-bottom:1px solid var(--border)}
+  .auto-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div id="dot"></div><div id="ring"></div>
+<!-- Scroll progress -->
+<div id="progress"></div>
+
+<!-- Galaxy + grade -->
+<canvas id="galaxy"></canvas>
+<div id="grade"></div>
+<div id="grain"></div>
+
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav>
+  <div class="logo" onclick="scrollTo({top:0,behavior:'smooth'})"><span>◈</span>OPERO</div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#features">Features</a>
+    <a href="#automations">Automations</a>
+    <a href="#arch">Architecture</a>
+    <a href="#demo">Demo</a>
+    <a href="#setup">Setup</a>
+    <a class="btn-star" href="https://github.com/channallikrishnasai/The-Opero" target="_blank">⭐ GitHub</a>
+  </div>
+</nav>
+
+<!-- ═══════════════ CONTENT ═══════════════ -->
+<div class="content">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge"><span class="live"></span>OPEN‑SOURCE &nbsp;·&nbsp; LOCAL‑FIRST &nbsp;·&nbsp; AUTONOMOUS</div>
+  <h1>OPER<em>O</em></h1>
+  <p>A multi‑modal AI desktop operator that sees your screen, hears your voice, and executes real actions on your own machine — no cloud middleman, no busywork.</p>
+  <div class="hero-btns">
+    <a class="btn-p" href="https://github.com/channallikrishnasai/The-Opero" target="_blank">Get Started</a>
+    <a class="btn-s" href="#features">Explore Features</a>
+  </div>
+
+  <div class="hero-strip">
+    <div><b id="s-tools">12</b>Registered tools</div>
+    <div><b id="s-mods">59</b>Action modules</div>
+    <div><b id="s-flows">6</b>Automations</div>
+    <div><b>on‑device</b>Execution</div>
+  </div>
+  <div class="scroll-hint">scroll</div>
+</section>
+
+<!-- ABOUT -->
+<section id="about" class="reveal">
+  <span class="eyebrow">What it is</span>
+  <h2 class="sec-title">An assistant that finishes the job</h2>
+  <p class="sec-sub">OPERO (Open Personal Execution &amp; Response Operator) doesn't just answer — it acts. Voice in, real side effects out: files written, mail sent, decks built, systems repaired.</p>
+  <div class="about-grid">
+    <div class="about-text">
+      <h3>Results, not answers</h3>
+      <p>Say <strong>"email John the Q3 report"</strong> and OPERO finds the file, attaches it, and sends it — after showing you a confirmation. Every action that touches the outside world is gated on your approval.</p>
+      <h3>Built to run locally</h3>
+      <p>Gemini handles intent; <strong>every action executes on your hardware</strong>. Gmail credentials are encrypted on disk, browser sessions stay on your profile, and nothing is uploaded behind your back.</p>
+      <h3>Self‑healing intelligence</h3>
+      <p>When a module throws, the <strong>Auto‑Heal Engine</strong> captures the traceback, asks the model for a patch, validates it in an AST sandbox, hot‑applies it — or rolls back instantly if the fix looks unsafe.</p>
+    </div>
+    <div class="about-stats">
+      <div class="stat-box"><div class="stat-num" data-target="12">0</div><div class="stat-label">Registered tools</div></div>
+      <div class="stat-box"><div class="stat-num" data-target="59">0</div><div class="stat-label">Action modules</div></div>
+      <div class="stat-box"><div class="stat-num" data-target="100">0</div><div class="stat-label">% on‑device runs</div></div>
+      <div class="stat-box"><div class="stat-num" data-target="0">0</div><div class="stat-label">Clicks required</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="reveal">
+  <span class="eyebrow">Feature inventory</span>
+  <h2 class="sec-title">Everything OPERO can run</h2>
+  <p class="sec-sub">Generated from the module registry, not from a slide deck. <b>Live</b> tools are registered right now; <b>module</b> entries are capability modules that ship in the repository.</p>
+  <div class="chips" id="chips"></div>
+  <div class="feat-grid" id="feat-grid"></div>
+  <p class="inv-note">Source of truth: <code>actions/*.py</code> TOOL declarations &nbsp;·&nbsp; run <code>python main.py</code> and the HUD shows the same registry live.</p>
+</section>
+
+<!-- AUTOMATIONS -->
+<section id="automations" class="reveal">
+  <span class="eyebrow">Multi‑step flows</span>
+  <h2 class="sec-title">Automations</h2>
+  <p class="sec-sub">Chains OPERO walks end‑to‑end — trigger, condition, action, result. The Automation Studio in the HUD draws these same flows, and the galaxy background animates them as step chains.</p>
+  <div class="auto-grid" id="auto-grid"></div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="arch" class="reveal">
+  <span class="eyebrow">Under the hood</span>
+  <h2 class="sec-title">System architecture</h2>
+  <p class="sec-sub">Five layers — input to output — each one observable and extensible.</p>
+  <div class="arch-stack">
+    <div class="arch-layer"><div class="arch-icon">🎙️</div><div><div class="arch-name">Input layer</div><div class="arch-desc">Voice, screen capture, clipboard and file drops unified into one context stream.</div></div></div>
+    <div class="arch-arrow">▼</div>
+    <div class="arch-layer"><div class="arch-icon">🧠</div><div><div class="arch-name">Gemini brain</div><div class="arch-desc">Intent understanding, entity extraction, reasoning and tool selection over a live session.</div></div></div>
+    <div class="arch-arrow">▼</div>
+    <div class="arch-layer"><div class="arch-icon">⚡</div><div><div class="arch-name">Action engine</div><div class="arch-desc">Dispatches to Python modules through a validated registry, with undo journaling and confirmations.</div></div></div>
+    <div class="arch-arrow">▼</div>
+    <div class="arch-layer"><div class="arch-icon">💾</div><div><div class="arch-name">Memory &amp; learning</div><div class="arch-desc">Session memory, persistent learned rules, recovery history and self‑heal patch log.</div></div></div>
+    <div class="arch-arrow">▼</div>
+    <div class="arch-layer"><div class="arch-icon">🖥️</div><div><div class="arch-name">UI &amp; voice output</div><div class="arch-desc">PyQt6 HUD with a WebGL galaxy background, spoken replies, mini‑mode overlay and remote control.</div></div></div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo" class="reveal">
+  <span class="eyebrow">Live trace</span>
+  <h2 class="sec-title">See it in action</h2>
+  <p class="sec-sub">A simulated session showing how a spoken command becomes a real side effect.</p>
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dot" style="background:#ff5f56"></div><div class="term-dot" style="background:#ffbd2e"></div><div class="term-dot" style="background:#27c93f"></div></div>
+    <div class="term-body" id="term"></div>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section id="setup" class="reveal">
+  <span class="eyebrow">Quick start</span>
+  <h2 class="sec-title">Three commands</h2>
+  <p class="sec-sub">Python 3.12+, a Gemini API key, and you're running.</p>
+  <div class="code-block">
+    <span class="comment"># Clone the repository</span><br>
+    <span class="cmd-text">git clone https://github.com/channallikrishnasai/The-Opero.git</span><br>
+    <span class="cmd-text">cd The-Opero</span><br><br>
+    <span class="comment"># Install dependencies</span><br>
+    <span class="cmd-text">pip install -r requirements.txt</span><br><br>
+    <span class="comment"># Add your Gemini API key, then launch</span><br>
+    <span class="cmd-text">python main.py</span>
+  </div>
+</section>
+
+</div><!-- /content -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-logo"><span>◈</span> OPERO</div>
+  <div class="foot-links">
+    <a href="https://github.com/channallikrishnasai/The-Opero" target="_blank">GitHub</a>
+    <a href="https://www.linkedin.com/in/krishna-sai-channalli-4528262b3" target="_blank">LinkedIn</a>
+    <a href="#features">Features</a>
+    <a href="#automations">Automations</a>
+    <a href="#setup">Setup</a>
+  </div>
+  <div class="foot-copy">© 2026 OPERO · MIT License · Made with ❤️ in India</div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     FEATURE + AUTOMATION DATA
+     Source of truth: the registry in actions/*.py and
+     AUTOMATION_FLOWS in ui/overlays.py.
+════════════════════════════════════════════════════ -->
+<script>
+const FEATURES = [
+  /* ── registered tools (load in the live registry today) ── */
+  {n:"file_controller", i:"🗂️", g:"Files", live:1, d:"List, create, move, copy, rename, read, write, find and clean up files and folders — guarded to your own safe roots.",
+   f:"actions/file_controller.py"},
+  {n:"computer_settings", i:"🎛️", g:"Desktop", live:1, d:"Volume, brightness, window management and keyboard shortcuts; types text into any app and closes it again.",
+   f:"actions/computer_settings.py"},
+  {n:"gmail", i:"📧", g:"Connect", live:1, d:"Gmail through OAuth or a 16‑character App Password: search, read, save real drafts, and send only after you confirm.",
+   f:"actions/gmail.py"},
+  {n:"website_builder", i:"🌐", g:"Build", live:1, d:"Writes an original, deploy‑ready static site from a brief into a new OPERO Websites folder.",
+   f:"actions/website_builder.py"},
+  {n:"ppt_builder", i:"📊", g:"Build", live:1, d:"Builds a polished PowerPoint deck from a title and a slide outline.",
+   f:"actions/ppt_builder.py"},
+  {n:"opero_dev_agent", i:"🤖", g:"Build", live:1, d:"Autonomous developer loop: applies code changes, runs builds and tests, reports what actually passed.",
+   f:"actions/opero_dev_agent.py"},
+  {n:"moss_check", i:"🔍", g:"Research", live:1, d:"Submits multi‑language source to Stanford MOSS and returns the similarity matrix plus report URL.",
+   f:"actions/moss_check.py"},
+  {n:"instagram_messaging", i:"💬", g:"Connect", live:1, d:"Lists conversations on a connected Instagram professional account and sends messages after confirmation.",
+   f:"actions/instagram_messaging.py"},
+  {n:"opero_connect", i:"📱", g:"Remote", live:1, d:"Pairs another device, reports link status and acts as the remote execution gateway.",
+   f:"actions/opero_connect.py"},
+  {n:"recovery", i:"♻️", g:"Safety", live:1, d:"Inspects recovery history and restores a recorded local backup after an on‑screen confirmation.",
+   f:"actions/recovery.py"},
+  {n:"task_status", i:"🧾", g:"Safety", live:1, d:"Shows recent action states, results and failures — read‑only, never changes anything.",
+   f:"actions/task_status.py"},
+  {n:"opero_health", i:"🩺", g:"Safety", live:1, d:"Read‑only check of OPERO's configuration and recovery state.",
+   f:"actions/opero_health.py"},
+
+  /* ── capability modules ── */
+  {n:"web_search", i:"🔎", g:"Research", d:"Live web search and news digests with structured extraction and comparison tables.", f:"actions/web_search.py"},
+  {n:"flight_finder", i:"✈️", g:"Research", d:"Searches routes and fares, then ranks options by price and duration.", f:"actions/flight_finder.py"},
+  {n:"system_diagnostics_mcp", i:"🧪", g:"System", d:"On‑demand hardware telemetry and process management — 100% local, no subprocess calls.", f:"actions/system_diagnostics_mcp.py"},
+  {n:"system_manager", i:"📈", g:"System", d:"CPU, RAM, battery and top‑process reporting, plus safe resource actions.", f:"actions/system_manager.py"},
+  {n:"auto_heal_engine", i:"🛡️", g:"System", d:"Traceback capture → patch synthesis → AST sandbox validation → atomic backup → auto‑rollback.", f:"actions/auto_heal_engine.py"},
+  {n:"proactive", i:"💡", g:"System", d:"Context and time aware prompting that decides when speaking up is actually useful.", f:"actions/proactive.py"},
+  {n:"background_monitor", i:"📡", g:"System", d:"Watches system thresholds, crypto prices and site uptime, and speaks an alert when one trips.", f:"actions/background_monitor.py"},
+  {n:"daily_briefing", i:"🌅", g:"System", d:"Morning briefing that gathers calendar, mail, news and weather into one spoken summary.", f:"actions/daily_briefing.py"},
+  {n:"clipboard_processor", i:"📋", g:"Desktop", d:"Instantly reads whatever is on the clipboard and turns it into an action.", f:"actions/clipboard_processor.py"},
+  {n:"desktop_organizer_mcp", i:"🗃️", g:"Files", d:"Classifies and tidies Desktop and Downloads with dry‑run previews before anything moves.", f:"actions/desktop_organizer_mcp.py"},
+  {n:"file_processor", i:"🖼️", g:"Files", d:"Images, OCR, resize, convert and compress — one processor for mixed file types.", f:"actions/file_processor.py"},
+  {n:"docx_tools", i:"📝", g:"Documents", d:"Creates, edits, extracts and summarises Word documents.", f:"actions/docx_tools.py"},
+  {n:"pdf_tools", i:"📄", g:"Documents", d:"Builds publication‑grade PDFs from structured content or markdown, with metadata.", f:"actions/pdf_tools.py"},
+  {n:"office_builder", i:"📑", g:"Documents", d:"Generates PowerPoint decks and Excel workbooks from structured data.", f:"actions/office_builder.py"},
+  {n:"ppt_template_workflow", i:"🎨", g:"Documents", d:"Applies a template's theme to generated slides so decks match an existing brand.", f:"actions/ppt_template_workflow.py"},
+  {n:"screen_processor", i:"👁️", g:"Vision", d:"Sees the screen and camera — describes what's on it and answers questions about it.", f:"actions/screen_processor.py"},
+  {n:"attention_monitor", i:"🎯", g:"Vision", d:"Watches for attention and presence signals and adapts how OPERO interrupts you.", f:"actions/attention_monitor.py"},
+  {n:"calorie_counter", i:"🥗", g:"Vision", d:"Estimates calories and macros from a meal photo taken on the camera.", f:"actions/calorie_counter.py"},
+  {n:"pushup_counter", i:"💪", g:"Vision", d:"Counts reps and tracks posture, pace and burn for bodyweight workouts.", f:"actions/pushup_counter.py"},
+  {n:"spotify_controller", i:"🎵", g:"Media", d:"Playback control, search and playlists through the Spotify Web API, hands‑free.", f:"actions/spotify_controller.py"},
+  {n:"youtube_video", i:"▶️", g:"Media", d:"Finds, queues and controls YouTube playback by voice.", f:"actions/youtube_video.py"},
+  {n:"game_updater", i:"🎮", g:"Media", d:"Checks and applies launcher updates without touching the keyboard.", f:"actions/game_updater.py"},
+  {n:"send_message", i:"📨", g:"Connect", d:"Sends messages through a connected messaging bridge and reports delivery.", f:"actions/send_message.py"},
+  {n:"instagram_chat", i:"📥", g:"Connect", d:"Listens for incoming Instagram DMs and replies using OPERO's own generation.", f:"actions/instagram_chat.py"},
+  {n:"calendar_scheduler", i:"📅", g:"Connect", d:"Creates, lists and edits appointments, and checks what's next.", f:"actions/calendar_scheduler.py"},
+  {n:"reminder", i:"⏰", g:"Connect", d:"Timed spoken reminders that wait for a good moment to interrupt.", f:"actions/reminder.py"},
+  {n:"meeting_assistant", i:"🎧", g:"Connect", d:"Joins the audio of a meeting, takes notes and produces a summary afterwards.", f:"actions/meeting_assistant.py"},
+  {n:"upload_video", i:"📤", g:"Media", d:"Prepares and publishes video across platforms with generated metadata.", f:"actions/upload_video.py"},
+  {n:"open_app", i:"🚀", g:"Desktop", d:"Launches installed applications by name, resolved against the real app paths.", f:"actions/open_app.py"},
+  {n:"mobile_autopilot", i:"📲", g:"Remote", d:"Drives a paired phone for tasks OPERO can't do on the desktop.", f:"actions/mobile_autopilot.py"},
+  {n:"unlock_device", i:"🔓", g:"Remote", d:"Unlocks a paired device on request, gated behind confirmation.", f:"actions/unlock_device.py"},
+  {n:"browser_control", i:"🧭", g:"Build", d:"Automates a real browser session through Playwright for multi‑step web tasks.", f:"actions/browser_control.py"},
+  {n:"code_helper", i:"⌨️", g:"Build", d:"Reads a project, answers questions about it and drafts edits in place.", f:"actions/code_helper.py"},
+  {n:"claude_code_bridge", i:"🌉", g:"Build", d:"Bridges an external coding agent into OPERO's action loop as another executor.", f:"actions/claude_code_bridge.py"},
+  {n:"google_workspace_mcp", i:"🗓️", g:"Connect", d:"Calendar, Drive and Gmail over IMAP/SMTP — the engine behind the Gmail tool.", f:"actions/google_workspace_mcp.py"}
+];
+
+/* Real flows, mirroring AUTOMATION_FLOWS in ui/overlays.py — one source of truth. */
+const FLOWS = [
+  {n:"WhatsApp busy reply", s:[["Trigger","Incoming WhatsApp call"],["Condition","Auto‑answer window is active"],["Action","Answer on the desktop session"],["Voice","Speak your busy message"]]},
+  {n:"Internship application", s:[["Trigger","Resume uploaded"],["Research","Find matching internships"],["Rank","Score the roles and links"],["Action","Fill the known form fields"],["Review","Wait for you before submitting"]]},
+  {n:"Smart reminder", s:[["Trigger","A reminder comes due"],["Condition","You are available to be interrupted"],["Action","Speak it and show the alert"]]},
+  {n:"Desktop command", s:[["Trigger","A voice or text command"],["Plan","Resolve it to an available tool"],["Action","Run the desktop task"],["Result","Report the outcome"]]},
+  {n:"Auto‑heal", s:[["Watch","Background monitor spots a fault"],["Diagnose","Identify the failing component"],["Repair","Apply the safe recovery step"],["Verify","Confirm the system is healthy again"]]},
+  {n:"Daily briefing", s:[["Trigger","First wake or scheduled time"],["Gather","Calendar, mail, news and weather"],["Compose","Rank what matters today"],["Voice","Speak the briefing"]]}
+];
+</script>
+
+<!-- ═══════════════════════════════════════════════════
+     RENDERERS + UI BEHAVIOUR
+════════════════════════════════════════════════════ -->
+<script>
+/* ──── Cursor ──── */
+const dot=document.getElementById('dot'),rng=document.getElementById('ring');
+let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=(mx-3)+'px';dot.style.top=(my-3)+'px'});
+(function cursorLoop(){rx+=(mx-rx)*.16;ry+=(my-ry)*.16;rng.style.left=(rx-16)+'px';rng.style.top=(ry-16)+'px';requestAnimationFrame(cursorLoop)})();
+
+/* ──── Scroll progress ──── */
+const prog=document.getElementById('progress');
+addEventListener('scroll',()=>{prog.style.width=((scrollY/(document.body.scrollHeight-innerHeight))*100)+'%'});
+
+/* ──── Scroll reveal ──── */
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');obs.unobserve(e.target)}})},{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+/* ──── Counters ──── */
+document.querySelectorAll('[data-target]').forEach(el=>{
+  const cObs=new IntersectionObserver(es=>{es.forEach(e=>{
+    if(!e.isIntersecting)return; cObs.unobserve(el);
+    const t=+el.dataset.target, start=performance.now(), dur=1100;
+    (function step(now){const p=Math.min((now-start)/dur,1);el.textContent=Math.round(p*t);if(p<1)requestAnimationFrame(step)})(start);
+  })},{threshold:.5});
+  cObs.observe(el);
+});
+
+/* ──── Feature grid + category filter ──── */
+const GROUPS=[...new Set(FEATURES.map(f=>f.g))];
+let activeGroup='All';
+const chipsEl=document.getElementById('chips'), gridEl=document.getElementById('feat-grid');
+
+function renderFeatures(){
+  const list=activeGroup==='All'?FEATURES:FEATURES.filter(f=>f.g===activeGroup);
+  gridEl.innerHTML=list.map(f=>`
+    <article class="feat-card">
+      <div class="feat-top">
+        <span class="feat-icon">${f.i}</span>
+        <span class="feat-title">${f.n}</span>
+      </div>
+      <p class="feat-desc">${f.d}</p>
+      <div class="feat-meta">
+        <span class="tag ${f.live?'live':'mod'}">${f.live?'live':'module'}</span>
+        <span class="feat-file">${f.f}</span>
+      </div>
+    </article>`).join('');
+  gridEl.querySelectorAll('.feat-card').forEach(c=>{
+    c.addEventListener('mousemove',e=>{
+      const r=c.getBoundingClientRect();
+      c.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');
+      c.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');
+    });
+  });
+}
+chipsEl.innerHTML=['All',...GROUPS].map(g=>{
+  const count=g==='All'?FEATURES.length:FEATURES.filter(f=>f.g===g).length;
+  return `<button class="chip${g===activeGroup?' on':''}" data-g="${g}">${g} ${count}</button>`;
+}).join('');
+chipsEl.addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b)return;
+  activeGroup=b.dataset.g;
+  chipsEl.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b));
+  renderFeatures();
+});
+renderFeatures();
+
+/* ──── Automation chains (steps light up in sequence) ──── */
+const autoEl=document.getElementById('auto-grid');
+autoEl.innerHTML=FLOWS.map(f=>`
+  <article class="auto-card">
+    <div class="auto-head">
+      <span class="auto-name">${f.n}</span>
+      <span class="auto-run">${f.s.length} steps</span>
+    </div>
+    <div class="chain">
+      ${f.s.map(([kind,label])=>`
+        <div class="step">
+          <span class="step-dot"></span>
+          <span><span class="step-kind">${kind}</span><span class="step-label">${label}</span></span>
+        </div>`).join('')}
+    </div>
+  </article>`).join('');
+
+function walk(card){
+  if(card.dataset.walking==='1')return;
+  card.dataset.walking='1';
+  const steps=[...card.querySelectorAll('.step')];
+  steps.forEach((s,i)=>{
+    setTimeout(()=>{s.classList.add('done')},180*i);
+    setTimeout(()=>{s.classList.remove('done')},180*i+2600);
+  });
+  setTimeout(()=>{card.dataset.walking='0'},180*steps.length+2800);
+}
+const autoObs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){walk(e.target);autoObs.unobserve(e.target)}})},{threshold:.4});
+document.querySelectorAll('.auto-card').forEach(c=>{autoObs.observe(c);c.addEventListener('mouseenter',()=>walk(c))});
+
+/* ──── Terminal trace ──── */
+const lines=[
+  {p:'you',c:'"Hey Opero, email John the Q3 report"',type:'cmd'},
+  {p:'',c:'🎙️  Transcribing voice input…',type:'dim'},
+  {p:'',c:'🧠  intent=gmail.send | to=John | attach=Q3_Report.pdf',type:'out'},
+  {p:'',c:'🔐  Confirmation requested — "Send \'Q3 Report\' to John?"',type:'out'},
+  {p:'',c:'✅  Approved · sent (msg_id 18a3f…)',type:'ok'},
+  {p:'opero',c:'"Sent — I\'ve put a copy in your Drafts too."',type:'cmd'},
+  {p:'',c:'',type:'spacer'},
+  {p:'you',c:'"Organize my downloads"',type:'cmd'},
+  {p:'',c:'⚡  file_controller · organize_folder → 151 files sorted into 9 categories',type:'out'},
+  {p:'',c:'✅  Undo journal recorded — say "undo" to reverse it',type:'ok'},
+  {p:'',c:'',type:'spacer'},
+  {p:'you',c:'"What\'s on my screen?"',type:'cmd'},
+  {p:'',c:'👁️  screen_processor · 3 windows, error dialog detected',type:'out'},
+  {p:'opero',c:'"A build failed on line 42 — the module is missing. Want me to patch it?"',type:'cmd'}
+];
+const termEl=document.getElementById('term');
+new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){runTerm();e.target.__done=1}})},{threshold:.3}).observe(termEl);
+function runTerm(){
+  let i=0;
+  (function next(){
+    if(i>=lines.length)return;
+    const l=lines[i], div=document.createElement('div');
+    div.className='term-line';
+    if(l.type==='spacer')div.innerHTML='&nbsp;';
+    else if(l.type==='cmd')div.innerHTML=`<span class="prompt">${l.p} $</span> <span class="cmd">${l.c}</span>`;
+    else if(l.type==='ok')div.innerHTML=`<span class="ok">${l.c}</span>`;
+    else if(l.type==='dim')div.innerHTML=`<span class="dim">${l.c}</span>`;
+    else div.innerHTML=`<span class="out">${l.c}</span>`;
+    termEl.appendChild(div); i++;
+    setTimeout(next, 260);
+  })();
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════
+     THREE.JS – the galaxy
+     Structure borrowed from the app's HUD background:
+     two wound arms of shader stars, dust along the arms,
+     a bright nucleus, a few dim nebula puffs placed off
+     axis, and bloom with a high threshold so only the
+     core and the brightest stars burn. Keep the clear
+     colour near-black — a large soft additive sprite is
+     what turns a dark sky into a purple wash.
+════════════════════════════════════════════════════ -->
+<script src="web_background/three.min.js"></script>
+<script src="web_background/CopyShader.js"></script>
+<script src="web_background/LuminosityHighPassShader.js"></script>
+<script src="web_background/EffectComposer.js"></script>
+<script src="web_background/RenderPass.js"></script>
+<script src="web_background/ShaderPass.js"></script>
+<script src="web_background/UnrealBloomPass.js"></script>
+<script>
+const canvas=document.getElementById('galaxy');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+renderer.setSize(innerWidth,innerHeight);
+renderer.setClearColor(0x03040a,1);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,400);
+camera.position.set(0,3.1,8.6);
+
+let px=0,py=0,tx=0,ty=0;
+addEventListener('mousemove',e=>{tx=(e.clientX/innerWidth)*2-1;ty=-(e.clientY/innerHeight)*2+1});
+const galaxy=new THREE.Group();
+galaxy.rotation.x=-0.62;              // look down on the disc so it reads 3D
+scene.add(galaxy);
+
+/* ── Stars: two wound spiral arms, cool core, violet rim ── */
+(function stars(){
+  const N=26000, g=new THREE.BufferGeometry();
+  const pos=new Float32Array(N*3), col=new Float32Array(N*3), siz=new Float32Array(N), pha=new Float32Array(N);
+  const core=new THREE.Color(0xdff2ff), mid=new THREE.Color(0x8fc2ff), rim=new THREE.Color(0x7f6bd8), hot=new THREE.Color(0xffffff);
+  const c=new THREE.Color();
+  const ARMS=2, WIND=2.15, R=9.4;
+  for(let i=0;i<N;i++){
+    const i3=i*3;
+    const arm=i%ARMS;
+    const t=Math.pow(Math.random(),.62);              // denser toward the core
+    const r=.35+t*R;
+    const spread=.34+.55*t;                           // arms fray as they wind out
+    const a=arm*(Math.PI*2/ARMS)+Math.log(1+r*1.35)*WIND+(Math.random()-.5)*spread;
+    const x=Math.cos(a)*r+(Math.random()-.5)*spread*1.5;
+    const z=Math.sin(a)*r+(Math.random()-.5)*spread*1.5;
+    const disc=.34+.22*(1-t);                         // thin disc, puffier in the middle
+    const y=(Math.random()+Math.random()+Math.random()-1.5)*disc*(1+r*.06);
+    pos[i3]=x; pos[i3+1]=y; pos[i3+2]=z;
+
+    const f=Math.min(1,r/R);
+    if(f<.22)      c.copy(core).lerp(hot,Math.random()*.35);
+    else if(f<.62) c.copy(core).lerp(mid,(f-.22)/.4);
+    else           c.copy(mid).lerp(rim,(f-.62)/.38);
+    c.offsetHSL(0,(Math.random()-.5)*.06,(Math.random()-.5)*.16);
+    if(Math.random()<.012) c.copy(hot);               // a few bright stars
+    col[i3]=c.r; col[i3+1]=c.g; col[i3+2]=c.b;
+
+    siz[i]=Math.random()*Math.random()*4.2+.55;
+    pha[i]=Math.random()*Math.PI*2;
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  g.setAttribute('size',new THREE.BufferAttribute(siz,1));
+  g.setAttribute('phase',new THREE.BufferAttribute(pha,1));
+  const m=new THREE.ShaderMaterial({
+    vertexColors:true, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    uniforms:{uTime:{value:0},uScale:{value:Math.min(innerHeight,900)}},
+    vertexShader:`
+      attribute float size; attribute float phase;
+      varying vec3 vC; varying float vTw;
+      uniform float uTime, uScale;
+      void main(){
+        vC=color;
+        vTw=.68+.32*sin(uTime*1.4+phase);
+        vec4 mv=modelViewMatrix*vec4(position,1.);
+        gl_PointSize=size*uTw*(uScale/max(-mv.z,.001))*.0016*uScale*.09;
+        gl_PointSize=max(gl_PointSize,.6);
+        gl_Position=projectionMatrix*mv;
+      }`,
+    fragmentShader:`
+      varying vec3 vC; varying float vTw;
+      void main(){
+        float d=length(gl_PointCoord-.5)*2.;
+        if(d>1.)discard;
+        float a=(1.-smoothstep(0.,1.,d));
+        gl_FragColor=vec4(vC*a*vTw*.9,a*.75);
+      }`
+  });
+  galaxy.add(new THREE.Points(g,m));
+  galaxy.userData.starMat=m;
+})();
+
+/* ── Dust lanes: violet, very low alpha, hugging the arms ── */
+(function dust(){
+  const N=4200, g=new THREE.BufferGeometry();
+  const pos=new Float32Array(N*3), col=new Float32Array(N*3), siz=new Float32Array(N);
+  const dustA=new THREE.Color(0x4a2f8f), dustB=new THREE.Color(0x22335e);
+  for(let i=0;i<N;i++){
+    const i3=i*3, arm=i%2, r=1.1+Math.random()*8.2;
+    const a=arm*Math.PI+Math.log(1+r*1.35)*2.15+(Math.random()-.5)*.5-.16;
+    pos[i3]=Math.cos(a)*r+(Math.random()-.5)*.7;
+    pos[i3+1]=(Math.random()-.5)*.3;
+    pos[i3+2]=Math.sin(a)*r+(Math.random()-.5)*.7;
+    const c=Math.random()<.5?dustA:dustB;
+    col[i3]=c.r; col[i3+1]=c.g; col[i3+2]=c.b;
+    siz[i]=Math.random()*7+3;
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  g.setAttribute('size',new THREE.BufferAttribute(siz,1));
+  galaxy.add(new THREE.Points(g,new THREE.ShaderMaterial({
+    vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.5,
+    uniforms:{uScale:{value:Math.min(innerHeight,900)}},
+    vertexShader:`attribute float size; varying vec3 vC; uniform float uScale;
+      void main(){vC=color;vec4 mv=modelViewMatrix*vec4(position,1.);
+      gl_PointSize=size*(uScale/max(-mv.z,.001))*.0016*uScale*.09;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`varying vec3 vC;
+      void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(vC,(1.-d)*.10);}`
+  })));
+})();
+
+/* ── Nucleus: the bright core the whole disc orbits ── */
+(function core(){
+  function radial(inner,power){
+    const s=64, cv=document.createElement('canvas'); cv.width=cv.height=s;
+    const ctx=cv.getContext('2d'), img=ctx.createImageData(s,s);
+    for(let y=0;y<s;y++)for(let x=0;x<s;x++){
+      const dx=(x-s/2)/(s/2), dy=(y-s/2)/(s/2);
+      const d=Math.min(1,Math.hypot(dx,dy));
+      const a=Math.pow(Math.max(0,1-d),power);
+      const i=(y*s+x)*4;
+      img.data[i]=255; img.data[i+1]=255; img.data[i+2]=255;
+      img.data[i+3]=Math.round(a*255*(d<inner?1:1));
+    }
+    ctx.putImageData(img,0,0);
+    const t=new THREE.CanvasTexture(cv); t.needsUpdate=true; return t;
+  }
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:radial(0,3.2), color:0xbfe4ff, transparent:true, blending:THREE.AdditiveBlending,
+    depthWrite:false, depthTest:false, opacity:.85
+  }));
+  glow.scale.set(5.6,5.6,1);
+  scene.add(glow);
+
+  const core2=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:radial(0,1.6), color:0xffffff, transparent:true, blending:THREE.AdditiveBlending,
+    depthWrite:false, depthTest:false, opacity:.9
+  }));
+  core2.scale.set(1.5,1.5,1);
+  scene.add(core2);
+
+  const halo=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:radial(0,5), color:0x6d5bd0, transparent:true, blending:THREE.AdditiveBlending,
+    depthWrite:false, depthTest:false, opacity:.22
+  }));
+  halo.scale.set(13,13,1);
+  scene.add(halo);
+  scene.userData.pulse=[glow,core2];
+})();
+
+/* ── Nebula puffs: only a handful, only at low alpha ── */
+(function nebula(){
+  const s=128, cv=document.createElement('canvas'); cv.width=cv.height=s;
+  const ctx=cv.getContext('2d');
+  for(let i=0;i<900;i++){
+    const a=Math.random()*Math.PI*2, r=Math.pow(Math.random(),.6)*s/2;
+    const x=s/2+Math.cos(a)*r, y=s/2+Math.sin(a)*r*.72;
+    const g=ctx.createRadialGradient(x,y,0,x,y,Math.random()*10+7);
+    g.addColorStop(0,'rgba(255,255,255,.055)');
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,12,0,Math.PI*2); ctx.fill();
+  }
+  const tex=new THREE.CanvasTexture(cv);
+  const cols=[0x3f6bd8,0x7a49c9,0x2a86c9];
+  for(let i=0;i<11;i++){
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({
+      map:tex, color:cols[i%cols.length], transparent:true,
+      blending:THREE.AdditiveBlending, depthWrite:false, opacity:.055
+    }));
+    const a=Math.random()*Math.PI*2, r=4+Math.random()*6;
+    sp.position.set(Math.cos(a)*r,(Math.random()-.5)*2.4,Math.sin(a)*r);
+    sp.scale.setScalar(5+Math.random()*7);
+    galaxy.add(sp);
+  }
+})();
+
+/* ── Halo stars far behind the disc ── */
+(function haloStars(){
+  const N=1400, g=new THREE.BufferGeometry();
+  const pos=new Float32Array(N*3), col=new Float32Array(N*3), siz=new Float32Array(N);
+  const c=new THREE.Color();
+  for(let i=0;i<N;i++){
+    const i3=i*3, r=11+Math.random()*30, a=Math.random()*Math.PI*2, e=(Math.random()-.5)*1.4;
+    pos[i3]=Math.cos(a)*r*Math.cos(e); pos[i3+1]=Math.sin(e)*r*.7; pos[i3+2]=Math.sin(a)*r*Math.cos(e);
+    c.setHSL(.55+Math.random()*.1,.5,.55+Math.random()*.35);
+    col[i3]=c.r; col[i3+1]=c.g; col[i3+2]=c.b;
+    siz[i]=Math.random()*1.6+.3;
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  g.setAttribute('size',new THREE.BufferAttribute(siz,1));
+  galaxy.add(new THREE.Points(g,new THREE.ShaderMaterial({
+    vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+    uniforms:{uScale:{value:Math.min(innerHeight,900)}},
+    vertexShader:`attribute float size;varying vec3 vC;uniform float uScale;
+      void main(){vC=color;vec4 mv=modelViewMatrix*vec4(position,1.);
+      gl_PointSize=size*(uScale/max(-mv.z,.001))*.0016*uScale*.09;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`varying vec3 vC;
+      void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(vC,(1.-d)*.65);}`
+  })));
+})();
+
+/* ── Bloom: high threshold, low strength — only the core burns ── */
+let composer=null;
+try{
+  composer=new THREE.EffectComposer(renderer);
+  composer.addPass(new THREE.RenderPass(scene,camera));
+  const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.52,.62,.72);
+  composer.addPass(bloom);
+}catch(e){ composer=null; }
+
+const clock=new THREE.Clock();
+let fps=60, last=performance.now(), quality=1;
+(function loop(){
+  requestAnimationFrame(loop);
+  const now=performance.now(), dt=now-last; last=now;
+  const t=clock.getElapsedTime();
+
+  if(galaxy.userData.starMat) galaxy.userData.starMat.uniforms.uTime.value=t;
+
+  px+=(tx-px)*.03; py+=(ty-py)*.03;
+  galaxy.rotation.y=t*.012+px*.16;
+  galaxy.rotation.z=py*.05;
+  camera.position.x+=(px*1.1-camera.position.x)*.02;
+  camera.position.y+=(3.1+py*.8-camera.position.y)*.02;
+  camera.lookAt(0,0,0);
+
+  (scene.userData.pulse||[]).forEach((s,i)=>{
+    const k=1+Math.sin(t*(1.1+i*.4))*.03;
+    s.scale.setScalar((i===0?5.6:i===1?1.5:1)*k);
+  });
+
+  if(composer) composer.render(dt); else renderer.render(scene,camera);
+
+  // Adaptive: drop the post pass if the frame budget slips.
+  fps=fps*.93+(1000/Math.max(dt,1))*.07;
+  if(quality===1 && fps<24){ quality=0; composer=null; }
+})();
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  if(composer) composer.setSize(innerWidth,innerHeight);
+});
+
+/* Small debug hook, mirrors the app background's stats() */
+window.__operoSite={stats:()=>({fps:Math.round(fps),post:!!composer,stars:26000,features:FEATURES.length,flows:FLOWS.length})};
+</script>
+</body>
+</html>

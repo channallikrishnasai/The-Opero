@@ -1,6 +1,7 @@
 import os
 import shutil
 import platform
+from functools import lru_cache
 from pathlib import Path
 from datetime import datetime
 
@@ -11,9 +12,6 @@ except ImportError:
     _SEND2TRASH = False
 
 from core.undo import push_undo
-
-from core.logger import get_logger
-log = get_logger(__name__)
 
 _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
 
@@ -88,14 +86,69 @@ def _restore_from_trash(original: Path) -> str:
                         item.InvokeVerb("UNDELETE")
                         return f"'{original.name}' restored from the Recycle Bin."
         except Exception as e:
-            log.error(f"[file] Recycle Bin restore failed: {e}")
+            print(f"[file] Recycle Bin restore failed: {e}")
     return (f"'{original.name}' is in the Recycle Bin — I could not pull it back "
             f"automatically, but it is there and can be restored by hand.")
 
 
-_SAFE_ROOTS: list[Path] = [
-    Path.home(),
-]
+# The shell moves the standard folders: with OneDrive backup on, "Documents" is
+# redirected to %USERPROFILE%\OneDrive\Documents while the old
+# %USERPROFILE%\Documents lingers (and is usually empty). Path.home()/"Documents"
+# therefore writes somewhere the user cannot find, so ask the shell where these
+# folders actually are. GUID = FOLDERID_*, XDG = the Linux equivalent.
+_KNOWN_FOLDERS: dict[str, tuple[str, str, str]] = {
+    "desktop":   ("B4BFCC3A-DB2C-424C-B029-7FE99A87C641", "Desktop",   "XDG_DESKTOP_DIR"),
+    "downloads": ("374DE290-123F-4565-9164-39C4925E467B", "Downloads", "XDG_DOWNLOAD_DIR"),
+    "documents": ("FDD39AD0-238F-46AF-ADB4-6C85480369C7", "Documents", "XDG_DOCUMENTS_DIR"),
+    "pictures":  ("33E28130-4E1E-4676-835A-98395C3BC3BB", "Pictures",  "XDG_PICTURES_DIR"),
+    "music":     ("4BD8D571-6D19-48D3-BE97-422220080E43", "Music",     "XDG_MUSIC_DIR"),
+    "videos":    ("18989B1D-99B5-455B-841C-AB7C74E4DDFC", "Videos",    "XDG_VIDEOS_DIR"),
+}
+
+
+def _windows_known_folder(guid: str):
+    """Ask Windows for a standard folder's real location (None if unavailable)."""
+    try:
+        import ctypes
+        from uuid import UUID
+
+        class _GUID(ctypes.Structure):
+            _fields_ = [("Data1", ctypes.c_ulong), ("Data2", ctypes.c_ushort),
+                        ("Data3", ctypes.c_ushort), ("Data4", ctypes.c_ubyte * 8)]
+
+        u = UUID(guid)
+        g = _GUID(u.time_low, u.time_mid, u.time_hi_version,
+                  (ctypes.c_ubyte * 8)(*u.bytes[8:]))
+        out = ctypes.c_wchar_p()
+        if ctypes.windll.shell32.SHGetKnownFolderPath(
+                ctypes.byref(g), 0, None, ctypes.byref(out)) != 0 or not out.value:
+            return None
+        try:
+            return Path(out.value)
+        finally:
+            ctypes.windll.ole32.CoTaskMemFree(out)
+    except Exception:
+        return None
+
+
+@lru_cache(maxsize=None)
+def _standard_folder(key: str) -> Path:
+    """Resolve one standard folder the way the user's file manager reports it."""
+    guid, fallback, xdg_var = _KNOWN_FOLDERS[key]
+    if _OS == "Windows":
+        found = _windows_known_folder(guid)
+        if found and found.is_dir():
+            return found
+    elif _OS == "Linux":
+        xdg = os.environ.get(xdg_var, "").strip()
+        if xdg and Path(xdg).is_dir():
+            return Path(xdg)
+    return Path.home() / fallback
+
+
+# Every standard folder is also a place the user's own files legitimately live,
+# so they stay writable even when OneDrive puts them on another drive.
+_SAFE_ROOTS: list[Path] = [Path.home()] + [_standard_folder(k) for k in _KNOWN_FOLDERS]
 
 def _is_safe_path(target: Path) -> bool:
     """Is the given path inside _SAFE_ROOTS? If not, reject the operation."""
@@ -109,46 +162,22 @@ def _is_safe_path(target: Path) -> bool:
         return False
 
 def _get_desktop() -> Path:
-    if _OS == "Linux":
-        xdg = os.environ.get("XDG_DESKTOP_DIR", "")
-        if xdg and Path(xdg).exists():
-            return Path(xdg)
-    return Path.home() / "Desktop"
+    return _standard_folder("desktop")
 
 def _get_downloads() -> Path:
-    if _OS == "Linux":
-        xdg = os.environ.get("XDG_DOWNLOAD_DIR", "")
-        if xdg and Path(xdg).exists():
-            return Path(xdg)
-    return Path.home() / "Downloads"
+    return _standard_folder("downloads")
 
 def _get_documents() -> Path:
-    if _OS == "Linux":
-        xdg = os.environ.get("XDG_DOCUMENTS_DIR", "")
-        if xdg and Path(xdg).exists():
-            return Path(xdg)
-    return Path.home() / "Documents"
+    return _standard_folder("documents")
 
 def _get_pictures() -> Path:
-    if _OS == "Linux":
-        xdg = os.environ.get("XDG_PICTURES_DIR", "")
-        if xdg and Path(xdg).exists():
-            return Path(xdg)
-    return Path.home() / "Pictures"
+    return _standard_folder("pictures")
 
 def _get_music() -> Path:
-    if _OS == "Linux":
-        xdg = os.environ.get("XDG_MUSIC_DIR", "")
-        if xdg and Path(xdg).exists():
-            return Path(xdg)
-    return Path.home() / "Music"
+    return _standard_folder("music")
 
 def _get_videos() -> Path:
-    if _OS == "Linux":
-        xdg = os.environ.get("XDG_VIDEOS_DIR", "")
-        if xdg and Path(xdg).exists():
-            return Path(xdg)
-    return Path.home() / "Videos"
+    return _standard_folder("videos")
 
 
 def _resolve_path(raw: str) -> Path:
@@ -177,7 +206,36 @@ def _resolve_path(raw: str) -> Path:
         rest = rest.strip("/")
         return shortcuts[head.lower()] / rest if rest else shortcuts[head.lower()]
 
-    return Path(raw).expanduser()
+    return _follow_known_folder(Path(raw).expanduser())
+
+
+def _follow_known_folder(target: Path) -> Path:
+    """Re-home <home>/Documents (etc.) onto the folder the shell actually shows.
+
+    The model usually asks for "~/Documents/notes.md" rather than the bare
+    shortcut, and that spelling never reached the shortcut table above: with
+    OneDrive backup on, Windows keeps the old %USERPROFILE%\\Documents around as
+    an empty leftover while the real folder moves under OneDrive\\Documents, so
+    the write succeeds into a folder the user cannot find. Rewrite the standard
+    folder component to the shell's answer so "says created" means "is here".
+    """
+    try:
+        home = Path.home()
+        if not target.is_absolute() or not target.is_relative_to(home):
+            return target
+        parts = target.parts[len(home.parts):]
+        if not parts:
+            return target
+        for key, (_guid, fallback, _xdg) in _KNOWN_FOLDERS.items():
+            if parts[0].lower() != fallback.lower():
+                continue
+            real = _standard_folder(key)
+            if os.path.normcase(str(real)) == os.path.normcase(str(home / fallback)):
+                return target          # not redirected — leave the user's path alone
+            return real.joinpath(*parts[1:]) if len(parts) > 1 else real
+        return target
+    except Exception:
+        return target
 
 def _format_size(b: int) -> str:
     for unit in ["B", "KB", "MB", "GB", "TB"]:
@@ -246,7 +304,9 @@ def create_file(path: str, name: str = "", content: str = "") -> str:
         target.write_text(content, encoding="utf-8")
         push_undo(f"created {target.name}",
                   _undo_write(target, previous) if existed else _undo_create(target))
-        return f"File created: {target.name}"
+        # Report the real location: "file created" with no path is how a file in a
+        # redirected (OneDrive) Documents folder reads as "there is no file".
+        return f"File created: {target}"
     except Exception as e:
         return f"Could not create file: {e}"
 
@@ -264,7 +324,7 @@ def create_folder(path: str, name: str = "") -> str:
         # directory the user has had for years.
         if not already:
             push_undo(f"created folder {target.name}", _undo_create(target))
-        return f"Folder created: {target.name}"
+        return f"Folder created: {target}"
     except Exception as e:
         return f"Could not create folder: {e}"
 
@@ -541,87 +601,15 @@ def get_disk_usage(path: str = "home") -> str:
         return f"Could not get disk usage: {e}"
 
 
-def organize_desktop() -> str:
-    type_map = {
-        "Images":    {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".ico", ".heic"},
-        "Documents": {".pdf", ".doc", ".docx", ".txt", ".xls", ".xlsx",
-                      ".ppt", ".pptx", ".csv", ".odt", ".ods", ".odp"},
-        "Videos":    {".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".m4v"},
-        "Music":     {".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a"},
-        "Archives":  {".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz"},
-        "Code":      {".py", ".js", ".ts", ".html", ".css", ".json", ".xml",
-                      ".cpp", ".java", ".cs", ".go", ".rs", ".sh"},
-    }
+def organize_desktop(mode: str = "by_type") -> str:
+    from actions.desktop_organizer_mcp import get_organizer_engine
+    return get_organizer_engine().organize(target="desktop", mode=mode)
 
-    desktop = _get_desktop()
-    moved, skipped = [], []
-    journal: list[tuple[Path, Path]] = []   # (where it was, where it went)
 
-    try:
-        for item in desktop.iterdir():
-            # Leave folders, hidden files and organize-folders untouched
-            if item.is_dir() or item.name.startswith("."):
-                continue
-            if item.name in {k for k in type_map}:
-                continue
-
-            ext        = item.suffix.lower()
-            target_dir = desktop / "Others"
-            for folder, exts in type_map.items():
-                if ext in exts:
-                    target_dir = desktop / folder
-                    break
-
-            target_dir.mkdir(exist_ok=True)
-            new_path = target_dir / item.name
-
-            if new_path.exists():
-                skipped.append(item.name)
-                continue
-
-            origin = item.resolve()
-            shutil.move(str(item), str(new_path))
-            journal.append((origin, new_path.resolve()))
-            moved.append(f"{item.name} → {target_dir.name}/")
-
-        # One command, dozens of moves — so one undo that reverses all of them.
-        # Without this, "organize my desktop" is the single least reversible
-        # thing the assistant can do to a person's files, and it was completely
-        # ungated.
-        if journal:
-            def _undo_organize(entries=tuple(journal)):
-                restored = 0
-                for origin, moved_to in entries:
-                    try:
-                        if moved_to.exists():
-                            origin.parent.mkdir(parents=True, exist_ok=True)
-                            shutil.move(str(moved_to), str(origin))
-                            restored += 1
-                    except Exception as e:
-                        log.info(f"[file] undo organize: {moved_to.name}: {e}")
-                # Clear away the folders we created, but only while they are
-                # empty — anything the user put in since stays.
-                for folder in {m.parent for _o, m in entries}:
-                    try:
-                        if folder.exists() and folder.is_dir() and not any(folder.iterdir()):
-                            folder.rmdir()
-                    except Exception as e:
-                        log.debug("%s", e)
-                return f"{restored} file(s) put back on the desktop."
-            push_undo(f"organized the desktop ({len(journal)} files)", _undo_organize)
-
-        result = f"Desktop organized: {len(moved)} files moved."
-        if moved:
-            preview = moved[:8]
-            result += "\n" + "\n".join(preview)
-            if len(moved) > 8:
-                result += f"\n... and {len(moved) - 8} more."
-        if skipped:
-            result += f"\n{len(skipped)} file(s) skipped (name conflict)."
-        return result
-
-    except Exception as e:
-        return f"Could not organize desktop: {e}"
+def organize_folder(folder_path: str, mode: str = "by_type") -> str:
+    from actions.desktop_organizer_mcp import get_organizer_engine
+    target = folder_path or "downloads"
+    return get_organizer_engine().organize(target=target, mode=mode)
 
 
 def get_file_info(path: str, name: str = "") -> str:
@@ -712,7 +700,22 @@ def file_controller(
             return get_disk_usage(path)
 
         elif action == "organize_desktop":
-            return organize_desktop()
+            return organize_desktop(mode=params.get("mode", "by_type"))
+
+        elif action in ("organize_folder", "organize"):
+            return organize_folder(path or params.get("folder", ""), mode=params.get("mode", "by_type"))
+
+        elif action in ("preview_organize", "organize_preview", "preview"):
+            from actions.desktop_organizer_mcp import get_organizer_engine
+            return get_organizer_engine().preview(target=path or "desktop", mode=params.get("mode", "by_type"))
+
+        elif action in ("undo_organize", "organize_undo", "undo"):
+            from actions.desktop_organizer_mcp import get_organizer_engine
+            return get_organizer_engine().undo()
+
+        elif action in ("find_duplicates", "duplicates", "dupes"):
+            from actions.desktop_organizer_mcp import get_organizer_engine
+            return get_organizer_engine().find_duplicates(target=path or "downloads")
 
         elif action == "info":
             return get_file_info(path, name=name)
@@ -733,7 +736,7 @@ TOOL = {
         "properties": {
             "action": {
                 "type": "STRING",
-                "description": "list | create_file | create_folder | delete | move | copy | rename | read | write | find | largest | disk_usage | organize_desktop | info"
+                "description": "list | create_file | create_folder | delete | move | copy | rename | read | write | find | largest | disk_usage | organize_desktop | organize_folder | preview_organize | undo_organize | find_duplicates | info"
             },
             "path": {
                 "type": "STRING",

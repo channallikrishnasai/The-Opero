@@ -35,11 +35,12 @@ from ui.theme import (
 from ui.widgets import (
     HudCanvas, MetricBar, LogWidget, FileDropZone, _CameraPreview,
     ClipboardPanel, _metrics, file_category, fmt_size, _FILE_ICONS,
+    WebGLBackground,
 )
 from ui.overlays import (
     SetupOverlay, CustomizeOverlay, AudioDeviceOverlay, MemoryOverlay,
     APIKeysOverlay, WhatsAppPairingOverlay, PluginManagerOverlay,
-    PluginSettingsOverlay, MiniModeWidget, RemoteKeyOverlay,
+    PluginSettingsOverlay, IntegrationOverlay, MiniModeWidget, RemoteKeyOverlay,
     ConfirmBanner, IncomingCallBanner, AutomationStudioOverlay,
     BASE_DIR, CONFIG_DIR, API_FILE,
 )
@@ -97,6 +98,7 @@ class MainWindow(QMainWindow):
     _incoming_call_sig = pyqtSignal(object, object, object)  # call, answer callback, decline callback
     _call_ended_sig = pyqtSignal()
     _whatsapp_qr_sig = pyqtSignal(str)
+    _bg_sig         = pyqtSignal(str, object)  # 3D background update: (kind, payload)
 
     def __init__(self, face_path: str):
         super().__init__()
@@ -168,6 +170,12 @@ class MainWindow(QMainWindow):
         # Center column: HUD + resizable content panel via QSplitter
         self.hud = HudCanvas(face_path, _display)
         self.hud.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        # 3D WebGL galaxy/orb background — placed behind the HUD
+        _bg_html = _base_dir() / "site" / "web_background" / "index.html"
+        self._webgl_bg = WebGLBackground(str(_bg_html))
+        self._webgl_bg.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._content_panel = self._build_content_panel()
         self._quiz_panel = self._build_quiz_panel()
 
@@ -205,9 +213,33 @@ class MainWindow(QMainWindow):
         )
         _cam_v.addWidget(self._cam_live_lbl, stretch=1)
 
-        # Stack: 0 = animated HUD, 1 = live camera
+        # Wrap the 3D WebGL background + HUD in a stacked container
+        _hud_wrapper = QWidget()
+        _hud_wrapper.setStyleSheet("background: transparent;")
+        _hud_wrapper_layout = QVBoxLayout(_hud_wrapper)
+        _hud_wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        _hud_wrapper_layout.setSpacing(0)
+
+        if self._webgl_bg is not None:
+            # Use a QStackedWidget-like approach: put the 3D layer first
+            # then overlay the HUD canvas on top using absolute geometry.
+            # We achieve this with a simple stacked layout via QStackedWidget
+            # placed in a wrapper with a QWidget overlay.
+            from PyQt6.QtWidgets import QStackedLayout
+            _inner_stack = QWidget()
+            _inner_stack_layout = QStackedLayout(_inner_stack)
+            _inner_stack_layout.setStackingMode(
+                QStackedLayout.StackingMode.StackAll)
+            _inner_stack_layout.addWidget(self._webgl_bg)
+            _inner_stack_layout.addWidget(self.hud)
+            _inner_stack_layout.setCurrentIndex(1)
+            _hud_wrapper_layout.addWidget(_inner_stack)
+        else:
+            _hud_wrapper_layout.addWidget(self.hud)
+
+        # Stack: 0 = animated HUD (with optional 3D bg), 1 = live camera
         self._hud_cam_stack = QStackedWidget()
-        self._hud_cam_stack.addWidget(self.hud)
+        self._hud_cam_stack.addWidget(_hud_wrapper)
         self._hud_cam_stack.addWidget(_cam_cont)
 
         self._center_split = QSplitter(Qt.Orientation.Vertical)
@@ -261,6 +293,15 @@ class MainWindow(QMainWindow):
         self._incoming_call_sig.connect(self._show_incoming_call)
         self._call_ended_sig.connect(self._hide_incoming_call)
         self._whatsapp_qr_sig.connect(self._show_whatsapp_qr)
+        self._bg_sig.connect(self._on_background_update)
+        # The automation map is known at import time. Pushing it here (after the
+        # connection) works even though the background page is still loading: the
+        # widget replays whatever it received once the page is up.
+        try:
+            from ui.overlays import automation_payload
+            self.set_background_automations(automation_payload())
+        except Exception as exc:
+            log.debug("Automation map unavailable for the 3D background: %s", exc)
         self._cam_stream_sig.connect(self._on_cam_stream)
         self._cam_frame_sig.connect(self._on_cam_frame)
         self._clipboard_sig.connect(self._show_clipboard_panel)
@@ -1268,6 +1309,13 @@ class MainWindow(QMainWindow):
         settings_btn.clicked.connect(self._open_plugin_settings)
         lay.addWidget(settings_btn)
 
+        integrations_btn = QPushButton("🔗  LINK ACCOUNTS")
+        integrations_btn.setFixedHeight(28)
+        integrations_btn.setFont(QFont("Segoe UI", 7))
+        integrations_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        integrations_btn.setStyleSheet(_BTN_STYLE_DIM)
+        integrations_btn.clicked.connect(self._open_integrations)
+        lay.addWidget(integrations_btn)
         wa_btn = QPushButton("💬  LINK WHATSAPP")
         wa_btn.setFixedHeight(28)
         wa_btn.setFont(QFont("Segoe UI", 7))
@@ -2491,19 +2539,30 @@ class MainWindow(QMainWindow):
         self._whatsapp_qr_overlay = ov
 
     def _refresh_whatsapp_qr(self):
-        """Ask the bridge for a fresh WhatsApp pairing QR code."""
-        from whatsapp_call import BRIDGE_URL
-        import requests, threading
+        """Ask the bridge for a fresh WhatsApp pairing QR code.
+
+        This button is the one place a user can recover a bridge that died, so
+        it starts the bridge first instead of reporting a refused connection.
+        """
         def _bg():
             try:
-                resp = requests.post(f"{BRIDGE_URL}/qr/refresh", timeout=10)
-                if resp.json().get("ok"):
-                    self._log.append_log("WA: New QR requested — scan when it appears.")
+                from whatsapp_call import get_call_manager
+                mgr = get_call_manager(
+                    log_fn=lambda msg: self._log_sig.emit(f"WA CALL: {msg}")
+                )
+                if not mgr.ensure_running():
+                    self._log_sig.emit(
+                        "WA: WhatsApp bridge unavailable — install Node.js, then run "
+                        "cd whatsapp_bridge && npm install"
+                    )
+                    return
+                if mgr.refresh_qr():
+                    self._log_sig.emit("WA: New QR requested — scan when it appears.")
                 else:
-                    self._log.append_log("WA: Bridge rejected refresh.")
+                    self._log_sig.emit("WA: Bridge could not produce a QR — see the WA CALL lines above.")
             except Exception as e:
-                self._log.append_log(f"WA: Bridge unreachable ({e}).")
-        threading.Thread(target=_bg, daemon=True).start()
+                self._log_sig.emit(f"WA: WhatsApp bridge unavailable ({type(e).__name__}).")
+        threading.Thread(target=_bg, daemon=True, name="wa-qr-refresh").start()
 
     def _on_confirm_answered(self, accepted: bool):
         # Tear the banner down first: core.confirm.resolve() may be about to
@@ -2545,6 +2604,35 @@ class MainWindow(QMainWindow):
         ov.raise_()
         self._plugin_settings_overlay = ov   # keep a reference so it isn't GC'd
 
+
+    def _open_integrations(self):
+        """Open official OAuth / Meta setup controls without collecting passwords."""
+        def connect_gmail():
+            def worker():
+                try:
+                    from actions.gmail import execute
+                    result = execute({"action": "connect"})
+                    self._log_sig.emit(f"SYS: {result}")
+                except Exception as exc:
+                    self._log_sig.emit(f"ERR: Gmail connection failed — {exc}")
+            threading.Thread(target=worker, daemon=True, name="gmail-oauth").start()
+
+        def connect_gmail_apppass(email: str, password: str) -> str:
+            """Gmail address + App Password: verified over IMAP, no OAuth window."""
+            from actions.gmail import execute
+            result = execute({"action": "connect_app_passcode", "email": email, "password": password})
+            self._log_sig.emit(f"SYS: {result}")
+            return result
+
+        cw = self.centralWidget()
+        ov = IntegrationOverlay(connect_gmail=connect_gmail,
+                               connect_gmail_apppass=connect_gmail_apppass, parent=cw)
+        ov.adjustSize()
+        ow, oh = IntegrationOverlay._OW, min(620, cw.height() - 16)
+        ov.setGeometry((cw.width() - ow) // 2, (cw.height() - oh) // 2, ow, oh)
+        ov.show()
+        ov.raise_()
+        self._integrations_overlay = ov
     # ── Clipboard intelligence ───────────────────────────────────────────────────
 
     def _on_clipboard_changed(self):
@@ -2619,6 +2707,44 @@ class MainWindow(QMainWindow):
     def _apply_state(self, state: str):
         self.hud.state    = state
         self.hud.speaking = (state == "SPEAKING")
+        bg = getattr(self, "_webgl_bg", None)
+        if bg is not None:
+            bg.set_state(state)
+
+    # ── 3D background data ────────────────────────────────────────────────
+
+    def _on_background_update(self, kind: str, payload: object) -> None:
+        """Qt-thread side of the background API — everything above is thread-safe."""
+        bg = getattr(self, "_webgl_bg", None)
+        if bg is None:
+            return
+        if kind == "features":
+            bg.set_features(payload)
+        elif kind == "active_feature":
+            bg.set_active_feature(str(payload or ""))
+        elif kind == "automations":
+            bg.set_automations(payload)
+        elif kind == "active_automation":
+            data = payload if isinstance(payload, dict) else {}
+            bg.set_active_automation(str(data.get("name", "")), int(data.get("step", -1)))
+        elif kind == "stats":
+            bg.set_system_stats(payload if isinstance(payload, dict) else {})
+
+    def set_background_features(self, features) -> None:
+        """Show the assistant's feature list as galaxy nodes (any thread)."""
+        self._bg_sig.emit("features", list(features or []))
+
+    def set_background_active_feature(self, name: str) -> None:
+        """Flash the node of a feature that just ran (any thread)."""
+        self._bg_sig.emit("active_feature", str(name or ""))
+
+    def set_background_automations(self, automations) -> None:
+        """Draw automations as step chains (any thread)."""
+        self._bg_sig.emit("automations", list(automations or []))
+
+    def set_background_active_automation(self, name: str, step: int = -1) -> None:
+        """Animate a running automation (any thread)."""
+        self._bg_sig.emit("active_automation", {"name": str(name or ""), "step": int(step)})
 
     def _check_config(self) -> bool:
         if not API_FILE.exists(): return False

@@ -24,9 +24,6 @@ except ImportError:
 from core import confirm
 from core.undo import push_undo
 
-from core.logger import get_logger
-log = get_logger(__name__)
-
 _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
 
 if _OS == "Windows":
@@ -57,8 +54,8 @@ def _get_macos_wifi_interface() -> str:
                 for j in range(i, min(i + 4, len(lines))):
                     if lines[j].startswith("Device:"):
                         return lines[j].split(":", 1)[1].strip()
-    except Exception as e:
-        log.debug("%s", e)
+    except Exception:
+        pass
     return "en0" 
 
 def volume_up():
@@ -142,8 +139,8 @@ def brightness_get() -> int | None:
             mx  = int(subprocess.run(["brightnessctl", "max"],
                                      capture_output=True, text=True, timeout=5).stdout.strip())
             return max(0, min(100, round(cur * 100 / mx))) if mx else None
-    except Exception as e:
-        log.debug("%s", e)
+    except Exception:
+        pass
     return None
 
 
@@ -177,7 +174,7 @@ def volume_set(value: int):
             vol.SetMasterVolumeLevel(vol_db, None)
             return
         except Exception as e:
-            log.error(f"[Settings] pycaw failed, using keypress fallback: {e}")
+            print(f"[Settings] pycaw failed, using keypress fallback: {e}")
             pyautogui.press("volumemute")
             pyautogui.press("volumemute")
     elif _OS == "Darwin":
@@ -216,7 +213,7 @@ def brightness_up():
                 capture_output=True, timeout=5, **_WIN_HIDE
             )
         except Exception as e:
-            log.error(f"[Settings] Brightness up failed on Windows: {e}")
+            print(f"[Settings] Brightness up failed on Windows: {e}")
 
 def brightness_down():
     if _OS == "Darwin":
@@ -245,7 +242,7 @@ def brightness_down():
                 capture_output=True, timeout=5, **_WIN_HIDE
             )
         except Exception as e:
-            log.error(f"[Settings] Brightness down failed on Windows: {e}")
+            print(f"[Settings] Brightness down failed on Windows: {e}")
 
 def close_app():
     if _OS == "Darwin": pyautogui.hotkey("command", "q")
@@ -285,15 +282,15 @@ def snap_left():
         # macOS has no built-in snap; try Rectangle app shortcut if installed
         try:
             subprocess.run(["open", "-a", "Rectangle"], capture_output=True, timeout=1)
-        except Exception as e:
-            log.debug("%s", e)
+        except Exception:
+            pass
         pyautogui.hotkey("ctrl", "option", "left")
     else:  # Linux
         try:
             subprocess.run(["wmctrl", "-r", ":ACTIVE:", "-e", "0,0,0,960,1080"],
                 capture_output=True)
-        except Exception as e:
-            log.debug("%s", e)
+        except Exception:
+            pass
 
 def snap_right():
     if _OS == "Windows":
@@ -301,15 +298,15 @@ def snap_right():
     elif _OS == "Darwin":
         try:
             subprocess.run(["open", "-a", "Rectangle"], capture_output=True, timeout=1)
-        except Exception as e:
-            log.debug("%s", e)
+        except Exception:
+            pass
         pyautogui.hotkey("ctrl", "option", "right")
     else:  # Linux
         try:
             subprocess.run(["wmctrl", "-r", ":ACTIVE:", "-e", "0,960,0,960,1080"],
                 capture_output=True)
-        except Exception as e:
-            log.debug("%s", e)
+        except Exception:
+            pass
 
 def switch_window():
     if _OS == "Darwin": pyautogui.hotkey("command", "tab")
@@ -504,7 +501,7 @@ def sleep_display():
             import ctypes
             ctypes.windll.user32.SendMessageW(0xFFFF, 0x0112, 0xF170, 2)
         except Exception as e:
-            log.error(f"[Settings] sleep_display failed: {e}")
+            print(f"[Settings] sleep_display failed: {e}")
     elif _OS == "Darwin":
         subprocess.run(["pmset", "displaysleepnow"], capture_output=True)
     else:
@@ -530,7 +527,7 @@ def dark_mode():
             winreg.SetValueEx(key, "SystemUsesLightTheme", 0, winreg.REG_DWORD, 1 - current)
             winreg.CloseKey(key)
         except Exception as e:
-            log.error(f"[Settings] dark_mode registry failed: {e}")
+            print(f"[Settings] dark_mode registry failed: {e}")
     else:
         try:
             result = subprocess.run(
@@ -544,7 +541,7 @@ def dark_mode():
                 capture_output=True
             )
         except Exception as e:
-            log.error(f"[Settings] dark_mode Linux failed: {e}")
+            print(f"[Settings] dark_mode Linux failed: {e}")
 
 def toggle_wifi():
     if _OS == "Darwin":
@@ -566,14 +563,14 @@ def toggle_wifi():
                 capture_output=True, timeout=10, **_WIN_HIDE
             )
         except Exception as e:
-            log.error(f"[Settings] toggle_wifi Windows failed: {e}")
+            print(f"[Settings] toggle_wifi Windows failed: {e}")
     else:
         try:
             result = subprocess.run(["nmcli", "radio", "wifi"], capture_output=True, text=True)
             state  = "off" if "enabled" in result.stdout else "on"
             subprocess.run(["nmcli", "radio", "wifi", state], capture_output=True)
         except Exception as e:
-            log.error(f"[Settings] toggle_wifi Linux failed: {e}")
+            print(f"[Settings] toggle_wifi Linux failed: {e}")
 
 def restart_computer():
     if _OS == "Windows":
@@ -681,7 +678,7 @@ _IRREVERSIBLE = {
     # the WiFi off cuts the assistant's own connection to the Live API, so it
     # cannot be asked to turn it back on.
     "toggle_wifi": ("Switch WiFi off or on",
-                    "If this switches WiFi off, OPERO loses its connection and "
+                    "If this switches WiFi off, Brahma loses its connection and "
                     "cannot switch it back on by voice."),
 }
 
@@ -809,7 +806,7 @@ def computer_settings(
     if not action:
         return _suggest(description or raw_action)
 
-    log.info(f"[Settings] Action: {action}  Value: {value}  OS: {_OS}")
+    print(f"[Settings] Action: {action}  Value: {value}  OS: {_OS}")
     if player:
         player.write_log(f"[Settings] {action}")
 
@@ -891,7 +888,7 @@ def computer_settings(
     try:
         func()
     except Exception as e:
-        log.error(f"[Settings] Action failed ({action}): {e}")
+        print(f"[Settings] Action failed ({action}): {e}")
         return f"Action failed ({action}): {e}"
 
     if _before:

@@ -4,6 +4,7 @@ from __future__ import annotations
 import sys
 import time
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication
 
 from core.logger import get_logger
@@ -22,6 +23,10 @@ class _RootShim:
 
 class OperaUI:
     def __init__(self, face_path: str, size=None):
+        # QtWebEngine (the 3D background) refuses to load unless shared OpenGL
+        # contexts were requested before the QApplication existed, which makes
+        # the background depend on import order without this.
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
         self._app = QApplication.instance() or QApplication(sys.argv)
         self._app.setStyle("Fusion")
         self._win = MainWindow(face_path)
@@ -192,6 +197,22 @@ class OperaUI:
 
     def set_state(self, state: str):
         self._win._state_sig.emit(state)
+
+    def set_background_features(self, features) -> None:
+        """Thread-safe: map the assistant's features onto the 3D background."""
+        self._win.set_background_features(features)
+
+    def set_background_active_feature(self, name: str) -> None:
+        """Thread-safe: flash the background node of a feature that just ran."""
+        self._win.set_background_active_feature(name)
+
+    def set_background_automations(self, automations) -> None:
+        """Thread-safe: draw automations as step chains in the 3D background."""
+        self._win.set_background_automations(automations)
+
+    def set_background_active_automation(self, name: str, step: int = -1) -> None:
+        """Thread-safe: animate a running automation in the 3D background."""
+        self._win.set_background_active_automation(name, step)
 
     def write_log(self, text: str):
         self._win._log_sig.emit(text)

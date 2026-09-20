@@ -634,13 +634,17 @@ class DashboardServer:
 
         @app.get("/", response_class=HTMLResponse)
         async def index():
-            # Auth is handled client-side via sessionStorage bearer token.
-            # Server-side header auth can't work here because browser navigations
-            # don't send custom headers (location.href doesn't carry Authorization).
             html = (self._app_html
                     .replace("__IP__", self._ip)
                     .replace("__PORT__", str(PORT)))
             return HTMLResponse(html)
+
+        @app.get("/portfolio", response_class=HTMLResponse)
+        async def portfolio():
+            portfolio_path = STATIC_DIR / "portfolio.html"
+            if portfolio_path.exists():
+                return HTMLResponse(portfolio_path.read_text(encoding="utf-8"))
+            return HTMLResponse("Portfolio page not found", status_code=440)
 
         @app.post("/login")
         async def login(req: Request):
@@ -740,6 +744,151 @@ class DashboardServer:
             count = len(self._device_sessions)
             self._device_sessions.clear()
             return JSONResponse({"ok": True, "revoked": count})
+
+        
+        @app.get("/api/integrations")
+        async def get_integrations(req: Request):
+            """Return current status of linked accounts (Gmail, Instagram, WhatsApp, MOSS)."""
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
+            
+            cfg_dir = BASE_DIR / "config"
+            # Gmail counts as linked through either route: an OAuth token, or the
+            # address + App Password used for direct IMAP/SMTP.
+            gmail_linked = ((cfg_dir / "gmail_token.json").exists()
+                            or (cfg_dir / "email_credentials.json").exists())
+            gmail_has_client = (cfg_dir / "google_oauth_client.json").exists()
+            
+            insta_cfg = cfg_dir / "instagram.json"
+            insta_linked = False
+            if insta_cfg.exists():
+                try:
+                    import json
+                    d = json.loads(insta_cfg.read_text(encoding="utf-8"))
+                    insta_linked = bool(d.get("access_token") and d.get("account_id"))
+                except Exception:
+                    pass
+                    
+            wa_bridge = BASE_DIR / "whatsapp_bridge"
+            wa_linked = (wa_bridge / ".wwebjs_auth").exists() or (BASE_DIR / "config" / "whatsapp.json").exists()
+            
+            api_keys_cfg = cfg_dir / "api_keys.json"
+            moss_user_id = ""
+            if api_keys_cfg.exists():
+                try:
+                    import json
+                    d = json.loads(api_keys_cfg.read_text(encoding="utf-8"))
+                    moss_user_id = str(d.get("moss_user_id", ""))
+                except Exception:
+                    pass
+
+            return JSONResponse({
+                "gmail": {"connected": gmail_linked, "has_client": gmail_has_client},
+                "instagram": {"connected": insta_linked},
+                "whatsapp": {"connected": wa_linked},
+                "moss": {"connected": bool(moss_user_id), "user_id": moss_user_id}
+            })
+
+        @app.post("/api/config/gmail")
+        async def config_gmail(req: Request):
+            """Save Google OAuth client credentials (either raw JSON or client_id + client_secret)."""
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
+            try:
+                data = await req.json()
+                client_id = str(data.get("client_id", "")).strip()
+                client_secret = str(data.get("client_secret", "")).strip()
+                client_json = data.get("client_json", "")
+
+                cfg_dir = BASE_DIR / "config"
+                cfg_dir.mkdir(parents=True, exist_ok=True)
+                import json
+
+                app_email = str(data.get("email", "")).strip()
+                app_password = str(data.get("app_password", "")).strip()
+                if app_email and app_password:
+                    # The App Password route: no Google Cloud project needed.
+                    from actions.google_workspace_mcp import save_stored_gmail_credentials, GmailEngine
+                    if not save_stored_gmail_credentials(app_email, app_password):
+                        return JSONResponse({"ok": False, "error": "Could not store the credentials."}, status_code=400)
+                    check = GmailEngine.test_connection()
+                    return JSONResponse({"ok": bool(check.get("success")),
+                                         "message": check.get("message", "")})
+
+                if client_id and client_secret:
+                    payload = {
+                        "installed": {
+                            "client_id": client_id,
+                            "project_id": "opero-assistant",
+                            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                            "token_uri": "https://oauth2.googleapis.com/token",
+                            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                            "client_secret": client_secret,
+                            "redirect_uris": ["http://localhost"]
+                        }
+                    }
+                    (cfg_dir / "google_oauth_client.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                    return JSONResponse({"ok": True, "message": "Gmail OAuth credentials constructed & saved."})
+                elif client_json:
+                    if isinstance(client_json, dict):
+                        (cfg_dir / "google_oauth_client.json").write_text(json.dumps(client_json, indent=2), encoding="utf-8")
+                    else:
+                        parsed = json.loads(client_json)
+                        (cfg_dir / "google_oauth_client.json").write_text(json.dumps(parsed, indent=2), encoding="utf-8")
+                    return JSONResponse({"ok": True, "message": "google_oauth_client.json saved."})
+                else:
+                    return JSONResponse({"ok": False, "error": "Provide Client ID & Client Secret or JSON"}, status_code=400)
+            except Exception as e:
+                return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+
+        @app.post("/api/config/instagram")
+        async def config_instagram(req: Request):
+            """Save Instagram Meta Graph credentials."""
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
+            try:
+                data = await req.json()
+                access_token = str(data.get("access_token", "")).strip()
+                account_id = str(data.get("account_id", "")).strip()
+                if not access_token or not account_id:
+                    return JSONResponse({"ok": False, "error": "access_token and account_id required"}, status_code=400)
+                cfg_dir = BASE_DIR / "config"
+                cfg_dir.mkdir(parents=True, exist_ok=True)
+                import json
+                payload = {
+                    "access_token": access_token,
+                    "account_id": account_id,
+                    "api_version": "v25.0",
+                    "base_url": "https://graph.instagram.com"
+                }
+                (cfg_dir / "instagram.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                return JSONResponse({"ok": True, "message": "Instagram credentials saved."})
+            except Exception as e:
+                return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+
+        @app.post("/api/config/moss")
+        async def config_moss(req: Request):
+            """Save MOSS Stanford user ID."""
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
+            try:
+                data = await req.json()
+                user_id = str(data.get("moss_user_id", "")).strip()
+                cfg_dir = BASE_DIR / "config"
+                cfg_dir.mkdir(parents=True, exist_ok=True)
+                api_keys_file = cfg_dir / "api_keys.json"
+                import json
+                current = {}
+                if api_keys_file.exists():
+                    try:
+                        current = json.loads(api_keys_file.read_text(encoding="utf-8"))
+                    except Exception:
+                        pass
+                current["moss_user_id"] = user_id
+                api_keys_file.write_text(json.dumps(current, indent=2), encoding="utf-8")
+                return JSONResponse({"ok": True, "message": "MOSS User ID saved."})
+            except Exception as e:
+                return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
 
         @app.post("/api/command")
         async def command(req: Request):

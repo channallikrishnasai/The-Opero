@@ -14,33 +14,23 @@ def get_base_dir():
 
 BASE_DIR         = get_base_dir()
 API_CONFIG_PATH  = BASE_DIR / "config" / "api_keys.json"
-PROJECTS_DIR     = Path.home() / "Desktop" / "OperaProjects"
+PROJECTS_DIR     = Path.home() / "Desktop" / "BrahmaProjects"
 MAX_FIX_ATTEMPTS = 5
-# Model choice, timeout and fallback ladder all live in core/gemini.py.
-from core import gemini
-
-from core.logger import get_logger
-from core.validator import validate_params, ValidationError
-
-log = get_logger(__name__)
-
-MODEL_PLANNER    = gemini.SMART
-MODEL_WRITER     = gemini.SMART
+MODEL_PLANNER    = "gemini-flash-latest"
+MODEL_WRITER     = "gemini-flash-latest"
 
 def _get_api_key() -> str:
     with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
         return json.load(f)["gemini_api_key"]
 
 
-def _get_model(model_name: str = gemini.SMART):
-    """Planning and writing whole files — the reasoning tier, and a long
-    deadline because the answer is a source file rather than a sentence."""
+def _get_model(model_name: str):
+    from google import genai
+    _c = genai.Client(api_key=_get_api_key())
+
     class _W:
         def generate_content(self, contents):
-            resp = gemini.call(contents, tier=model_name, timeout_ms=60000)
-            if resp is None:
-                raise RuntimeError("every Gemini model on the ladder failed")
-            return resp
+            return _c.models.generate_content(model=model_name, contents=contents)
 
     return _W()
 
@@ -236,7 +226,7 @@ Code for {file_path}:"""
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_text(code, encoding="utf-8")
 
-        log.info(f"[DevAgent] ✅ Written: {file_path} ({len(code)} chars)")
+        print(f"[DevAgent] ✅ Written: {file_path} ({len(code)} chars)")
         return code
 
     except Exception as e:
@@ -258,12 +248,12 @@ def _install_dependencies(dependencies: list[str], project_dir: Path) -> str:
         if result.returncode != 0:
             to_install.append(dep)
         else:
-            log.info(f"[DevAgent] ✓ Already installed: {pkg_name}")
+            print(f"[DevAgent] ✓ Already installed: {pkg_name}")
 
     if not to_install:
         return f"All dependencies already installed: {', '.join(dependencies)}"
 
-    log.info(f"[DevAgent] 📦 Installing: {to_install}")
+    print(f"[DevAgent] 📦 Installing: {to_install}")
     try:
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install"] + to_install,
@@ -294,14 +284,14 @@ def _open_vscode(project_dir: Path) -> bool:
                 stderr=subprocess.DEVNULL
             )
             time.sleep(1.5)
-            log.info(f"[DevAgent] 💻 VSCode opened: {project_dir}")
+            print(f"[DevAgent] 💻 VSCode opened: {project_dir}")
             return True
         except Exception:
             continue
     return False
 
 def _run_project(run_command: str, project_dir: Path, timeout: int = 30) -> str:
-    log.info(f"[DevAgent] 🚀 Running: {run_command}")
+    print(f"[DevAgent] 🚀 Running: {run_command}")
     try:
         parts = run_command.split()
         if parts[0].lower() == "python":
@@ -334,7 +324,7 @@ def _run_project(run_command: str, project_dir: Path, timeout: int = 30) -> str:
         return f"Run error: {e}"
 
 def _try_auto_install(error_output: str, project_dir: Path) -> bool:
-    """If there is a ModuleNotFoundError, tries to auto-install the missing package."""
+    """ModuleNotFoundError varsa eksik paketi otomatik kurmaya çalışır."""
     pattern = re.compile(
         r"No module named ['\"]([a-zA-Z0-9_\-\.]+)['\"]", re.IGNORECASE
     )
@@ -343,7 +333,7 @@ def _try_auto_install(error_output: str, project_dir: Path) -> bool:
         return False
 
     pkg = match.group(1).replace("_", "-").split(".")[0]
-    log.info(f"[DevAgent] 🔧 Auto-installing missing package: {pkg}")
+    print(f"[DevAgent] 🔧 Auto-installing missing package: {pkg}")
     try:
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install", pkg],
@@ -435,12 +425,12 @@ Fixed code for {fix_path}:"""
             full_path.write_text(fixed, encoding="utf-8")
 
             updated_codes[fix_path] = fixed
-            log.info(f"[DevAgent] 🔧 Fixed: {fix_path}")
+            print(f"[DevAgent] 🔧 Fixed: {fix_path}")
 
         except Exception as e:
             if _is_rate_limit(e):
                 raise RateLimitError(str(e))
-            log.info(f"[DevAgent] ⚠️ Could not fix {fix_path}: {e}")
+            print(f"[DevAgent] ⚠️ Could not fix {fix_path}: {e}")
 
     return updated_codes
 
@@ -454,7 +444,7 @@ def _build_project(
 ) -> str:
 
     def log(msg: str):
-        log.info(f"[DevAgent] {msg}")
+        print(f"[DevAgent] {msg}")
         if player:
             player.write_log(f"[DevAgent] {msg}")
 
@@ -470,7 +460,7 @@ def _build_project(
         if speak: speak(msg)
         return msg
 
-    proj_name    = project_name or plan.get("project_name", "opero_project")
+    proj_name    = project_name or plan.get("project_name", "brahma_project")
     proj_name    = re.sub(r"[^\w\-]", "_", proj_name)
     project_dir  = PROJECTS_DIR / proj_name
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -594,7 +584,6 @@ def dev_agent(
     speak=None,
 ) -> str:
     p            = parameters or {}
-    p            = validate_params(p, VALIDATOR, tool_name="dev_agent")
     description  = p.get("description", "").strip()
     language     = p.get("language", "python").strip()
     project_name = p.get("project_name", "").strip()
@@ -611,40 +600,3 @@ def dev_agent(
         speak        = speak,
         player       = player,
     )
-
-
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
-TOOL = {
-    "name": "dev_agent",
-    "description": "Builds complete multi-file projects from scratch: plans, writes files, installs deps, opens VSCode, runs and fixes errors.",
-    "parameters": {
-        "type": "OBJECT",
-        "properties": {
-            "description": {
-                "type": "STRING",
-                "description": "What the project should do"
-            },
-            "language": {
-                "type": "STRING",
-                "description": "Programming language (default: python)"
-            },
-            "project_name": {
-                "type": "STRING",
-                "description": "Optional project folder name"
-            },
-            "timeout": {
-                "type": "INTEGER",
-                "description": "Run timeout in seconds (default: 30)"
-            }
-        },
-        "required": [
-            "description"
-        ]
-    },
-    "handler": dev_agent,
-}
-
-VALIDATOR = {
-    "description": [{"type": str, "required": True, "max_len": 2000}],
-    "language":    [{"type": str, "max_len": 30}],
-}

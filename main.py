@@ -21,6 +21,7 @@ from datetime import datetime
 from pathlib import Path
 
 from core.logger import get_logger
+from core.live_reconnect import is_clean_live_close
 log = get_logger(__name__)
 
 import sounddevice as sd
@@ -40,7 +41,7 @@ from memory.memory_manager import (
 # Only tools that are tied to live-session state stay inline in this file
 # (screen_process, close_camera, save_memory, manage_monitor, shutdown_opero,
 # system_status).
-from actions.screen_processor  import _capture_camera, _capture_screen
+from actions.screen_processor  import _capture_camera, _capture_screenshot
 from actions.system_monitor    import SystemMonitor, get_system_status
 from actions.proactive         import ProactiveEngine
 from actions.background_monitor import (
@@ -64,6 +65,9 @@ from core.viseme               import VisemeStream
 from core.wake_word            import (
     WakeWordDetector, is_ready as wake_is_ready, install_and_download as wake_install,
 )
+from core.boot_sentry          import sentry
+from core.learned_rules        import rules_engine
+
 
 # How long the assistant stays awake with no user speech before it auto-sleeps
 # again (wake-word mode only).
@@ -270,13 +274,20 @@ def _get_api_key() -> str:
 
 def _load_system_prompt() -> str:
     try:
-        return PROMPT_PATH.read_text(encoding="utf-8")
+        base_prompt = PROMPT_PATH.read_text(encoding="utf-8")
     except Exception:
-        return (
+        base_prompt = (
             "You are OPERO, a personal AI assistant. "
             "Be concise, direct, and always use the provided tools to complete tasks. "
             "Never simulate or guess results — always call the appropriate tool."
         )
+    
+    # Inject dynamically learned rules
+    rules_text = rules_engine.get_prompt_injections()
+    if rules_text:
+        base_prompt += "\n\n" + rules_text
+        
+    return base_prompt
 
 _CTRL_RE = re.compile(r"<ctrl\d+>", re.IGNORECASE)
 
@@ -519,6 +530,7 @@ def _is_reconnect_signal(exc: BaseException) -> bool:
     return False
 
 
+
 def _keep_context_of(exc: BaseException) -> bool:
     """Read `keep_context` off a reconnect signal, unwrapping the group the
     TaskGroup put it in. Defaults to True: an unexpected shape must not silently
@@ -636,6 +648,17 @@ class OperaLive:
         self.ui.get_plugins = self._plugin_registry.list_for_ui
         self.ui.get_plugin_settings = self._plugin_registry.settings_schemas  # ⚙ settings tab
         self.ui.request_say = self.plugin_say   # plugins: mid-task speech channel
+
+        # The 3D background draws one star node per feature the assistant can
+        # actually run — inline tools, discovered actions, and live plugins.
+        try:
+            _features = sorted(
+                _core_names
+                | {p["name"] for p in self._plugin_registry.list_for_ui() if p.get("valid")}
+            )
+            self.ui.set_background_features(_features)
+        except Exception as e:
+            log.debug("%s", e)
 
         # ── Wake word ────────────────────────────────────────────────────────
         # _awake gates the mic (see _listen_audio) and the background speakers.
@@ -1293,6 +1316,8 @@ class OperaLive:
 
         log.info("🔧 %s  %s", name, args)
         self.ui.set_state("THINKING")
+        # Light the tool's node in the 3D background as it starts work.
+        self.ui.set_background_active_feature(name)
 
 
         if name == "save_memory":
@@ -1349,7 +1374,7 @@ class OperaLive:
                         log.info(f"[Vision] 📷 Camera: {len(img_b):,} bytes")
                         _stall = "camera"
                     else:
-                        img_b, mime_t = await loop.run_in_executor(None, _capture_screen)
+                        img_b, mime_t = await loop.run_in_executor(None, _capture_screenshot)
                         log.info(f"[Vision] 🖥️  Screen: {len(img_b):,} bytes")
                         _stall = "screen"
                     self._pending_vision = (img_b, mime_t, user_text, angle)
@@ -1763,8 +1788,13 @@ class OperaLive:
                         )
                         await self._flush_pending_vision()
         except Exception as e:
-            log.error(f"[OPERO] ❌ Recv: {e}")
-            traceback.print_exc()
+            # google-genai can surface websocket code 1000 as APIError. Let the
+            # outer session supervisor reconnect it without a scary traceback.
+            if is_clean_live_close(e):
+                log.info("[OPERO] Live receive closed normally.")
+            else:
+                log.error(f"[OPERO] ❌ Recv: {e}")
+                traceback.print_exc()
             raise
 
     async def _play_audio(self):
@@ -2395,6 +2425,14 @@ class OperaLive:
                     self._conn_backoff = 0
                     continue
 
+                # Gemini can close a Live socket cleanly (websocket 1000).
+                # google-genai surfaces it as an APIError inside a TaskGroup;
+                # reconnect it without treating it as a crash.
+                if is_clean_live_close(e):
+                    log.info("[OPERO] Live session closed normally — reconnecting.")
+                    self.ui.write_log("SYS: Live session refreshed — reconnecting.")
+                    self._conn_backoff = 1
+                    continue
                 # A resumption handle the server will not accept — expired, or
                 # belonging to a session it has since dropped. Without this, the
                 # same dead handle would be replayed on every retry and the
@@ -2493,6 +2531,7 @@ class OperaLive:
             await asyncio.sleep(delay)
 
 def main():
+    sentry.mark_boot_start()
     ui = OperaUI("face.png")
 
     def runner():
@@ -2501,9 +2540,14 @@ def main():
         _shutdown.register("stop_listening", lambda: setattr(opero, '_stop', True))
         _shutdown.register("close_session", lambda: opero.shutdown())
         try:
+            sentry.mark_boot_success()
             asyncio.run(opero.run())
         except KeyboardInterrupt:
             log.info("\n🔴 Shutting down...")
+        except Exception:
+            import sys
+            sentry.record_crash(sys.exc_info())
+            log.exception("Fatal error in OperaLive runner")
         finally:
             _shutdown.run()
 

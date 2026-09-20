@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OPERO — 3D Living AI Portfolio & Stellar Galaxy</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            border: 'rgba(255,255,255,0.1)',
+            background: '#020613',
+            foreground: '#c7ecff',
+            card: '#06142b',
+            primary: '#54b9ff',
+            accent: '#377ed4',
+            muted: '#8aafd0'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React & ReactDOM & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #020613; color: #c7ecff; font-family: system-ui, sans-serif; overflow-x: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- AetherFlow Particle Canvas Component ---
+    function AetherCanvas() {
+      const canvasRef = useRef(null);
+
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let animationFrameId;
+        let particles = [];
+        const mouse = { x: null, y: null, radius: 180 };
+
+        const handleMouseMove = (e) => {
+          mouse.x = e.clientX;
+          mouse.y = e.clientY;
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+
+        class Particle {
+          constructor(x, y, dirX, dirY, size, color) {
+            this.x = x; this.y = y;
+            this.directionX = dirX; this.directionY = dirY;
+            this.size = size; this.color = color;
+          }
+          draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+          }
+          update() {
+            if (this.x > canvas.width || this.x < 0) this.directionX = -this.directionX;
+            if (this.y > canvas.height || this.y < 0) this.directionY = -this.directionY;
+
+            if (mouse.x !== null && mouse.y !== null) {
+              let dx = mouse.x - this.x;
+              let dy = mouse.y - this.y;
+              let dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < mouse.radius + this.size) {
+                let forceX = dx / dist;
+                let forceY = dy / dist;
+                let force = (mouse.radius - dist) / mouse.radius;
+                this.x -= forceX * force * 4;
+                this.y -= forceY * force * 4;
+              }
+            }
+            this.x += this.directionX;
+            this.y += this.directionY;
+            this.draw();
+          }
+        }
+
+        function init() {
+          particles = [];
+          let numParticles = (canvas.height * canvas.width) / 10000;
+          for (let i = 0; i < numParticles; i++) {
+            let size = Math.random() * 2 + 1;
+            let x = Math.random() * (canvas.width - size * 4) + size * 2;
+            let y = Math.random() * (canvas.height - size * 4) + size * 2;
+            let dirX = (Math.random() * 0.4) - 0.2;
+            let dirY = (Math.random() * 0.4) - 0.2;
+            let color = 'rgba(84, 185, 255, 0.7)';
+            particles.push(new Particle(x, y, dirX, dirY, size, color));
+          }
+        }
+
+        const resize = () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+          init();
+        };
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function animate() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          for (let i = 0; i < particles.length; i++) {
+            particles[i].update();
+          }
+          // draw connection lines
+          for (let a = 0; a < particles.length; a++) {
+            for (let b = a; b < particles.length; b++) {
+              let dx = particles[a].x - particles[b].x;
+              let dy = particles[a].y - particles[b].y;
+              let dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < 110) {
+                let opacity = 1 - (dist / 110);
+                ctx.strokeStyle = `rgba(84, 185, 255, ${opacity * 0.25})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(particles[a].x, particles[a].y);
+                ctx.lineTo(particles[b].x, particles[b].y);
+                ctx.stroke();
+              }
+            }
+          }
+          animationFrameId = requestAnimationFrame(animate);
+        }
+        animate();
+
+        return () => {
+          window.removeEventListener('mousemove', handleMouseMove);
+          window.removeEventListener('resize', resize);
+          cancelAnimationFrame(animationFrameId);
+        };
+      }, []);
+
+      return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />;
+    }
+
+    // --- Main App Component ---
+    function App() {
+      const [activeTab, setActiveTab] = useState("gallery");
+
+      const cards = [
+        { title: "Voice Assistant HUD", category: "Core AI", img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80" },
+        { title: "3D Living Reactor", category: "WebGL Core", img: "https://images.unsplash.com/photo-1507499739999-097706ad8914?auto=format&fit=crop&w=600&q=80" },
+        { title: "Autonomous Self-Heal", category: "System", img: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80" },
+        { title: "Gmail & Instagram Hub", category: "Integrations", img: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&w=600&q=80" },
+        { title: "PDF Research Synthesis", category: "Document Engine", img: "https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=600&q=80" },
+        { title: "Stanford MOSS Checker", category: "Code Analysis", img: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80" }
+      ];
+
+      return (
+        <div className="relative min-h-screen bg-[#020613] text-[#c7ecff] overflow-x-hidden">
+          <AetherCanvas />
+
+          <!-- Header -->
+          <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#020613]/80 border-b border-white/10 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#377ed4] to-[#54b9ff] flex items-center justify-center font-bold text-black shadow-[0_0_15px_rgba(84,185,255,0.4)]">
+                O
+              </div>
+              <span className="font-extrabold text-lg tracking-wider text-white">OPERO 3D STUDIO</span>
+            </div>
+
+            <div className="flex gap-3">
+              <a href="/" className="px-4 py-2 text-xs font-bold uppercase rounded-lg border border-white/10 hover:border-[#54b9ff] transition">
+                ← Back to Dashboard
+              </a>
+              <a href="https://github.com/channallikrishnasai/The-Opero" target="_blank" className="px-4 py-2 text-xs font-bold uppercase rounded-lg bg-[#54b9ff] text-black hover:brightness-110 shadow-[0_0_15px_rgba(84,185,255,0.4)] transition">
+                GitHub Repo
+              </a>
+            </div>
+          </header>
+
+          <!-- Hero Section -->
+          <section className="relative z-10 max-w-6xl mx-auto pt-20 px-6 text-center">
+            <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-[#377ed4]/20 border border-[#54b9ff]/40 text-[#54b9ff] mb-6">
+              Next-Gen Autonomous Operating System
+            </span>
+            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tight text-white mb-6">
+              Stellar <span className="text-[#54b9ff] italic">Automation</span> Gallery
+            </h1>
+            <p className="text-lg text-[#8aafd0] max-w-2xl mx-auto mb-12">
+              Interactive 3D preview of OPERO core modules, live background particle physics, and autonomous workflow engines.
+            </p>
+
+            <!-- Interactive Grid -->
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-24 text-left">
+              {cards.map((item, idx) => (
+                <div key={idx} className="group relative rounded-2xl bg-[#06142b]/90 border border-white/10 p-5 hover:border-[#54b9ff] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(84,185,255,0.2)]">
+                  <div className="relative h-48 rounded-xl overflow-hidden mb-4">
+                    <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <span className="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-black/60 border border-white/10 text-[#54b9ff]">
+                      {item.category}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white group-hover:text-[#54b9ff] transition">{item.title}</h3>
+                  <p className="text-xs text-[#8aafd0] mt-1">Autonomous OPERO module powered by local intelligence.</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>

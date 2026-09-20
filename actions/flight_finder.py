@@ -8,10 +8,6 @@ from pathlib import Path
 
 from config import is_windows, is_mac, is_linux
 
-from core.logger import get_logger
-from core.validator import validate_params, ValidationError
-log = get_logger(__name__)
-
 def _get_base_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent
@@ -21,23 +17,19 @@ def _get_base_dir() -> Path:
 BASE_DIR        = _get_base_dir()
 API_CONFIG_PATH = BASE_DIR / "config" / "api_keys.json"
 
-
-def _get_api_key() -> str:
-    with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)["gemini_api_key"]
-
 _MONTH_MAP: dict[str, int] = {
 
     "january": 1, "february": 2, "march": 3,     "april": 4,
     "may": 5,     "june": 6,     "july": 7,       "august": 8,
     "september": 9, "october": 10, "november": 11, "december": 12,
+    "ocak": 1,  "şubat": 2,  "mart": 3,   "nisan": 4,
+    "mayıs": 5, "haziran": 6, "temmuz": 7, "ağustos": 8,
+    "eylül": 9, "ekim": 10,  "kasım": 11, "aralık": 12,
 }
 
-# English fast-path only — Gemini (below) normalizes date expressions in ANY
-# language to YYYY-MM-DD, so no other language needs to be hardcoded here.
 _RELATIVE_MAP_KEYS = {
-    "today",
-    "tomorrow",
+    "today", "bugün",
+    "tomorrow", "yarın",
 }
 
 
@@ -52,30 +44,31 @@ def _parse_date(raw: str) -> str:
     for fmt in ("%d/%m/%Y", "%m/%d/%Y", "%d.%m.%Y", "%d-%m-%Y"):
         try:
             return datetime.strptime(raw, fmt).strftime("%Y-%m-%d")
-        except ValueError as e:
-            log.debug("%s", e)
+        except ValueError:
+            pass
 
     relative = {
-        "today": today,
+        "today": today, "bugün": today,
         "tomorrow": today + timedelta(days=1),
+        "yarın":    today + timedelta(days=1),
     }
     for key, val in relative.items():
         if key in lower:
             return val.strftime("%Y-%m-%d")
-
+# replace the try/except genai block with:
     try:
-        from core import gemini
-        result = gemini.text(
+        from llm_client import client
+        result = client.chat(
             f"Today is {today.strftime('%Y-%m-%d')}. "
             f"Convert this date expression to YYYY-MM-DD: '{raw}'. "
             f"Return ONLY the date string, nothing else.",
-            tier=gemini.FAST,
+            system="You are a date converter. Return only the YYYY-MM-DD string."
         )
+        result = result.strip()
         if re.match(r"\d{4}-\d{2}-\d{2}", result):
             return result
     except Exception as e:
-        log.error(f"[FlightFinder] ⚠️ Gemini date parse failed: {e}")
-
+        print(f"[FlightFinder] ⚠️ date parse failed: {e}")
     for month_name, month_num in _MONTH_MAP.items():
         if month_name in lower:
             day_match = re.search(r"\d{1,2}", raw)
@@ -85,7 +78,7 @@ def _parse_date(raw: str) -> str:
                 return f"{year}-{month_num:02d}-{day:02d}"
 
     # Last resort: today
-    log.info(f"[FlightFinder] ⚠️ Could not parse date '{raw}' — using today.")
+    print(f"[FlightFinder] ⚠️ Could not parse date '{raw}' — using today.")
     return today.strftime("%Y-%m-%d")
 
 _CABIN_CODE: dict[str, str] = {
@@ -95,7 +88,6 @@ _CABIN_CODE: dict[str, str] = {
     "first":    "4",
 }
 
-
 def _build_google_flights_url(
     origin:      str,
     destination: str,
@@ -104,25 +96,25 @@ def _build_google_flights_url(
     passengers:  int        = 1,
     cabin:       str        = "economy",
 ) -> str:
-    cabin_code = _CABIN_CODE.get(cabin.lower(), "1")
-    base       = "https://www.google.com/travel/flights"
+    from urllib.parse import quote_plus
 
-    # Google Flights accepts these query params for pre-filling
+    cabin_code = _CABIN_CODE.get(cabin.lower(), "1")
+
+    origin_enc      = quote_plus(origin)
+    destination_enc = quote_plus(destination)
+
     if return_date:
-        trip = f"Flights+from+{origin}+to+{destination}+on+{date}+returning+{return_date}"
+        trip = f"Flights+from+{origin_enc}+to+{destination_enc}+on+{date}+returning+{return_date}"
     else:
-        trip = f"Flights+from+{origin}+to+{destination}+on+{date}"
+        trip = f"Flights+from+{origin_enc}+to+{destination_enc}+on+{date}"
 
     return (
-        f"{base}"
+        f"https://www.google.com/travel/flights"
         f"?q={trip}"
-        f"&tfs=CBwQAhoeEgoyMDI1LTAzLTE1agcIARIDSVNUcgcIARIDTEhS"   
         f"&curr=USD"
         f"&cabin={cabin_code}"
         f"&adults={passengers}"
     )
-
-
 
 def _search_flights_browser(
     origin:      str,
@@ -139,23 +131,21 @@ def _search_flights_browser(
         origin, destination, date, return_date, passengers, cabin
     )
 
-    log.info(f"[FlightFinder] 🌐 Opening: {url}")
+    print(f"[FlightFinder] 🌐 Opening: {url}")
     browser_control({"action": "go_to", "url": url})
     time.sleep(5)
 
     raw = browser_control({"action": "get_text"})
     return (raw or ""), url
-
 def _parse_flights_with_gemini(
     raw_text:    str,
     origin:      str,
     destination: str,
     date:        str,
 ) -> list[dict]:
-    from google import genai as _genai
-    from google.genai import types
+    from llm_client import client
 
-    prompt  = (
+    prompt = (
         f"Extract flight options from {origin} to {destination} on {date} "
         f"from this Google Flights page text:\n\n{raw_text[:12000]}\n\n"
         f"Return a JSON array of up to 5 flights:\n"
@@ -165,24 +155,10 @@ def _parse_flights_with_gemini(
     )
 
     try:
-        from core import gemini
-        response = gemini.call(
-            prompt,
-            tier=gemini.SMART,
-            timeout_ms=30_000,
-            config=types.GenerateContentConfig(
-                system_instruction=(
-                    "You are a flight data extraction expert. "
-                    "Extract flight information from raw webpage text. "
-                    "Return ONLY valid JSON — no markdown, no explanation."
-                )
-            ),
-        )
-        text     = re.sub(r"```(?:json)?", "", response.text).strip().rstrip("`").strip()
-        flights  = json.loads(text)
-        return flights if isinstance(flights, list) else []
+        result = client.chat_json(prompt, system="Return only valid JSON. No extra text.")
+        return result if isinstance(result, list) else []
     except Exception as e:
-        log.error(f"[FlightFinder] ⚠️ Gemini parse failed: {e}")
+        print(f"[FlightFinder] ⚠️ parse failed: {e}")
         return []
 
 def _format_spoken(
@@ -241,7 +217,7 @@ def _format_text_report(
     page_url:    str,
 ) -> str:
     lines = [
-        "OPERO — Flight Search Results",
+        "Brahma AI - Flight Search Results",
         "─" * 50,
         f"Route     : {origin} → {destination}",
         f"Date      : {date}",
@@ -282,7 +258,7 @@ def _save_to_desktop(content: str, origin: str, destination: str) -> str:
     filepath = desktop / filename
 
     filepath.write_text(content, encoding="utf-8")
-    log.info(f"[FlightFinder] 💾 Saved: {filepath}")
+    print(f"[FlightFinder] 💾 Saved: {filepath}")
 
     try:
         if is_windows():
@@ -292,14 +268,13 @@ def _save_to_desktop(content: str, origin: str, destination: str) -> str:
         else:
             subprocess.Popen(["xdg-open", str(filepath)])
     except Exception as e:
-        log.info(f"[FlightFinder] ⚠️ Could not open text editor: {e}")
+        print(f"[FlightFinder] ⚠️ Could not open text editor: {e}")
 
     return str(filepath)
 
 
 def flight_finder(parameters: dict, player=None, speak=None) -> str:
     params = parameters or {}
-    params = validate_params(params, VALIDATOR, tool_name="flight_finder")
 
     origin      = params.get("origin",      "").strip()
     destination = params.get("destination", "").strip()
@@ -327,9 +302,11 @@ def flight_finder(parameters: dict, player=None, speak=None) -> str:
     if speak:
         speak(f"Searching flights from {origin} to {destination} on {date}, sir.")
 
-    log.info(f"[FlightFinder] ▶️ {origin} → {destination} | {date}"
+    print(
+        f"[FlightFinder] ▶️ {origin} → {destination} | {date}"
         f"{' → ' + return_date if return_date else ''}"
-        f" | {cabin} | {passengers} pax")
+        f" | {cabin} | {passengers} pax"
+    )
 
     try:
         raw_text, page_url = _search_flights_browser(
@@ -358,60 +335,5 @@ def flight_finder(parameters: dict, player=None, speak=None) -> str:
         return result
 
     except Exception as e:
-        log.info(f"[FlightFinder] ❌ {e}")
+        print(f"[FlightFinder] ❌ {e}")
         return f"Flight search failed, sir: {e}"
-
-
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
-TOOL = {
-    "name": "flight_finder",
-    "description": "Searches Google Flights and speaks the best options.",
-    "parameters": {
-        "type": "OBJECT",
-        "properties": {
-            "origin": {
-                "type": "STRING",
-                "description": "Departure city or airport code"
-            },
-            "destination": {
-                "type": "STRING",
-                "description": "Arrival city or airport code"
-            },
-            "date": {
-                "type": "STRING",
-                "description": "Departure date (any format)"
-            },
-            "return_date": {
-                "type": "STRING",
-                "description": "Return date for round trips"
-            },
-            "passengers": {
-                "type": "INTEGER",
-                "description": "Number of passengers (default: 1)"
-            },
-            "cabin": {
-                "type": "STRING",
-                "description": "economy | premium | business | first"
-            },
-            "save": {
-                "type": "BOOLEAN",
-                "description": "Save results to Notepad"
-            }
-        },
-        "required": [
-            "origin",
-            "destination",
-            "date"
-        ]
-    },
-    "handler": flight_finder,
-}
-
-VALIDATOR = {
-    "origin":      [{"type": str, "required": True, "max_len": 10}],
-    "destination": [{"type": str, "required": True, "max_len": 10}],
-    "date":        [{"type": str, "required": True, "max_len": 20}],
-    "return_date": [{"type": str, "max_len": 20}],
-    "passengers":  [{"type": int, "min": 1, "max": 9}],
-    "cabin":       [{"type": str, "max_len": 20}],
-}

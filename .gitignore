@@ -59,3 +59,9 @@ ui/config/
 whatsapp_bridge/.wwebjs_cache/
 .pytest-tmp/
 .test-tmp/
+
+config/google_oauth_client.json
+config/gmail_token.json
+config/instagram.json
+
+config/recovery/

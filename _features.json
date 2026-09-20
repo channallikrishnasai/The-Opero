@@ -1,0 +1,62 @@
+[
+ {
+  "src": "computer_settings.py",
+  "name": "computer_settings",
+  "desc": "Controls the computer: volume, brightness, window management, keyboard shortcuts, typing text on screen, closing apps, fullscreen, dark mode, WiFi, restart, shutdown, scrolling, tab management, zoom, screenshots, lock screen, refresh/reload page. Use for ANY single computer control command. restart, shutdown and toggle_wifi put a confirmation on the user's screen and do NOT happen until they press it \u2014 never claim they are done. Volume, brightness and dark mode can be reversed with the `undo` tool."
+ },
+ {
+  "src": "file_controller.py",
+  "name": "file_controller",
+  "desc": "Manages files and folders: list, create, delete, move, copy, rename, read, write, find, disk usage."
+ },
+ {
+  "src": "gmail.py",
+  "name": "gmail",
+  "desc": "Connect Gmail with OAuth or App Passcode, search/read email, save drafts, and send after confirmation."
+ },
+ {
+  "src": "instagram_messaging.py",
+  "name": "instagram_messaging",
+  "desc": "Use a connected Meta Instagram professional account to list supported conversations and send messages after on-screen confirmation."
+ },
+ {
+  "src": "moss_check.py",
+  "name": "moss_check",
+  "desc": "Check code for plagiarism using Stanford MOSS (Measure of Software Similarity). Uploads source files to Stanford's server and returns a URL with similarity results. Works with Python, Java, C/C++, JavaScript, Haskell, and 30+ other languages. Use when the user wants to check if code is plagiarized, compare code submissions, or check code originality."
+ },
+ {
+  "src": "opero_connect.py",
+  "name": "opero_connect",
+  "desc": "Remote device pairing, status checking, and execution gateway."
+ },
+ {
+  "src": "opero_dev_agent.py",
+  "name": "opero_dev_agent",
+  "desc": "Autonomous developer task execution engine. Runs code modifications, builds, and tests."
+ },
+ {
+  "src": "opero_health.py",
+  "name": "opero_health",
+  "desc": "Check OPERO configuration and recovery status without changing anything."
+ },
+ {
+  "src": "ppt_builder.py",
+  "name": "ppt_builder",
+  "desc": "Creates a polished PowerPoint (.pptx) presentation from a title, optional subtitle, and a list of slides. Each slide supports: title, kicker (eyebrow label), bullets (list of strings), and notes. Supports themes: auto, neon, corporate, luxury, academic, sunset. Use when the user asks to create a presentation, slideshow, deck, or PowerPoint."
+ },
+ {
+  "src": "recovery.py",
+  "name": "recovery",
+  "desc": "Inspect OPERO recovery history or restore a recorded local backup after on-screen confirmation."
+ },
+ {
+  "src": "task_status.py",
+  "name": "task_status",
+  "desc": "Show recent OPERO action states, results, and failures without changing anything."
+ },
+ {
+  "src": "website_builder.py",
+  "name": "website_builder",
+  "desc": "Create an original, deploy-ready static website from a brief in a new OPERO Websites folder."
+ }
+]

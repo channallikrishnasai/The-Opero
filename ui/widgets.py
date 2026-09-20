@@ -1,7 +1,9 @@
 """Small reusable widgets: HUD, metrics, log, file drop, clipboard, etc."""
 from __future__ import annotations
 
+import json
 import math
+import os
 import platform
 import random
 import subprocess
@@ -42,6 +44,55 @@ try:
     from core.gradient_orb import GradientOrb
 except Exception:
     GradientOrb = None
+
+def _add_qt6_dll_dirs() -> None:
+    """Register every Qt6 native DLL directory Windows should search.
+
+    A split PyQt6 install keeps PyQt6-Qt6's native DLLs and PyQt6-WebEngine's
+    .pyd in different site-packages (system vs --user), so QtWebEngineWidgets
+    only imports once each of those ``PyQt6/Qt6/bin`` roots is on the search
+    path. Deriving them from ``site`` avoids pinning a Python version.
+    """
+    if platform.system() != "Windows":
+        return
+    import os
+    import site
+
+    roots = []
+    try:
+        import PyQt6
+        roots.append(Path(PyQt6.__file__).parent)
+    except Exception as e:
+        log.debug("%s", e)
+    packages = []
+    for getter in ("getsitepackages", "getusersitepackages"):
+        try:
+            found = getattr(site, getter)()
+        except Exception:
+            continue
+        packages.extend(found if isinstance(found, list) else [found])
+    roots.extend(Path(p) / "PyQt6" for p in packages if p)
+
+    for root in roots:
+        bin_dir = root / "Qt6" / "bin"
+        if bin_dir.is_dir():
+            try:
+                os.add_dll_directory(str(bin_dir))
+            except Exception as e:
+                log.debug("%s", e)
+
+
+try:
+    _add_qt6_dll_dirs()
+    from PyQt6.QtWebEngineWidgets import QWebEngineView
+    from PyQt6.QtWebEngineCore import QWebEngineSettings
+    _WEBENGINE_AVAILABLE = True
+except Exception as _webengine_error:
+    QWebEngineView = None
+    QWebEngineSettings = None
+    _WEBENGINE_AVAILABLE = False
+    # Staying silent here hid a background that never rendered, so say why.
+    log.debug("QtWebEngine unavailable — 3D background disabled: %s", _webengine_error)
 
 _OS = platform.system()
 
@@ -249,7 +300,10 @@ class HudCanvas(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)
         self.setMinimumSize(300, 300)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-
+        # Static, generated locally for OPERO: painted once per frame at low
+        # opacity below the HUD grid so controls and text remain readable.
+        galaxy_path = Path(__file__).resolve().parent / "assets" / "opero-light-galaxy.png"
+        self._galaxy_bg = QPixmap(str(galaxy_path)) if galaxy_path.is_file() else QPixmap()
         self.muted    = False
         self.speaking = False
         self.state    = "INITIALISING"
@@ -696,7 +750,10 @@ class HudCanvas(QWidget):
             return
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.fillRect(self.rect(), qcol(C.BG))
-
+        if not self._galaxy_bg.isNull():
+            p.setOpacity(0.18)
+            p.drawPixmap(self.rect(), self._galaxy_bg)
+            p.setOpacity(1.0)
         W, H = self.width(), self.height()
         cx, cy = W / 2, H / 2
         fw = min(W, H)
@@ -1259,12 +1316,20 @@ class _CameraPreview(QWidget):
         self._timer.start(6_000)   # auto-dismiss after 6 s
 
 class AutomationCanvas(QWidget):
-    """Compact node graph used by OPERO's Automation Studio."""
+    """3D Animated Node Graph Studio with glowing flow connectors & dynamic particles."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._nodes = []
-        self.setMinimumHeight(230)
+        self._t = 0.0
+        self.setMinimumHeight(240)
+        self._anim_timer = QTimer(self)
+        self._anim_timer.timeout.connect(self._animate)
+        self._anim_timer.start(30)   # 33 fps smooth 3D animation loop
+
+    def _animate(self):
+        self._t += 0.05
+        self.update()
 
     def set_nodes(self, nodes):
         self._nodes = list(nodes or [])
@@ -1273,31 +1338,78 @@ class AutomationCanvas(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.fillRect(self.rect(), QColor("#020912"))
+        p.fillRect(self.rect(), QColor("#020713"))
+
+        # Draw subtle animated grid background
+        grid_pen = QPen(QColor(42, 98, 160, 25), 1, Qt.PenStyle.DotLine)
+        p.setPen(grid_pen)
+        for gx in range(0, self.width(), 30):
+            p.drawLine(gx, 0, gx, self.height())
+        for gy in range(0, self.height(), 30):
+            p.drawLine(0, gy, self.width(), gy)
+
         count = max(1, len(self._nodes))
-        gap = 18
+        gap = 22
         width = min(150, max(105, (self.width() - gap * (count + 1)) // count))
-        height = 86
+        height = 92
         total = count * width + (count - 1) * gap
         x = max(10, (self.width() - total) // 2)
         y = (self.height() - height) // 2
-        colors = [QColor("#20d67a"), QColor("#e0ad36"), QColor("#55c8ff"), QColor("#9d7bff"), QColor("#ff7a90")]
+
+        colors = [QColor("#54b9ff"), QColor("#80c3ff"), QColor("#377ed4"), QColor("#9d7bff"), QColor("#34d399")]
+
         for i, node in enumerate(self._nodes):
             color = colors[i % len(colors)]
             rect = QRectF(x, y, width, height)
-            if i:
-                p.setPen(QPen(QColor("#1d5268"), 2))
-                p.drawLine(int(x - gap), int(y + height / 2), int(x), int(y + height / 2))
-                p.setBrush(QBrush(QColor("#55c8ff")))
+
+            # Animated glow pulse connector between nodes
+            if i > 0:
+                p_prev_x = x - gap
+                p_curr_x = x
+                cy_mid = y + height / 2
+
+                # Line shadow glow
+                p.setPen(QPen(QColor(84, 185, 255, 60), 4))
+                p.drawLine(int(p_prev_x), int(cy_mid), int(p_curr_x), int(cy_mid))
+
+                # Core line
+                p.setPen(QPen(QColor("#54b9ff"), 2))
+                p.drawLine(int(p_prev_x), int(cy_mid), int(p_curr_x), int(cy_mid))
+
+                # Animated moving particle along connector
+                progress = (self._t * 0.8 + i * 0.5) % 1.0
+                px = p_prev_x + progress * (p_curr_x - p_prev_x)
+                p.setBrush(QBrush(QColor("#80c3ff")))
                 p.setPen(Qt.PenStyle.NoPen)
-                p.drawEllipse(QPointF(x - gap / 2, y + height / 2), 3.5, 3.5)
-            p.setPen(QPen(color, 1.4)); p.setBrush(QBrush(QColor("#07131e")))
-            p.drawRoundedRect(rect, 7, 7)
-            p.setPen(QPen(color)); p.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
-            p.drawText(QRectF(x + 9, y + 12, width - 18, 18), Qt.AlignmentFlag.AlignLeft, str(node[0]).upper())
-            p.setPen(QPen(QColor("#d6e5ed"))); p.setFont(QFont("Courier New", 8))
-            p.drawText(QRectF(x + 9, y + 36, width - 18, 38), Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap, str(node[1]))
+                p.drawEllipse(QPointF(px, cy_mid), 4.5, 4.5)
+
+            # 3D Node Card with Layered Shadow & Glow
+            shadow_rect = QRectF(x + 3, y + 4, width, height)
+            p.setBrush(QBrush(QColor(0, 0, 0, 100)))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawRoundedRect(shadow_rect, 10, 10)
+
+            # Card Background
+            p.setBrush(QBrush(QColor("#06172b")))
+            p.setPen(QPen(color, 1.6))
+            p.drawRoundedRect(rect, 10, 10)
+
+            # Header Accent Bar
+            p.setBrush(QBrush(color))
+            p.drawRoundedRect(QRectF(x + 1, y + 1, width - 2, 4), 2, 2)
+
+            # Node Type Header
+            p.setPen(QPen(color))
+            p.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+            p.drawText(QRectF(x + 10, y + 14, width - 20, 18), Qt.AlignmentFlag.AlignLeft, str(node[0]).upper())
+
+            # Node Description Text
+            p.setPen(QPen(QColor("#c7ecff")))
+            p.setFont(QFont("Segoe UI", 8))
+            p.drawText(QRectF(x + 10, y + 36, width - 20, 48), Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap, str(node[1]))
+
             x += width + gap
+
         p.end()
 
 class ClipboardPanel(QWidget):
@@ -1384,3 +1496,136 @@ class ClipboardPanel(QWidget):
         self._preview.setText(f'"{preview}"')
         self.show(); self.raise_()
         self._dismiss_timer.start(8000)
+
+
+# ── 3D WebGL Background Widget (requires PyQt6-WebEngine) ────────────────────
+
+class WebGLBackground(QWidget):
+    """Full-window 3D Three.js galaxy+orb background powered by QWebEngineView.
+
+    Place this widget behind HudCanvas in the window layout.
+    When PyQt6-WebEngine is not installed it is a no-op transparent widget.
+    """
+
+    def __init__(self, bg_html_path: str, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setStyleSheet("background: transparent;")
+        self._view = None
+        self._ready = False
+        self._pending: list[str] = []      # JS queued before the page finished loading
+
+        if not _WEBENGINE_AVAILABLE:
+            log.debug("PyQt6-WebEngine not available - 3D background disabled.")
+            return
+        # Creating a QWebEngineView under the offscreen/minimal platform plugin
+        # aborts the whole process, so headless runs (tests, CI) skip it and
+        # keep the transparent no-op widget instead.
+        if os.environ.get("QT_QPA_PLATFORM", "").lower() in ("offscreen", "minimal"):
+            log.debug("Headless Qt platform - 3D background disabled.")
+            return
+
+        try:
+            layout = QVBoxLayout(self)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(0)
+
+            view = QWebEngineView(self)
+            view.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            view.setStyleSheet("background: transparent;")
+
+            settings = view.settings()
+            settings.setAttribute(
+                QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
+            settings.setAttribute(
+                QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
+            settings.setAttribute(
+                QWebEngineSettings.WebAttribute.WebGLEnabled, True)
+            settings.setAttribute(
+                QWebEngineSettings.WebAttribute.Accelerated2dCanvasEnabled, True)
+            settings.setAttribute(
+                QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+
+            from PyQt6.QtCore import QUrl
+            url = QUrl.fromLocalFile(str(Path(bg_html_path).resolve()))
+            view.setUrl(url)
+            view.loadFinished.connect(self._on_loaded)
+
+            layout.addWidget(view)
+            self._view = view
+            log.debug("WebGL 3D background initialised from %s", bg_html_path)
+        except Exception as exc:
+            log.warning("WebGL background init failed: %s", exc)
+            self._view = None
+
+    def _run(self, js: str) -> None:
+        """Run JS in the background page, holding it back until the page is ready.
+
+        State, audio and the feature map are all pushed during startup, which is
+        long before Chromium has loaded the page, so the newest payloads are kept
+        and replayed once it is.
+        """
+        if self._view is None:
+            return
+        if not self._ready:
+            self._pending.append(js)
+            del self._pending[:-16]
+            return
+        try:
+            self._view.page().runJavaScript(js)
+        except Exception as exc:
+            log.debug("WebGL background update failed: %s", exc)
+
+    def _on_loaded(self, ok: bool):
+        """Called when the HTML page has finished loading."""
+        self._ready = ok
+        if not ok:
+            log.warning("WebGL background page failed to load.")
+            return
+        pending, self._pending = self._pending, []
+        for js in pending:
+            try:
+                self._view.page().runJavaScript(js)
+            except Exception as exc:
+                log.debug("WebGL background replay failed: %s", exc)
+
+    def set_state(self, state: str) -> None:
+        """Forward the assistant state to the galaxy core."""
+        self._run("if(window.setOrbState) window.setOrbState({!r});".format(state))
+
+    def set_audio_level(self, level: float) -> None:
+        """Forward audio amplitude (0.0-1.0) to the Three.js scene."""
+        self._run("if(window.setAudioLevel) window.setAudioLevel({:.3f});".format(level))
+
+    def trigger_pulse(self) -> None:
+        """Send a shockwave pulse through the galactic core."""
+        self._run("if(window.triggerPulse) window.triggerPulse();")
+
+    def set_features(self, features) -> None:
+        """Draw the features the assistant can run as star nodes.
+
+        Accepts plain names or ``{"name", "group"}`` mappings; the scene buckets
+        them into rings on its own when no group is given.
+        """
+        self._run("if(window.setFeatures) window.setFeatures({});".format(
+            json.dumps(list(features or []))))
+
+    def set_active_feature(self, name: str) -> None:
+        """Flash the node of a feature the assistant has just used."""
+        self._run("if(window.setActiveFeature) window.setActiveFeature({});".format(
+            json.dumps(str(name or ""))))
+
+    def set_automations(self, automations) -> None:
+        """Draw automations as step chains orbiting the galaxy."""
+        self._run("if(window.setAutomations) window.setAutomations({});".format(
+            json.dumps(list(automations or []))))
+
+    def set_active_automation(self, name: str, step: int = -1) -> None:
+        """Animate one automation; a negative step lets its spark travel freely."""
+        self._run("if(window.setActiveAutomation) window.setActiveAutomation({}, {});".format(
+            json.dumps(str(name or "")), int(step)))
+
+    def set_system_stats(self, stats: dict) -> None:
+        """Tint the dust lanes with machine load (cpu/ram as 0.0-1.0)."""
+        self._run("if(window.setSystemStats) window.setSystemStats({});".format(
+            json.dumps(dict(stats or {}))))

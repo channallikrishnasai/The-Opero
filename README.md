@@ -1,364 +1,253 @@
-<div align="center">
+# <div align="center">
 
-# ◈ OPERO
+**📧** [channallikrishnasai@gmail.com](mailto:channallikrishnasai%40gmail.com) &nbsp;&nbsp;|&nbsp;&nbsp; **🔗** [LinkedIn](https://www.linkedin.com/in/channallikrishnasai)
 
-### _A native voice-first desktop operator_
+```text
+ ██████╗ ██████╗ ███████╗██████╗  ██████╗
+██╔═══██╗██╔══██╗██╔════╝██╔══██╗██╔═══██╗
+██║   ██║██████╔╝█████╗  ██████╔╝██║   ██║
+██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗██║   ██║
+╚██████╔╝██║     ███████╗██║  ██║╚██████╔╝
+ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝
+```
 
-`VOICE` · `VISION` · `AUTOMATION` · `LOCAL CONTROL`
+<img src="assets/hero.svg" alt="OPERO Animated Hero" width="100%">
 
-![Python](https://img.shields.io/badge/Python-3.11%2B-55c8ff?style=for-the-badge&logo=python&logoColor=white)
-![Desktop](https://img.shields.io/badge/Desktop-PyQt6-20d67a?style=for-the-badge)
-![Voice](https://img.shields.io/badge/Voice-Gemini%20Live-e0ad36?style=for-the-badge)
-![Tests](https://img.shields.io/badge/Tests-84%20passed-4CAF50?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-9d7bff?style=for-the-badge)
+**Open Personal Execution & Response Operator**
+*Your desktop. Your AI. Fully autonomous.*
 
-<sub>OPERO listens, reasons, acts, and reports the verified result.</sub>
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![PyQt6](https://img.shields.io/badge/PyQt6-GUI-41cd52?style=for-the-badge&logo=qt&logoColor=white)](https://pypi.org/project/PyQt6/)
+[![Gemini](https://img.shields.io/badge/Gemini-AI%20Brain-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-00d4ff?style=for-the-badge)](LICENSE)
 
-[**GET STARTED**](#-quick-start) · [**CAPABILITIES**](#-capabilities) · [**ARCHITECTURE**](#-system-architecture) · [**DEVELOPMENT**](#-development) · [**WHATSAPP**](#-whatsapp-call-assistant)
+[🚀 Quick Start](#-quick-start) · [🤖 Automations](#-autonomous-modules--capabilities) · [🔀 Architecture](#-architecture--pipeline) · [🔧 Setup](#-setup--configuration) · [🤝 Connect](#-connect)
 
 </div>
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  OPERO // DESKTOP OPERATOR                                      STATUS: READY │
-│  INPUT  voice · text · file · camera       OUTPUT  speech · UI · local action │
-│  CORE   Gemini Live · AssemblyAI · Playwright · PyQt6 · local tool registry   │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+---
 
-> [!IMPORTANT]
-> OPERO is designed to act, not merely describe how to act. It keeps consequential work visible and stops for review before final submissions or irreversible external actions.
+## 🌟 What is OPERO?
+
+**OPERO** is a multi‑modal, local‑first living AI assistant and dynamic desktop operating system powered by **Google Gemini**. It sees your screen, hears your voice, understands your intent, and executes real actions on your computer autonomously.
+
+Unlike traditional chatbots, OPERO is an **action engine** – it **does** the work for you.
 
 ---
 
-## ◈ // WHY OPERO
+## 🔀 Architecture & Pipeline
 
-Most assistants stop at advice. OPERO is designed to turn a spoken or typed request into an observable desktop result: opening an app, researching current information, processing a file, controlling a browser, preparing an application, or routing a voice interaction through a visual HUD.
-
-OPERO is a **local desktop application**. Its interface, audio devices, files, browser automation, and WhatsApp Desktop controls remain on the machine. Cloud services are used only for capabilities you configure, such as Gemini or AssemblyAI.
-
----
-
-## ◈ // QUICK START
-
-### Prerequisites
-
-| Requirement | Needed for | Notes |
-| --- | --- | --- |
-| Python 3.11–3.13 | Core application | Python 3.12 is recommended |
-| Gemini API key | Default live voice experience | Enter on first launch or in OPERO settings |
-| Node.js 18+ | WhatsApp bridge | Required only for WhatsApp pairing/call detection |
-| Chrome or Edge | WhatsApp bridge runtime | The bridge discovers installed browsers; use `WA_CHROME_PATH` to override |
-
-### Install
-
-```powershell
-git clone <your-repository-url>
-cd "The Opero"
-python setup.py
-```
-
-### Start
-
-```powershell
-python main.py
-```
-
-On first launch, OPERO guides you through API key configuration. All secrets stay local — `config/api_keys.json` is gitignored by default.
-
-### Run Tests
-
-```powershell
-pip install -e ".[dev]"
-python -m pytest tests/ -v
-```
-
----
-
-## ◈ // CAPABILITIES
-
-| Capability | Typical request | Outcome |
-| --- | --- | --- |
-| Live web research | "Find internships matching my Python and AI experience." | Current links, ranked options, concise comparison |
-| Application preparation | "Use my resume to fill this internship form." | Extracts details and fills fields; pauses before submission |
-| Desktop control | "Set this image as my wallpaper." | Applies a local image or downloads a URL-based wallpaper |
-| File processing | "Summarize this PDF" / "Convert this spreadsheet." | Reads, analyzes, transforms, or exports supported files |
-| Vision | "What is on my screen?" | On-demand screen or camera analysis |
-| Browser operation | "Open the docs and find the API section." | Browser navigation and page interaction |
-| Call assistance | "Answer WhatsApp calls and say I'm busy." | QR pairing, bridge detection, and Desktop-call handling |
-| Mini mode | Press F10 or click ◱ | Small draggable avatar widget (cat, face, emoji, Spider-Man) |
-| Voice engines | Switch between Gemini Live and AssemblyAI | Real-time voice with multiple STT/TTS backends |
-| Plugin system | Drop a Python file in `plugins/` | Auto-discovered, hot-loadable, with enable/disable |
-
-> [!NOTE]
-> **Operator rule:** OPERO reports verified tool results — it never claims an action occurred when it did not.
-
----
-
-## ◈ // SYSTEM ARCHITECTURE
-
-```mermaid
-flowchart LR
-    U[User: voice, text, file, camera] --> UI[PyQt6 HUD / OPERO UI]
-    UI --> R[OperaLive runtime]
-    R <--> GL[Gemini Live]
-    R --> AR[Action registry]
-    R --> PR[Plugin registry]
-    R <--> MEM[Local memory & config]
-    AR --> DESK[Desktop controls]
-    AR --> WEB[Browser automation]
-    AR --> FILES[File processor]
-    AR --> SEARCH[Live web research]
-    AR --> WA[WhatsApp call manager]
-    WA <--> BRIDGE[WhatsApp Web bridge]
-    R <--> DASH[Optional phone dashboard]
-```
-
-### Voice and action lifecycle
-
+### Core Flow (Mermaid)
 ```mermaid
 sequenceDiagram
-    participant User
-    participant HUD as OPERO HUD
-    participant Runtime as OperaLive
-    participant Model as Voice / LLM
-    participant Tool as Action or Plugin
-    User->>HUD: Speak, type, or drop a file
-    HUD->>Runtime: Normalized input
-    Runtime->>Model: Context + tool declarations
-    Model-->>Runtime: Reply or tool call
-    alt Tool required
-        Runtime->>Tool: Execute local action
-        Tool-->>Runtime: Verified result
-        Runtime->>Model: Result context
-    end
-    Runtime-->>HUD: Speech, state, log, visual feedback
-    HUD-->>User: Result
+    participant User as User
+    participant Input as Input Layer (Mic/Screen)
+    participant Brain as Gemini AI Brain
+    participant Dispatch as Action Dispatcher
+    participant Module as Action Module (50+)
+    participant UI as UI & TTS Output
+    
+    User->>Input: "Hey Opero, email John the Q3 report"
+    Input->>Brain: Context + Audio Transcript + Screen Capture
+    Note over Brain: Understand intent, extract entities
+    Brain->>Dispatch: Function Call: gmail_send(to="John", subject="Q3")
+    Dispatch->>Module: Route to actions/gmail.py
+    Module-->>Dispatch: Execution Result (Success ID)
+    Dispatch-->>Brain: Return Context
+    Brain->>UI: "I've sent the Q3 report to John."
+    UI-->>User: (Spoken Audio + HUD Update)
 ```
+
+### System Layer Diagram (SVG)
+<div align="center">
+  <img src="assets/pipeline.svg" alt="OPERO Pipeline Flowchart" width="100%">
+</div>
 
 ---
 
-## ◈ // REPOSITORY MAP
+## 🤖 Autonomous Modules & Capabilities
 
-```text
-opero/
-├── main.py                 # Entry point, OperaLive session, audio pipeline
-├── ui.py                   # PyQt6 HUD, overlays, Automation Studio
-├── whatsapp_call.py        # Bridge coordination and Desktop call detection
-├── whatsapp_bridge/        # Node.js WhatsApp Web bridge and QR endpoint
-│
-├── core/                   # Voice, audio, vision, infrastructure
-│   ├── gemini.py           # Gemini Live API client with model fallback
-│   ├── llm_client.py       # Local LLM support (Ollama, OpenAI-compatible)
-│   ├── action_loader.py    # Tool discovery, validation, and dispatch
-│   ├── validator.py        # Input validation for tool parameters
-│   ├── echo.py             # Content-based echo cancellation
-│   ├── viseme.py           # Lip-sync viseme generation
-│   ├── tts.py              # Multi-engine TTS (EdgeTTS, Kokoro, ElevenLabs)
-│   ├── stt.py              # Multi-engine STT (Whisper, Vosk)
-│   ├── wake_word.py        # Local "Hey opero" wake word detection
-│   ├── confirm.py          # Human confirmation gate (forge-resistant token)
-│   ├── logger.py           # Centralized logging configuration
-│   ├── installer.py        # Auto-dependency installer
-│   ├── avatar.py           # Avatar rendering (holographic orb)
-│   └── prompt.txt          # AI behavior specification
-│
-├── actions/                # Self-registering tool modules (21+)
-│   ├── browser_control.py  # Search, navigate, screenshot, form fill
-│   ├── send_message.py     # WhatsApp, email, messaging
-│   ├── file_ops.py         # Read, write, move, copy, delete
-│   ├── computer_control.py # System commands, app control
-│   ├── code_helper.py      # Code analysis and generation
-│   ├── dev_agent.py        # Development task automation
-│   └── ...                 # weather, reminders, flight finder, etc.
-│
-├── memory/
-│   ├── config_manager.py   # Settings persistence (JSON + AES encryption)
-│   └── memory_manager.py   # Long-term memory with search
-│
-├── dashboard/              # Local HTTP dashboard (FastAPI + WebSocket)
-├── plugins/                # Drop-in extensions with hot-load
-├── config/                 # Runtime config (gitignored)
-├── tests/                  # Test suite (84 tests, pytest)
-├── pyproject.toml          # Modern Python packaging
-└── CONTRIBUTING.md         # Development guide
-```
+OPERO ships with **50+ Action Modules**. Click any category to explore the automations.
 
----
+<details>
+<summary><b>🛡️ 1️⃣ Self‑Heal Engine</b></summary>
 
-## ◈ // SYSTEM MAP
-
-| Area | What OPERO provides | Primary component |
-| --- | --- | --- |
-| Voice | Gemini Live conversation, interruption, push-to-talk, wake word | `main.py`, `core/session.py` |
-| Alternative voice | AssemblyAI streaming STT with TTS output | `core/assemblyai_voice.py` |
-| Desktop | App launch, wallpaper, file tasks, system controls | `actions/` |
-| Browser | Search, navigation, page reading, screenshots | `actions/browser_control.py` |
-| Files | Documents, PDFs, images, spreadsheets, audio, video | `actions/file_processor.py` |
-| WhatsApp | QR pairing, bridge events, call detection | `whatsapp_call.py`, `whatsapp_bridge/` |
-| Automation | Visual trigger → logic → action maps | `ui.py` Automation Studio |
-| Remote access | Optional phone dashboard with encrypted pairing | `dashboard/` |
-| Mini mode | Draggable avatar widget (4 styles) | `ui.py` MiniModeWidget |
-| Extensibility | Auto-discovered actions and plugins | `core/action_loader.py`, `plugins/` |
-
----
-
-<a id="development"></a>
-## ◈ // DEVELOPMENT
-
-### Setup
-
-```powershell
-git clone <repo-url> && cd "The Opero"
-python -m venv .venv
-.venv\Scripts\activate          # Windows
-pip install -e ".[dev]"
-```
-
-### Code Quality
-
-```powershell
-# Run all tests
-python -m pytest tests/ -v
-
-# Lint
-ruff check .
-
-# Type check
-mypy .
-```
-
-### Adding a New Action
-
-1. Create `actions/my_action.py`
-2. Define a `TOOL` dict (name, description, JSON Schema parameters)
-3. Optionally add a `VALIDATOR` dict for input validation
-4. Implement `execute(params: dict) -> str`
-5. The action is auto-discovered on next startup
-
-```python
-# actions/example.py
-from core.logger import get_logger
-from core.validator import validate_params
-
-log = get_logger(__name__)
-
-TOOL = {
-    "name": "example_action",
-    "description": "Does something useful",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "query": {"type": "string", "description": "What to search for"},
-        },
-        "required": ["query"],
-    },
-}
-
-VALIDATOR = {
-    "query": [{"type": str, "required": True, "max_len": 500}],
-}
-
-def execute(params: dict) -> str:
-    params = validate_params(params, VALIDATOR, "example_action")
-    log.info("Running example_action with query=%s", params["query"])
-    return f"Result for: {params['query']}"
-```
-
-### Adding a Plugin
-
-Drop a Python file in `plugins/` following the template in `plugins/_template.py`. Plugins are hot-loaded — enable/disable without restart.
-
----
-
-<a id="whatsapp-call-assistant"></a>
-## ◈ // WHATSAPP CALL ASSISTANT
-
-### Pairing flow
+Detects runtime errors, generates Gemini patches, validates with an AST sandbox, and auto‑rolls back if needed.
 
 ```mermaid
-flowchart TD
-    A[Start OPERO] --> B[Launch local WhatsApp bridge]
-    B --> C{Already paired?}
-    C -- No --> D[OPERO shows LINK WHATSAPP QR]
-    D --> E[Phone: WhatsApp → Linked devices]
-    E --> F[Scan QR]
-    F --> G[Bridge reports connected]
-    C -- Yes --> G
-    G --> H[Monitor bridge + WhatsApp Desktop]
+graph TD
+    A[Runtime Traceback] -->|Captured| B(Traceback Analyzer)
+    B --> C{Core Protected File?}
+    C -->|Yes| D[Abort: Cannot patch core]
+    C -->|No| E[Gemini: Synthesize Patch]
+    E --> F(Safety Sandbox: AST Validation)
+    F --> G{Syntax Valid?}
+    G -->|No| H[Abort: Rejected by Sandbox]
+    G -->|Yes| I[Create Atomic Backup]
+    I --> J[Apply Patch to Disk]
+    J --> K(py_compile check)
+    K -->|Fail| L[Auto‑Rollback]
+    K -->|Pass| M((Patch Successful))
 ```
+</details>
 
-1. Start OPERO
-2. Click **💬 LINK WHATSAPP** in the controls drawer (or wait for auto-prompt)
-3. On your phone: **WhatsApp → Settings → Linked devices → Link a device**
-4. Scan the QR code shown inside OPERO
-5. Keep WhatsApp Desktop open for automated call controls
+<details>
+<summary><b>📧 2️⃣ Gmail Automation</b></summary>
 
-### Incoming call flow
+Fully integrated OAuth2/App‑Passcode email engine.
+- **Read & Search** – "Find the email from my boss about the Q3 report."
+- **Draft & Send** – "Reply saying I will have it done by 5 PM."
+- **Summarize** – "Summarize my unread emails today."
+</details>
 
-```mermaid
-flowchart LR
-    I([Incoming call]) --> B{Bridge event?}
-    B -- Yes --> D[Create call event]
-    B -- No --> V[Inspect WhatsApp Desktop UI]
-    D --> A{Auto-answer enabled?}
-    A -- No --> P[Show Answer / Decline]
-    A -- Yes --> Q[Click answer + speak message]
-```
+<details>
+<summary><b>🌐 3️⃣ Live Web Research</b></summary>
 
-> [!WARNING]
-> WhatsApp does not provide a public API for personal calls. OPERO uses a linked local session and Desktop UI automation, which must be tested on your machine.
+DuckDuckGo + Gemini powered instant research.
+- **Compare** – "Compare iPhone 15 vs Galaxy S24."
+- **News** – "Top tech headlines today."
+- **Scrape** – Structured data extraction from live pages.
+</details>
+
+<details>
+<summary><b>📝 4️⃣ Document & Media Generation</b></summary>
+
+Create rich files locally.
+- **Word (.docx)** – Project proposals.
+- **PowerPoint (.pptx)** – AI‑generated decks.
+- **PDF** – Formatted reports.
+- **HTML/CSS** – Landing pages.
+</details>
+
+<details>
+<summary><b>🎵 5️⃣ Spotify Voice Control</b></summary>
+
+Hands‑free music management via the Spotify Web API.
+- Play, pause, skip, add to playlist.
+</details>
+
+<details>
+<summary><b>💻 6️⃣ Full Desktop & File System Control</b></summary>
+
+Orchestrate your PC with PyAutoGUI and OS utilities.
+- Move/rename files, UI clicks, system monitoring.
+</details>
+
+<details>
+<summary><b>🔍 7️⃣ Stanford MOSS Plagiarism Detection</b></summary>
+
+Upload source code to MOSS, receive similarity matrix & web report URL.
+</details>
 
 ---
 
-## ◈ // VOICE ENGINES
+## 📊 Feature Matrix
 
-| Engine | Use case | Setup |
-| --- | --- | --- |
-| Gemini Live | Low-latency bidirectional voice + native tool use | Configure Gemini key, choose a voice |
-| AssemblyAI | Real-time transcription with alternate pipeline | Add `assemblyai_api_key`, switch engine in UI |
-
-If AssemblyAI fails, OPERO falls back to the default engine automatically.
+| **Module Category** | **Example Files** | **Inputs** | **Outputs** |
+|---------------------|-------------------|------------|-------------|
+| System Control      | `computer_control.py`, `system_manager.py` | Voice, Text | Mouse/Keyboard events, Settings changes |
+| Media & Audio       | `spotify_controller.py`, `youtube_video.py` | Voice | Audio playback, Spotify API triggers |
+| File Processing     | `file_controller.py`, `file_processor.py` | File paths, NL description | Moved/renamed files, OCR text, extracted data |
+| Document Generation | `docx_tools.py`, `ppt_builder.py`, `pdf_tools.py` | Topic, content guidelines | `.docx`, `.pptx`, `.pdf` |
+| Web & Research      | `web_search.py`, `browser_control.py` | Search queries, URLs | JSON summaries, Markdown reports |
+| Communication       | `gmail.py`, `instagram_mcp.py` | Credentials, draft content | Sent emails, Direct messages |
+| Self‑Healing        | `auto_heal_engine.py`, `recovery.py` | Tracebacks, exceptions | AST‑validated `.py` patches |
 
 ---
 
-## ◈ // LOCAL CONFIGURATION
+## 🚀 Quick Start
 
-Configuration is stored at `config/api_keys.json` (gitignored):
+### 1️⃣ Prerequisites
+- **Python 3.10+** (Windows 10/11 recommended)
+- **Microphone & Speakers**
+- **Google Gemini API Key** – obtain from the [Gemini AI Studio](https://deepmind.google/technologies/gemini/).
 
+### 2️⃣ Installation
+```bash
+# Clone the repo
+git clone https://github.com/channallikrishnasai/The-Opero.git
+cd The-Opero
+
+# (Optional) create a virtual env
+python -m venv venv && .\venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 3️⃣ Configuration
+Place your secret keys in `config/api_keys.json`:
 ```json
 {
-  "gemini_api_key": "",
-  "assemblyai_api_key": "",
-  "voice_engine": "opero",
-  "whatsapp_auto_answer": false,
-  "whatsapp_busy_message": "I am busy right now.",
-  "moss_user_id": "123456"
+  "gemini": "YOUR_GEMINI_API_KEY",
+  "gmail": {
+    "client_id": "...",
+    "client_secret": "...",
+    "refresh_token": "..."
+  },
+  "spotify": {
+    "client_id": "...",
+    "client_secret": "..."
+  }
 }
 ```
+> **Tip:** The UI includes a Settings overlay where you can paste the Gemini key directly.
+
+### 4️⃣ Run OPERO
+```bash
+python main.py
+```
+The desktop HUD will appear, embedding the interactive **`site/index.html`** dashboard.
 
 ---
 
-## ◈ // TROUBLESHOOTING
-
-| Symptom | Fix |
-| --- | --- |
-| Browser actions fail | Run `python -m playwright install chromium firefox` |
-| AssemblyAI falls back | Re-enter API key and check microphone selection |
-| QR panel never appears | Run `npm install` in `whatsapp_bridge/`, check Node.js |
-| Caller hears nothing | Configure virtual audio device as WhatsApp's microphone |
-| MOSS rejects submission | Use the numeric ID from Stanford MOSS registration |
+## 🔧 Verification & Testing
+| **Subsystem** | **Command** | **Expected Result** |
+|---------------|-------------|---------------------|
+| Core Boot | `python -c "import main; print('OK')"` | No import errors |
+| Action Loader | `python -c "from core.action_loader import discover_actions; discover_actions(None)"` | 50+ actions discovered |
+| Gmail OAuth | `python -c "from actions.gmail import execute; print(execute({'action':'status'}))"` | Shows active token status |
+| Self‑Heal Demo | `python demo/demo_selfheal.py` | Runs 3 auto‑repair cycles |
+| UI Load | Open `http://localhost:8000/site/` (or run `main.py`) | 3D galaxy background, interactive cards |
 
 ---
 
-## ◈ // SECURITY & RESPONSIBLE USE
+## 🖼️ UI Highlights (Live Demo)
+<div align="center">
+  <img src="assets/hero.svg" alt="Animated Hero" width="48%" style="margin:4px"/>
+  <img src="assets/pipeline.svg" alt="Pipeline Flow" width="48%" style="margin:4px"/>
+</div>
 
-- API keys, OAuth tokens, and WhatsApp sessions stay on your machine (`config/` is gitignored)
-- Review recipients, form fields, and submissions before they leave your machine
-- Dashboard is localhost-only with CORS, rate limiting, and security headers
-- All tool parameters are validated before execution
-- Human confirmation gate prevents irreversible actions
+- **Full‑screen 3D galaxy** built with Three.js – stars, nebulae, floating geometry.
+- **Custom neon cursor** with interactive halo.
+- **Feature cards** tilt on mouse hover (desktop) and pop‑out on tap (mobile).
+- **Scroll progress bar** at the top.
+- **Mini‑mode (F10)** – shrinks HUD to a floating avatar that stays on top.
+- **Live HUD** updates via Gemini responses (voice & text).
 
-## ◈ // LICENSE
+---
 
-See [LICENSE](LICENSE).
+## 🤝 Connect & Contribute
+<div align="center">
+
+**Built by [Krishna Sai Channalli](https://www.linkedin.com/in/channallikrishnasai)**
+
+[![GitHub ★](https://img.shields.io/badge/⭐_Star_on_GitHub-181717?style=for-the-badge&logo=github)](https://github.com/channallikrishnasai/The-Opero)
+[![LinkedIn](https://img.shields.io/badge/Connect_on_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/channallikrishnasai)
+[![Issues](https://img.shields.io/badge/Report_a_Bug-ff3355?style=for-the-badge&logo=github)](https://github.com/channallikrishnasai/The-Opero/issues)
+
+</div>
+
+- 🐛 **Found a bug?** Open an issue.
+- 💡 **Feature request?** Start a discussion.
+- 🤝 **Pull requests** are warmly welcome – see `CONTRIBUTING.md` for guidelines.
+
+---
+
+<div align="center">
+
+Made with ❤️ in India 🇮🇳
+
+**[⭐ Star this repo](https://github.com/channallikrishnasai/The-Opero) if OPERO made your day easier!**
+
+</div>

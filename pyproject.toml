@@ -13,7 +13,7 @@ authors = [
     { name = "The Opero Contributors" },
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -53,6 +53,8 @@ dependencies = [
     "python-docx",
     "paho-mqtt",
     "nvidia-ml-py",
+    "google-api-python-client>=2.100,<3",
+    "google-auth-oauthlib>=1.2,<2",
 ]
 
 [project.optional-dependencies]

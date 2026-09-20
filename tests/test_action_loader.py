@@ -175,3 +175,44 @@ def test_reserved_names_rejected(tmp_path):
     )
     registry = discover_actions(actions_dir, reserved_names={"reserved_action"})
     assert "reserved_action" not in registry.names()
+
+
+def test_registry_run_records_task_lifecycle(tmp_path):
+    """Every dispatched action is visible to task-status consumers."""
+    from core.action_loader import discover_actions
+    from core.task_manager import TaskState, journal
+
+    actions_dir = tmp_path / "actions"
+    actions_dir.mkdir()
+    (actions_dir / "tracked.py").write_text(
+        'def _handler(parameters, **kwargs):\n'
+        '    return "completed"\n'
+        'TOOL = {"name": "tracked_action", "description": "tracked", '
+        '"parameters": {"type": "OBJECT"}, "handler": _handler}\n'
+    )
+    registry = discover_actions(actions_dir)
+    assert registry.run("tracked_action", {"secret": "not-recorded"}) == "completed"
+    latest = journal.recent(1)[0]
+    assert latest["state"] == TaskState.SUCCEEDED.value
+    assert latest["metadata"] == {"action": "tracked_action", "parameter_keys": ["secret"]}
+    assert latest["result"] == "Completed successfully."
+    assert "not-recorded" not in str(latest)
+
+
+def test_registry_does_not_retain_action_output_in_journal(tmp_path):
+    from core.action_loader import discover_actions
+    from core.task_manager import journal
+
+    actions_dir = tmp_path / "actions"
+    actions_dir.mkdir()
+    (actions_dir / "private.py").write_text(
+        'def _handler(parameters, **kwargs):\n'
+        '    return "private-message-body"\n'
+        'TOOL = {"name": "private_action", "description": "private", '
+        '"parameters": {"type": "OBJECT"}, "handler": _handler}\n'
+    )
+    registry = discover_actions(actions_dir)
+    assert registry.run("private_action", {}) == "private-message-body"
+    latest = journal.recent(1)[0]
+    assert latest["result"] == "Completed successfully."
+    assert "private-message-body" not in str(latest)

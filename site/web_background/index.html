@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OPERO · Deep Space Background</title>
+  <link rel="icon" href="data:,">   <!-- the page is chrome-less; keep the console clean -->
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #01020a; }
+    #stage { position: absolute; inset: 0; }
+    #stage canvas { display: block; }
+
+    /* Shown only when the machine cannot give us a WebGL context. */
+    #fallback {
+      position: absolute; inset: 0; display: none; place-items: center; text-align: center;
+      background: radial-gradient(circle at 50% 44%, #0a2036 0%, #050a14 46%, #01020a 100%);
+    }
+    #fallback h1 { color: #7fd8ff; font: 600 15px 'Segoe UI', system-ui, sans-serif; letter-spacing: .34em; }
+    #fallback p  { color: #40697d; font: 400 10px 'Segoe UI', system-ui, sans-serif; letter-spacing: .16em; margin-top: 10px; }
+    body.no-webgl #fallback { display: grid; }
+  </style>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="fallback">
+    <div>
+      <h1>OPERO</h1>
+      <p>3D DEEP-SPACE BACKGROUND UNAVAILABLE — WEBGL DISABLED</p>
+    </div>
+  </div>
+
+  <!-- Offline three.js r128 plus its post-processing add-ons, in dependency order:
+       EffectComposer defines THREE.Pass, which ShaderPass/RenderPass extend as the
+       file loads, and CopyShader/LuminosityHighPassShader are what the composer and
+       the bloom pass construct. -->
+  <script src="three.min.js"></script>
+  <script src="EffectComposer.js"></script>
+  <script src="CopyShader.js"></script>
+  <script src="LuminosityHighPassShader.js"></script>
+  <script src="ShaderPass.js"></script>
+  <script src="RenderPass.js"></script>
+  <script src="UnrealBloomPass.js"></script>
+  <script src="OrbitControls.js"></script>
+
+  <script>
+  /* ===========================================================================
+     OPERO deep-space background
+     ---------------------------------------------------------------------------
+     A living dark-themed galaxy: a barred spiral of shader-drawn stars, drifting
+     nebula clouds, and a reactor nucleus at the galactic core. Every feature the
+     assistant can run orbits the core as a star node, every automation is a chain
+     of steps, and both light up as Python reports what is actually happening.
+
+     Public API (all optional to call; missing calls simply leave defaults):
+       setOrbState(state)                    IDLE|LISTENING|THINKING|SPEAKING|
+                                             EXECUTING|WORKING|MUTED|SCANNING|
+                                             SLEEPING|CINEMATIC|ERROR
+       setBrahmaState(state)                 alias kept for older callers
+       setAudioLevel(0..1)                   live microphone/voice amplitude
+       setFeatures([{name, group}])          rebuild the feature constellation
+       setActiveFeature(name)                flash the node a tool just used
+       setAutomations([{name, steps:[...]}]) rebuild the automation chains
+       setActiveAutomation(name, step)       animate a running automation
+       setSystemStats({cpu, ram})            0..1 load, brightens the dust lanes
+       setQuality(0|1|2)                     pin the quality ladder
+       triggerPulse()                        shockwave through the galactic core
+       accelerateReactor()/losePower()/setReactorSpeed()/dissolveReactor()
+                                             setup-wizard cine controls
+       __operoBackground                     diagnostics: {ready, stats(), errors}
+     =========================================================================== */
+  (function () {
+    "use strict";
+
+    // ── Palette ───────────────────────────────────────────────────────────────
+    const C = {
+      void:     0x01020a,
+      coreHot:  0xffffff,
+      coreMid:  0x9fe9ff,
+      arm:      0x2f6fd0,
+      armHot:   0x74c8ff,
+      armFar:   0x241a55,
+      nebula:   [0x2b1b6b, 0x0e4a63, 0x5c1a5e, 0x123a5e],
+      accent:   0x00e5ff,
+      chain:    0x3c6ea8,
+    };
+
+    // Per-state look: colour, pace, bloom and camera distance.
+    const STATES = {
+      IDLE:      { hot: 0xcfeaff, mid: 0x2f8fd0, dim: 0x081f38, accent: 0x2f9fd0, spin: 1.00, bloom: 0.55, camera: 30, warp: 0.00, arcs: 0.25 },
+      ONLINE:    { hot: 0xcfeaff, mid: 0x2f8fd0, dim: 0x081f38, accent: 0x2f9fd0, spin: 1.00, bloom: 0.55, camera: 30, warp: 0.00, arcs: 0.25 },
+      LISTENING: { hot: 0xeafcff, mid: 0x00e5ff, dim: 0x07505e, accent: 0x00e5ff, spin: 1.55, bloom: 0.72, camera: 26, warp: 0.05, arcs: 0.45 },
+      THINKING:  { hot: 0xfff0dc, mid: 0xffa63d, dim: 0x5a2f06, accent: 0xffb347, spin: 2.30, bloom: 0.82, camera: 28, warp: 0.16, arcs: 0.85 },
+      SPEAKING:  { hot: 0xffffff, mid: 0x7fe6ff, dim: 0x0a3f66, accent: 0x9fe9ff, spin: 1.90, bloom: 0.95, camera: 24, warp: 0.34, arcs: 0.55 },
+      EXECUTING: { hot: 0xf0e2ff, mid: 0xa06cff, dim: 0x30125c, accent: 0xb388ff, spin: 2.60, bloom: 0.85, camera: 27, warp: 0.20, arcs: 0.95 },
+      WORKING:   { hot: 0xf0e2ff, mid: 0xa06cff, dim: 0x30125c, accent: 0xb388ff, spin: 2.60, bloom: 0.85, camera: 27, warp: 0.20, arcs: 0.95 },
+      SCANNING:  { hot: 0xe8fff2, mid: 0x37ff9f, dim: 0x0a4a2c, accent: 0x5cffb0, spin: 2.05, bloom: 0.78, camera: 26, warp: 0.14, arcs: 0.70 },
+      MUTED:     { hot: 0xffd9de, mid: 0xff4d6d, dim: 0x4a0d18, accent: 0xff6b83, spin: 0.55, bloom: 0.42, camera: 31, warp: 0.00, arcs: 0.18 },
+      SLEEPING:  { hot: 0xa9c6ff, mid: 0x243b78, dim: 0x050a1c, accent: 0x3f5ea8, spin: 0.30, bloom: 0.30, camera: 34, warp: 0.00, arcs: 0.10 },
+      CINEMATIC: { hot: 0xffe9c9, mid: 0xff7fb0, dim: 0x3c1030, accent: 0xffc46b, spin: 0.40, bloom: 0.90, camera: 38, warp: 0.08, arcs: 0.60 },
+      ERROR:     { hot: 0xffe3e3, mid: 0xff3b30, dim: 0x5c0a0a, accent: 0xff5c4d, spin: 1.40, bloom: 0.88, camera: 26, warp: 0.00, arcs: 0.90 },
+    };
+
+    // Feature buckets, matched on the tool name the registry reports.
+    const GROUPS = [
+      { key: "core",   ring: 7.4,  tilt: 0.30, spin:  0.20, color: 0x6fd8ff,
+        match: /(system|screen|monitor|recovery|task|undo|shutdown|settings|wake|health|desktop)/ },
+      { key: "work",   ring: 12.2, tilt: -0.42, spin: -0.14, color: 0xa98cff,
+        match: /(file|doc|ppt|pdf|office|website|dev|code|brahma|project|calendar|calorie|pushup|video|youtube|game)/ },
+      { key: "mind",   ring: 10.0, tilt: 0.62, spin: 0.11, color: 0x7cffc4,
+        match: /(memory|recall|remember|moss|research|web|search|weather|flight|briefing)/ },
+      { key: "channel", ring: 16.6, tilt: -0.18, spin: 0.08, color: 0xffb35c,
+        match: /(whats|instagram|gmail|mail|message|connect|spotify|music|social|browser|call)/ },
+    ];
+
+    // Shown until Python pushes the live registries.
+    const DEFAULT_FEATURES = [
+      "system_status", "screen_process", "close_camera", "manage_monitor", "shutdown_opero",
+      "undo", "computer_settings", "recovery", "task_status",
+      "save_memory", "recall_memory",
+      "file_controller", "ppt_builder", "website_builder", "opero_dev_agent",
+      "gmail", "instagram_messaging", "opero_connect", "moss_check", "opero_health",
+    ];
+
+    const DEFAULT_AUTOMATIONS = [
+      { name: "WhatsApp busy reply", steps: ["Incoming WhatsApp call", "Auto-answer window active", "Answer in Desktop", "Say busy message"] },
+      { name: "Internship application", steps: ["Resume uploaded", "Find matching internships", "Score roles and links", "Fill known form fields", "Wait before submit"] },
+      { name: "Smart reminder", steps: ["Reminder due", "User is available", "Speak and show alert"] },
+      { name: "Desktop command", steps: ["Voice or text command", "Resolve available tool", "Run desktop task", "Report outcome"] },
+      { name: "Auto-heal", steps: ["Detect failure", "Diagnose cause", "Apply repair", "Verify recovery"] },
+      { name: "Daily briefing", steps: ["Gather calendar and mail", "Compose briefing", "Speak summary"] },
+    ];
+
+    // ── Small helpers ─────────────────────────────────────────────────────────
+    const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+    const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+    const TAU = Math.PI * 2;
+
+    function groupFor(name) {
+      const n = String(name || "").toLowerCase();
+      for (const g of GROUPS) if (g.match.test(n)) return g;
+      return GROUPS[1];
+    }
+
+    function label(text, color, height) {
+      const font = "600 30px 'Segoe UI', system-ui, sans-serif";
+      const measure = document.createElement("canvas").getContext("2d");
+      measure.font = font;
+      const width = Math.ceil(measure.measureText(text).width) + 26;
+      const cv = document.createElement("canvas");
+      cv.width = width; cv.height = 64;
+      const ctx = cv.getContext("2d");
+      ctx.font = font;
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(0,0,0,.85)";
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = color;
+      ctx.fillText(text, 13, 34);
+      const tex = new THREE.CanvasTexture(cv);
+      tex.minFilter = THREE.LinearFilter;
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: tex, transparent: true, depthWrite: false, depthTest: false,
+        blending: THREE.AdditiveBlending, opacity: 0.0,
+      }));
+      sprite.scale.set((cv.width / cv.height) * height, height, 1);
+      sprite.renderOrder = 6;
+      return sprite;
+    }
+
+    function dotTexture(inner, outer) {
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = 128;
+      const ctx = cv.getContext("2d");
+      const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      g.addColorStop(0.0, inner);
+      g.addColorStop(0.35, outer);
+      g.addColorStop(1.0, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 128, 128);
+      return new THREE.CanvasTexture(cv);
+    }
+
+    function cloudTexture(tint) {
+      const size = 256;
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = size;
+      const ctx = cv.getContext("2d");
+      const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      g.addColorStop(0.0, `rgba(${tint},0.55)`);
+      g.addColorStop(0.4, `rgba(${tint},0.22)`);
+      g.addColorStop(1.0, `rgba(${tint},0)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, size, size);
+      // Streaks give the clouds structure; random alpha keeps them from looking
+      // like identical circles.
+      ctx.globalCompositeOperation = "destination-out";
+      for (let i = 0; i < 26; i++) {
+        const r = 12 + Math.random() * 54;
+        ctx.globalAlpha = 0.10 + Math.random() * 0.32;
+        ctx.beginPath();
+        ctx.ellipse(Math.random() * size, Math.random() * size, r, r * (0.35 + Math.random() * 0.7),
+                    Math.random() * Math.PI, 0, TAU);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+      return new THREE.CanvasTexture(cv);
+    }
+
+    const diagnostics = { version: "2.0", ready: false, errors: [] };
+    window.addEventListener("error", (e) => diagnostics.errors.push(String(e.message || e)));
+    window.addEventListener("unhandledrejection", (e) => diagnostics.errors.push("rejection: " + String(e.reason)));
+
+    // ── Renderer, scene, camera ───────────────────────────────────────────────
+    const stage = document.getElementById("stage");
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    } catch (err) {
+      document.body.classList.add("no-webgl");
+      diagnostics.errors.push("webgl: " + err.message);
+      window.__operoBackground = diagnostics;
+      return;
+    }
+    if (!renderer.getContext()) {
+      document.body.classList.add("no-webgl");
+      window.__operoBackground = diagnostics;
+      return;
+    }
+
+    let dpr = Math.min(window.devicePixelRatio || 1, 1.35);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(C.void, 1);
+    stage.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(52, window.innerWidth / Math.max(1, window.innerHeight), 0.1, 900);
+    camera.position.set(0, 13, 26);   // ~27° above the disc: depth without a side-on view
+    camera.lookAt(0, 0, 0);
+
+    // Auto-orbit only: the widget sits behind the interactive HUD, so the camera
+    // should never demand input. `window.controls` is kept for the setup wizard.
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.enableZoom = false;
+    controls.enableRotate = false;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.28;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 0, 0);
+    window.controls = controls;
+
+    // Sky dome: a very dim blue-black gradient so the void never reads as flat
+    // black, plus the distant star field parented to it.
+    const sky = new THREE.Mesh(
+      new THREE.SphereGeometry(420, 32, 24),
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide, depthWrite: false,
+        uniforms: {
+          uTop: { value: new THREE.Color(0x02040e) },
+          uBottom: { value: new THREE.Color(0x070313) },
+        },
+        vertexShader: "varying vec3 vPos; void main(){ vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+        fragmentShader: [
+          "uniform vec3 uTop; uniform vec3 uBottom; varying vec3 vPos;",
+          "void main(){",
+          "  float h = normalize(vPos).y * 0.5 + 0.5;",
+          "  vec3 col = mix(uBottom, uTop, smoothstep(0.0, 1.0, h));",
+          "  gl_FragColor = vec4(col, 1.0);",
+          "}",
+        ].join("\n"),
+      })
+    );
+    sky.renderOrder = -10;
+    scene.add(sky);
+
+    // ── Distant stars ─────────────────────────────────────────────────────────
+    function buildDistantStars(count) {
+      const pos = new Float32Array(count * 3);
+      const col = new Float32Array(count * 3);
+      const size = new Float32Array(count);
+      const seed = new Float32Array(count);
+      const tint = new THREE.Color();
+      for (let i = 0; i < count; i++) {
+        const r = 220 + Math.random() * 160;
+        const theta = Math.random() * TAU;
+        const phi = Math.acos(2 * Math.random() - 1);
+        pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        pos[i * 3 + 1] = r * Math.cos(phi);
+        pos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+        tint.setHSL(0.52 + (Math.random() - 0.5) * 0.22, 0.35 + Math.random() * 0.3, 0.55 + Math.random() * 0.35);
+        col[i * 3] = tint.r; col[i * 3 + 1] = tint.g; col[i * 3 + 2] = tint.b;
+        size[i] = 0.8 + Math.random() * 1.5;
+        seed[i] = Math.random() * 100;
+      }
+      return makeStarPoints(pos, col, size, seed, { twinkle: 0.75, brightness: 0.6 });
+    }
+
+    // Shared star-field material: additive round points, size attenuated by depth,
+    // with a per-star twinkle phase so the field shimmers instead of blinking.
+    function makeStarPoints(pos, col, size, seed, opts) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute("aColor", new THREE.Float32BufferAttribute(col, 3));
+      geo.setAttribute("aSize", new THREE.Float32BufferAttribute(size, 1));
+      geo.setAttribute("aSeed", new THREE.Float32BufferAttribute(seed, 1));
+      const mat = new THREE.ShaderMaterial({
+        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+        uniforms: {
+          uTime: { value: 0 },
+          uAudio: { value: 0 },
+          uPixelRatio: { value: dpr },
+          uTwinkle: { value: opts.twinkle },
+          uBrightness: { value: opts.brightness },
+        },
+        vertexShader: [
+          "attribute float aSize; attribute vec3 aColor; attribute float aSeed;",
+          "uniform float uTime, uAudio, uPixelRatio, uTwinkle;",
+          "varying vec3 vColor; varying float vAlpha;",
+          "void main() {",
+          "  vec4 mv = modelViewMatrix * vec4(position, 1.0);",
+          "  float twinkle = 0.72 + 0.28 * sin(uTime * 1.6 + aSeed * 27.0);",
+          "  vAlpha = mix(1.0, twinkle, uTwinkle);",
+          "  vColor = aColor;",
+          "  gl_PointSize = aSize * uPixelRatio * (30.0 / max(1.0, -mv.z)) * (1.0 + uAudio * 0.4);",
+          "  gl_Position = projectionMatrix * mv;",
+          "}",
+        ].join("\n"),
+        fragmentShader: [
+          "uniform float uBrightness;",
+          "varying vec3 vColor; varying float vAlpha;",
+          "void main() {",
+          "  vec2 d = gl_PointCoord - 0.5;",
+          "  float r2 = dot(d, d);",
+          "  if (r2 > 0.25) discard;",
+          "  float falloff = smoothstep(0.25, 0.0, r2);",
+          "  gl_FragColor = vec4(vColor * uBrightness * (0.22 + falloff * 0.85), 1.0) * vAlpha;",
+          "}",
+        ].join("\n"),
+      });
+      const points = new THREE.Points(geo, mat);
+      points.frustumCulled = false;
+      return points;
+    }
+
+    const distantStars = buildDistantStars(1600);
+    scene.add(distantStars);
+
+    // ── The galaxy ────────────────────────────────────────────────────────────
+    const galaxy = new THREE.Group();
+    scene.add(galaxy);
+
+    // Two dominant arms wrapped well around the nucleus read as a galaxy far
+    // more clearly than an even four-arm pinwheel of the same star count.
+    const galaxyState = { stars: 0, arms: 2, radius: 24, twist: 3.4, thickness: 2.15 };
+
+    function buildGalaxy(count) {
+      const pos = new Float32Array(count * 3);
+      const col = new Float32Array(count * 3);
+      const size = new Float32Array(count);
+      const seed = new Float32Array(count);
+      const core = new THREE.Color(C.coreMid);
+      const arm = new THREE.Color(C.arm);
+      const armHot = new THREE.Color(C.armHot);
+      const far = new THREE.Color(C.armFar);
+      const tint = new THREE.Color();
+      const bulge = Math.floor(count * 0.12);   // dense nucleus population
+
+      for (let i = 0; i < count; i++) {
+        let x, y, z, t;
+        if (i < bulge) {
+          const r = Math.pow(Math.random(), 2.1) * 5.4;
+          const theta = Math.random() * TAU;
+          const phi = Math.acos(2 * Math.random() - 1);
+          x = r * Math.sin(phi) * Math.cos(theta);
+          y = r * Math.cos(phi) * 0.75;
+          z = r * Math.sin(phi) * Math.sin(theta);
+          t = clamp(r / 5.4, 0, 1);
+        } else {
+          const radial = Math.pow(Math.random(), 0.62);
+          const r = 2.2 + radial * galaxyState.radius;
+          const armIndex = Math.floor(Math.random() * galaxyState.arms);
+          const spread = 0.20 + radial * 0.24;   // tight enough to read as arms
+          const theta = (armIndex / galaxyState.arms) * TAU
+                      + r * (galaxyState.twist / galaxyState.radius)
+                      + gauss() * spread;
+          x = Math.cos(theta) * r + gauss() * 0.35;
+          z = Math.sin(theta) * r + gauss() * 0.35;
+          y = gauss() * galaxyState.thickness * (1.25 - radial * 0.75);
+          t = clamp((r - 2.2) / galaxyState.radius, 0, 1);
+        }
+        pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+
+        // Colour runs white-hot at the nucleus, through the arms, to cold violet
+        // at the rim — the depth cue that makes a flat disc read as a galaxy.
+        if (t < 0.28) tint.copy(core).lerp(armHot, t / 0.28);
+        else if (t < 0.68) tint.copy(armHot).lerp(arm, (t - 0.28) / 0.4);
+        else tint.copy(arm).lerp(far, (t - 0.68) / 0.32);
+        tint.offsetHSL((Math.random() - 0.5) * 0.03, 0, (Math.random() - 0.5) * 0.12);
+        col[i * 3] = tint.r; col[i * 3 + 1] = tint.g; col[i * 3 + 2] = tint.b;
+
+        // Point sizes are in pixels at the reference camera distance, so the disc
+        // stays a field of stars instead of a sheet of overlapping blobs.
+        size[i] = 1.4 + Math.random() * 2.0 + (1 - t) * 0.4;
+        seed[i] = Math.random() * 100;
+      }
+      galaxyState.stars = count;
+      return makeStarPoints(pos, col, size, seed, { twinkle: 0.35, brightness: 0.62 });
+    }
+
+    const galaxyPoints = buildGalaxy(
+      (window.devicePixelRatio || 1) > 1.5 ? 30000 : 26000
+    );
+    galaxy.add(galaxyPoints);
+
+    // Dust lanes: larger, dimmer, violet-brown motes between the arms. They are a
+    // separate draw call so quality steps can drop them first.
+    const dustLanes = (function buildDust(count) {
+      const pos = new Float32Array(count * 3);
+      const col = new Float32Array(count * 3);
+      const size = new Float32Array(count);
+      const seed = new Float32Array(count);
+      const a = new THREE.Color(0x1a0f2e);
+      const b = new THREE.Color(0x2f1d4a);
+      const tint = new THREE.Color();
+      for (let i = 0; i < count; i++) {
+        const radial = Math.pow(Math.random(), 0.7);
+        const r = 3.5 + radial * galaxyState.radius * 1.12;
+        const armIndex = Math.floor(Math.random() * galaxyState.arms);
+        const theta = (armIndex / galaxyState.arms) * TAU
+                    + r * (galaxyState.twist / galaxyState.radius) + 0.62
+                    + gauss() * 0.22;
+        pos[i * 3] = Math.cos(theta) * r + gauss() * 0.7;
+        pos[i * 3 + 1] = gauss() * 0.55;
+        pos[i * 3 + 2] = Math.sin(theta) * r + gauss() * 0.7;
+        tint.copy(a).lerp(b, Math.random());
+        col[i * 3] = tint.r; col[i * 3 + 1] = tint.g; col[i * 3 + 2] = tint.b;
+        size[i] = 2.2 + Math.random() * 4.2;
+        seed[i] = Math.random() * 100;
+      }
+      return makeStarPoints(pos, col, size, seed, { twinkle: 0.18, brightness: 0.18 });
+    })(4200);
+    galaxy.add(dustLanes);
+
+    // Nebula clouds: soft additive quads on a wide shell, slowly counter-rotating
+    // so the backdrop has parallax against the disc.
+    const nebula = new THREE.Group();
+    scene.add(nebula);
+    (function buildNebula(count) {
+      for (let i = 0; i < count; i++) {
+        const hex = C.nebula[i % C.nebula.length];
+        const tint = `${(hex >> 16) & 255},${(hex >> 8) & 255},${hex & 255}`;
+        const mat = new THREE.SpriteMaterial({
+          map: cloudTexture(tint), transparent: true, depthWrite: false,
+          blending: THREE.AdditiveBlending, opacity: 0.045 + Math.random() * 0.065,
+        });
+        const sprite = new THREE.Sprite(mat);
+        // Kept just outside the disc: further out and they sit outside the frustum
+        // of the background camera and contribute nothing.
+        const r = 34 + Math.random() * 58;
+        const theta = Math.random() * TAU;
+        sprite.position.set(Math.cos(theta) * r, gauss() * 26, Math.sin(theta) * r);
+        const scale = 42 + Math.random() * 66;
+        sprite.scale.set(scale, scale * (0.55 + Math.random() * 0.6), 1);
+        sprite.renderOrder = -5;
+        nebula.add(sprite);
+      }
+    })(18);
+
+    // ── Galactic nucleus: the reactor the assistant actually lives in ─────────
+    const nucleus = new THREE.Group();
+    galaxy.add(nucleus);
+
+    const corePanelMat = new THREE.MeshBasicMaterial({
+      color: C.coreMid, wireframe: true, transparent: true, opacity: 0.16,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const coreInnerMat = new THREE.MeshBasicMaterial({
+      color: C.coreHot, transparent: true, opacity: 0.5,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const icoWireMat = new THREE.LineBasicMaterial({
+      color: C.coreMid, transparent: true, opacity: 0.5,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const ringMat = new THREE.LineBasicMaterial({
+      color: C.arm, transparent: true, opacity: 0.24,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+
+    // Volumetric glow. `window.glowMaterial`/`glowMesh` keep the names the setup
+    // wizard drives, so its pulse and power-loss animations still land.
+    const glowMaterial = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: {
+        c: { value: 1.0 },
+        uTime: { value: 0 },
+        uColor: { value: new THREE.Color(C.coreMid) },
+        uAudio: { value: 0 },
+      },
+      vertexShader: [
+        "varying vec3 vNormal; varying vec3 vView;",
+        "void main() {",
+        "  vNormal = normalize(normalMatrix * normal);",
+        "  vec4 mv = modelViewMatrix * vec4(position, 1.0);",
+        "  vView = normalize(-mv.xyz);",
+        "  gl_Position = projectionMatrix * mv;",
+        "}",
+      ].join("\n"),
+      fragmentShader: [
+        "uniform float c; uniform float uTime; uniform float uAudio; uniform vec3 uColor;",
+        "varying vec3 vNormal; varying vec3 vView;",
+        "void main() {",
+        "  float rim = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.2);",
+        "  float breath = 0.82 + 0.18 * sin(uTime * 1.35);",
+        "  float a = c * breath * (0.10 + rim * 0.72) * (1.0 + uAudio * 0.85);",
+        "  gl_FragColor = vec4(uColor * (0.65 + rim * 1.6), a);",
+        "}",
+      ].join("\n"),
+    });
+    const glowMesh = new THREE.Mesh(new THREE.SphereGeometry(2.5, 48, 32), glowMaterial);
+    glowMesh.renderOrder = 2;
+    nucleus.add(glowMesh);
+    window.glowMaterial = glowMaterial;
+    window.glowMesh = glowMesh;
+
+    const coreInner = new THREE.Mesh(new THREE.SphereGeometry(0.78, 32, 24), coreInnerMat);
+    nucleus.add(coreInner);
+
+    const nucleusShell = new THREE.Mesh(new THREE.IcosahedronGeometry(3.05, 1), corePanelMat);
+    nucleus.add(nucleusShell);
+
+    const icoWire = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.9, 1)), icoWireMat);
+    nucleus.add(icoWire);
+
+    // Latitude rings and meridians: latitude for the dome, meridians so the rings
+    // read as a sphere rather than a fan of flat discs.
+    function latRing(radius, y, segments) {
+      const pts = [];
+      const r = Math.sqrt(Math.max(0.0001, radius * radius - y * y));
+      for (let i = 0; i <= segments; i++) {
+        const a = (i / segments) * TAU;
+        pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r));
+      }
+      return new THREE.BufferGeometry().setFromPoints(pts);
+    }
+    function meridian(radius, rotation, segments) {
+      const pts = [];
+      for (let i = 0; i <= segments; i++) {
+        const a = (i / segments) * Math.PI;
+        pts.push(new THREE.Vector3(0, Math.cos(a) * radius, Math.sin(a) * radius));
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      geo.rotateY(rotation);
+      return geo;
+    }
+
+    const shellRings = new THREE.Group();
+    for (let i = -3; i <= 3; i++) shellRings.add(new THREE.Line(latRing(3.6, i * 0.85, 120), ringMat));
+    for (let i = 0; i < 6; i++) shellRings.add(new THREE.Line(meridian(3.6, (i / 6) * Math.PI, 90), ringMat));
+    nucleus.add(shellRings);
+
+    // Counter-rotating energy panels: thin additive planes that give the core a
+    // sense of machinery without resorting to texture maps.
+    const panelGroup = new THREE.Group();
+    for (let i = 0; i < 5; i++) {
+      const panel = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 2.1, 12, 2), corePanelMat);
+      panel.rotation.set(Math.PI / 2, 0, (i / 5) * Math.PI);
+      panel.position.y = -1.6 + i * 0.8;
+      panelGroup.add(panel);
+    }
+    nucleus.add(panelGroup);
+
+    // Accretion disc: a wide flat torus of dust spiralling into the core.
+    const accretion = new THREE.Group();
+    for (let i = 0; i < 3; i++) {
+      const disc = new THREE.Mesh(
+        new THREE.TorusGeometry(4.6 + i * 1.5, 0.035 + i * 0.02, 3, 200),
+        new THREE.MeshBasicMaterial({
+          color: i === 0 ? C.coreMid : C.arm, transparent: true,
+          opacity: 0.42 - i * 0.11, blending: THREE.AdditiveBlending, depthWrite: false,
+        })
+      );
+      disc.rotation.x = Math.PI / 2 + gauss() * 0.03;
+      accretion.add(disc);
+    }
+    nucleus.add(accretion);
+
+    // Shockwave rings fired by triggerPulse()/state changes.
+    const shockwaves = [];
+    for (let i = 0; i < 3; i++) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: C.accent, transparent: true, opacity: 0.0,
+        blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+      });
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.05, 3, 128), mat);
+      ring.rotation.x = Math.PI / 2;
+      ring.visible = false;
+      scene.add(ring);
+      shockwaves.push({ mesh: ring, life: 0, speed: 1 });
+    }
+
+    // ── Feature constellation ────────────────────────────────────────────────
+    // Every callable feature becomes a star node on one of three inclined rings,
+    // tethered to the nucleus by a filament that brightens when it is used.
+    const featuresGroup = new THREE.Group();
+    galaxy.add(featuresGroup);
+    const features = new Map();          // name -> node record
+    const featureRings = new Map();      // group key -> { group, ring }
+
+    // Geometries are shared between nodes, so rebuilding the constellation must
+    // free materials and label textures without releasing them.
+    const nodeGeo = new THREE.OctahedronGeometry(0.3, 1);
+    nodeGeo.userData.shared = true;
+
+    function disposeGroup(group) {
+      for (let i = group.children.length - 1; i >= 0; i--) {
+        const child = group.children[i];
+        group.remove(child);
+        child.traverse((o) => {
+          if (o.geometry && o.geometry.userData.shared !== true) o.geometry.dispose();
+          if (o.material) {
+            if (o.material.map) o.material.map.dispose();
+            o.material.dispose();
+          }
+        });
+      }
+    }
+
+    function ensureRing(groupKey) {
+      if (featureRings.has(groupKey)) return featureRings.get(groupKey);
+      const spec = GROUPS.find((g) => g.key === groupKey) || GROUPS[1];
+      const ring = new THREE.Group();
+      ring.rotation.set(spec.tilt * 0.6, 0, spec.tilt);
+      ring.userData.spin = spec.spin;
+      featuresGroup.add(ring);
+      const record = { group: spec, ring };
+      featureRings.set(groupKey, record);
+      return record;
+    }
+
+    function buildFeatures(list) {
+      disposeGroup(featuresGroup);
+      features.clear();
+      featureRings.clear();
+
+      const buckets = new Map();
+      (list || []).forEach((item) => {
+        const name = typeof item === "string" ? item : (item && item.name);
+        if (!name) return;
+        const spec = (item && item.group && GROUPS.find((g) => g.key === item.group)) || groupFor(name);
+        if (!buckets.has(spec.key)) buckets.set(spec.key, []);
+        buckets.get(spec.key).push({ name: String(name), spec });
+      });
+
+      buckets.forEach((items, key) => {
+        const { group: spec, ring } = ensureRing(key);
+        const count = items.length;
+        items.forEach((item, index) => {
+          const angle = (index / Math.max(1, count)) * TAU;
+          const radius = spec.ring + gauss() * 0.5;
+          const pos = new THREE.Vector3(
+            Math.cos(angle) * radius,
+            gauss() * 0.7 + Math.sin(angle * 3) * 0.25,
+            Math.sin(angle) * radius
+          );
+
+          const mesh = new THREE.Mesh(nodeGeo, new THREE.MeshBasicMaterial({
+            color: spec.color, transparent: true, opacity: 0.85,
+          }));
+          mesh.position.copy(pos);
+          ring.add(mesh);
+
+          const tag = label(item.name.replace(/_/g, " "), "#bfe9ff", 0.62);
+          tag.position.copy(pos).multiplyScalar(1.06);
+          tag.material.opacity = 0.0;
+          ring.add(tag);
+
+          const filament = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), pos.clone()]),
+            new THREE.LineBasicMaterial({
+              color: spec.color, transparent: true, opacity: 0.07,
+              blending: THREE.AdditiveBlending, depthWrite: false,
+            })
+          );
+          ring.add(filament);
+
+          features.set(item.name, {
+            name: item.name, spec, mesh, tag, filament,
+            baseColor: new THREE.Color(spec.color),
+            pulse: 0, selected: false,
+          });
+        });
+      });
+
+    }
+
+    // ── Automation chains ────────────────────────────────────────────────────
+    // Each automation is a chain of step nodes strung along an outer orbit. The
+    // active chain runs a spark from step to step; the rest stay cold.
+    const automationsGroup = new THREE.Group();
+    automationsGroup.rotation.set(-0.5, 0, 0.12);
+    galaxy.add(automationsGroup);
+    const automations = new Map();
+
+    const sparkTexture = dotTexture("rgba(255,255,255,1)", "rgba(0,229,255,0.55)");
+    const stepGeo = new THREE.SphereGeometry(0.17, 12, 10);
+    stepGeo.userData.shared = true;
+
+    function buildAutomations(list) {
+      disposeGroup(automationsGroup);
+      automations.clear();
+
+      const items = (list || []).filter((a) => a && a.name);
+      items.forEach((item, index) => {
+        const chain = new THREE.Group();
+        const baseAngle = (index / Math.max(1, items.length)) * TAU;
+        const radius = 21 + (index % 2) * 2.2;
+        const span = 0.52;
+        const y = 1.2 + (index % 3) * 1.5 - 1.5;
+
+        const steps = (Array.isArray(item.steps) ? item.steps : []).map((s) => (typeof s === "string" ? s : (s.label || s.kind || "step")));
+        const points = [];
+        const count = Math.max(2, steps.length);
+        for (let i = 0; i < count; i++) {
+          const t = i / (count - 1);
+          const angle = baseAngle + (t - 0.5) * span;
+          points.push(new THREE.Vector3(
+            Math.cos(angle) * radius,
+            y + Math.sin(t * Math.PI) * 1.1,
+            Math.sin(angle) * radius
+          ));
+        }
+
+        const curve = new THREE.CatmullRomCurve3(points);
+        const line = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(curve.getPoints(60)),
+          new THREE.LineBasicMaterial({
+            color: C.chain, transparent: true, opacity: 0.16,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        chain.add(line);
+
+        const stepMeshes = points.map((p, i) => {
+          const step = new THREE.Mesh(stepGeo, new THREE.MeshBasicMaterial({
+            color: 0x5f8fc0, transparent: true, opacity: 0.55,
+          }));
+          step.position.copy(p);
+          chain.add(step);
+          return step;
+        });
+
+        const tags = points.map((p, i) => {
+          const text = (steps[i] || `step ${i + 1}`);
+          const tag = label(text, "#9fd4ff", 0.5);
+          tag.position.copy(p).add(new THREE.Vector3(0, 0.85, 0));
+          tag.material.opacity = 0.0;
+          chain.add(tag);
+          return tag;
+        });
+
+        const spark = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: sparkTexture, transparent: true, depthWrite: false,
+          blending: THREE.AdditiveBlending, opacity: 0.0,
+        }));
+        spark.scale.set(1.5, 1.5, 1);
+        chain.add(spark);
+
+        automationsGroup.add(chain);
+        automations.set(item.name, {
+          name: item.name, chain, curve, line, steps: stepMeshes, tags, spark,
+          count: steps.length, step: -1, active: false, progress: 0,
+        });
+      });
+    }
+
+    // ── Shockwave / pulse effects ─────────────────────────────────────────────
+    let energy = 1.0;          // global brightness multiplier (power-loss effects)
+    let spinBoost = 1.0;
+
+    function fireShockwave(strength) {
+      const slot = shockwaves.find((s) => s.life <= 0) || shockwaves[0];
+      slot.life = 1.0;
+      slot.speed = 1.0 + strength * 0.6;
+      slot.mesh.visible = true;
+      slot.mesh.material.color.set(C.accent);
+      slot.mesh.scale.setScalar(0.6);
+      slot.mesh.material.opacity = 0.55 * clamp(strength, 0.2, 2);
+    }
+
+    // ── Post-processing ───────────────────────────────────────────────────────
+    const composer = new THREE.EffectComposer(renderer);
+    composer.addPass(new THREE.RenderPass(scene, camera));
+
+    // Threshold is deliberately high: only the nucleus, bright nodes and sparks
+    // should bloom, otherwise a dense star field hazes the whole frame.
+    const bloom = new THREE.UnrealBloomPass(
+      new THREE.Vector2(Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2))),
+      0.60, 0.50, 0.34
+    );
+    composer.addPass(bloom);
+
+    // Final grade: chromatic aberration toward the rim, vignette, and a whisper of
+    // grain. Overdriven while speaking so the frame feels charged.
+    const gradePass = new THREE.ShaderPass({
+      uniforms: {
+        tDiffuse: { value: null },
+        uTime: { value: 0 },
+        uAberration: { value: 0.0018 },
+        uVignette: { value: 1.02 },
+        uGrain: { value: 0.028 },
+        uWarp: { value: 0 },
+      },
+      vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+      fragmentShader: [
+        "uniform sampler2D tDiffuse;",
+        "uniform float uTime, uAberration, uVignette, uGrain, uWarp;",
+        "varying vec2 vUv;",
+        "float hash(vec2 p){ return fract(sin(dot(p, vec2(41.7, 289.3))) * 43758.5453); }",
+        "void main() {",
+        "  vec2 c = vUv - 0.5;",
+        "  float r = length(c);",
+        "  float ab = (0.35 + uWarp) * uAberration * (0.3 + r * 2.4);",
+        "  vec3 col;",
+        "  col.r = texture2D(tDiffuse, vUv + c * ab).r;",
+        "  col.g = texture2D(tDiffuse, vUv).g;",
+        "  col.b = texture2D(tDiffuse, vUv - c * ab).b;",
+        "  col *= smoothstep(1.18, 0.22, r * uVignette);",
+        "  col += (hash(vUv * (1.0 + fract(uTime))) - 0.5) * uGrain;",
+        "  gl_FragColor = vec4(max(col, vec3(0.0)), 1.0);",
+        "}",
+      ].join("\n"),
+    });
+    composer.addPass(gradePass);
+
+    // ── State ────────────────────────────────────────────────────────────────
+    const target = {
+      hot: new THREE.Color(STATES.IDLE.hot),
+      mid: new THREE.Color(STATES.IDLE.mid),
+      dim: new THREE.Color(STATES.IDLE.dim),
+      accent: new THREE.Color(STATES.IDLE.accent),
+      spin: STATES.IDLE.spin,
+      bloom: STATES.IDLE.bloom,
+      camera: STATES.IDLE.camera,
+      warp: STATES.IDLE.warp,
+      arcs: STATES.IDLE.arcs,
+    };
+    let stateName = "IDLE";
+    let audioLevel = 0;      // instantaneous, from Python
+    let audioAmp = 0;        // smoothed
+    let shake = 0;           // error jitter
+    let nebulaDrift = 0;
+
+    function applyState(name) {
+      const key = String(name || "IDLE").toUpperCase();
+      const spec = STATES[key] || STATES.IDLE;
+      if (!STATES[key]) diagnostics.errors.push("unknown state: " + key);
+      stateName = STATES[key] ? key : "IDLE";
+
+      target.hot.set(spec.hot);
+      target.mid.set(spec.mid);
+      target.dim.set(spec.dim);
+      target.accent.set(spec.accent);
+      target.spin = spec.spin;
+      target.bloom = spec.bloom;
+      target.camera = spec.camera;
+      target.warp = spec.warp;
+      target.arcs = spec.arcs;
+
+      // A state change is an event worth seeing, but idle chatter should not
+      // strobe the scene.
+      if (stateName === "THINKING" || stateName === "EXECUTING" || stateName === "WORKING"
+          || stateName === "ERROR" || stateName === "LISTENING") {
+        fireShockwave(stateName === "ERROR" ? 1.4 : 0.7);
+      }
+      if (stateName === "ERROR") shake = 1.0;
+    }
+
+    // ── Quality ladder ───────────────────────────────────────────────────────
+    const quality = { level: 0, pinned: false, frames: 0, last: performance.now(), lowStreak: 0 };
+
+    function applyQuality(level) {
+      quality.level = clamp(level | 0, 0, 2);
+      const starBudget = [1.0, 0.55, 0.38][quality.level];
+      galaxyPoints.geometry.setDrawRange(0, Math.floor(galaxyState.stars * starBudget));
+      dustLanes.visible = quality.level < 1;
+      distantStars.visible = quality.level < 2;
+      nebula.visible = quality.level < 2;
+      const bloomScale = [0.5, 0.4, 0.3][quality.level];
+      bloom.setSize(
+        Math.max(1, Math.floor(window.innerWidth * bloomScale)),
+        Math.max(1, Math.floor(window.innerHeight * bloomScale))
+      );
+      gradePass.uniforms.uGrain.value = quality.level >= 2 ? 0 : 0.028;
+    }
+
+    // ── Public API ───────────────────────────────────────────────────────────
+    window.setOrbState = function (state) { applyState(state); };
+    window.setBrahmaState = window.setOrbState;   // older callers
+
+    window.setAudioLevel = function (level) {
+      const v = clamp(Number(level) || 0, 0, 1);
+      if (v > audioLevel) audioLevel = v;         // peaks latch, then decay
+    };
+
+    window.setFeatures = function (list) {
+      try { buildFeatures(list && list.length ? list : DEFAULT_FEATURES); }
+      catch (e) { diagnostics.errors.push("setFeatures: " + e.message); }
+    };
+
+    // Feature flashes decay on their own: Python reports a use, not a lifetime.
+    window.setActiveFeature = function (name) {
+      const node = features.get(String(name));
+      if (node) node.pulse = 1.0;
+    };
+
+    window.setAutomations = function (list) {
+      try { buildAutomations(list && list.length ? list : DEFAULT_AUTOMATIONS); }
+      catch (e) { diagnostics.errors.push("setAutomations: " + e.message); }
+    };
+
+    window.setActiveAutomation = function (name, step) {
+      const wanted = String(name || "");
+      automations.forEach((chain) => {
+        const isActive = chain.name === wanted;
+        if (isActive && !chain.active) chain.progress = 0;
+        chain.active = isActive;
+        chain.step = isActive && step !== undefined && step !== null ? Number(step) : -1;
+      });
+    };
+
+    window.setSystemStats = function (stats) {
+      const load = clamp(((stats && (stats.cpu || 0)) + (stats && (stats.ram || 0))) / 2, 0, 1);
+      dustLanes.material.uniforms.uBrightness.value = 0.45 + load * 0.5;
+    };
+
+    window.setQuality = function (level) { quality.pinned = true; applyQuality(level); };
+
+    window.triggerPulse = function () {
+      energy = Math.max(energy, 1.25);
+      glowMaterial.uniforms.c.value = Math.max(glowMaterial.uniforms.c.value, 2.2);
+      fireShockwave(0.9);
+    };
+
+    // Setup-wizard cine controls, all funnelled through the same state model so
+    // they cannot leave the scene in a half-lit state.
+    window.accelerateReactor = function () {
+      spinBoost = 7.0;
+      controls.autoRotateSpeed = 4.5;
+      setTimeout(() => { controls.autoRotateSpeed = 0.28; }, 4200);
+    };
+    window.losePower = function () {
+      energy = 0.14;
+      controls.autoRotateSpeed = 0.05;
+      setTimeout(() => {
+        energy = 1.0;
+        controls.autoRotateSpeed = 0.28;
+      }, 1600);
+    };
+    window.setReactorSpeed = function (speed) {
+      const v = Number(speed);
+      if (isFinite(v) && v > 0) {
+        spinBoost = clamp(v / 1.5, 0.1, 8);
+        controls.autoRotateSpeed = clamp(v * 0.14, 0.02, 6);
+      }
+    };
+    window.dissolveReactor = function () {
+      glowMaterial.uniforms.c.value = 3.0;
+      fireShockwave(1.6);
+      setTimeout(() => { glowMaterial.uniforms.c.value = 1.0; window.setReactorSpeed(2.0); }, 600);
+    };
+
+    diagnostics.stats = function () {
+      return {
+        state: stateName,
+        stars: galaxyState.stars,
+        features: features.size,
+        automations: automations.size,
+        featureRings: featureRings.size,
+        quality: quality.level,
+        fps: quality.fps || 0,
+        audio: Number(audioAmp.toFixed(3)),
+        webgl: (typeof WebGL2RenderingContext !== "undefined"
+                && renderer.getContext() instanceof WebGL2RenderingContext) ? "webgl2" : "webgl1",
+      };
+    };
+    window.__operoBackground = diagnostics;
+
+    // ── Frame loop ───────────────────────────────────────────────────────────
+    const clock = new THREE.Clock();
+    let elapsed = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const dt = Math.min(0.05, clock.getDelta());
+      elapsed += dt;
+
+      // Visibility pause: QWebEngine keeps a background widget compositing, and a
+      // minimised window should not keep the GPU busy.
+      if (document.hidden) return;
+
+      // Adaptive quality: two consecutive slow seconds drop a rung.
+      quality.frames++;
+      const now = performance.now();
+      if (now - quality.last >= 1000) {
+        quality.fps = quality.frames * 1000 / (now - quality.last);
+        quality.frames = 0;
+        quality.last = now;
+        if (!quality.pinned && quality.fps < 26 && quality.level < 2) {
+          quality.lowStreak++;
+          if (quality.lowStreak >= 2) {
+            quality.lowStreak = 0;
+            applyQuality(quality.level + 1);
+          }
+        } else {
+          quality.lowStreak = 0;
+        }
+      }
+
+      // Smooth toward the state targets.
+      galaxyPoints.material.uniforms.uAudio.value = audioAmp;
+      dustLanes.material.uniforms.uAudio.value = audioAmp * 0.6;
+      glowMaterial.uniforms.uAudio.value = audioAmp;
+      glowMaterial.uniforms.c.value += (energy - glowMaterial.uniforms.c.value) * 0.08;
+
+      coreInnerMat.color.lerp(target.hot, 0.05);
+      corePanelMat.color.lerp(target.mid, 0.05);
+      icoWireMat.color.lerp(target.hot, 0.06);
+      ringMat.color.lerp(target.dim, 0.05);
+      glowMaterial.uniforms.uColor.value.lerp(target.mid, 0.05);
+      bloom.strength += (target.bloom * energy - bloom.strength) * 0.06;
+
+      audioAmp += (audioLevel - audioAmp) * 0.35;
+      audioLevel *= 0.86;
+
+      const spin = target.spin * spinBoost * (1 + audioAmp * 0.5);
+      galaxy.rotation.y += dt * 0.012 * spin;
+      dustLanes.rotation.y += dt * 0.018 * spin;
+      nucleus.rotation.y += dt * 0.09 * spin;
+      shellRings.rotation.y -= dt * 0.05 * spin;
+      panelGroup.rotation.y += dt * 0.07 * spin;
+      accretion.rotation.y += dt * 0.22 * spin;
+      icoWire.rotation.x += dt * 0.18 * spin;
+      icoWire.rotation.y += dt * 0.24 * spin;
+      featureRings.forEach((record) => { record.ring.rotation.y += dt * record.ring.userData.spin; });
+      automationsGroup.rotation.y += dt * 0.02;
+      nebula.rotation.y -= dt * 0.004;
+      nebulaDrift += dt;
+      nebula.position.y = Math.sin(nebulaDrift * 0.06) * 1.6;
+
+      // Core breathing, driven by audio and state pace.
+      const surge = Math.pow(Math.max(0, Math.sin(elapsed * 0.42 * target.spin)), 6) * 0.5;
+      glowMesh.scale.setScalar(1 + surge + audioAmp * 0.7);
+      coreInner.scale.setScalar(1 + surge * 1.4 + audioAmp * 1.1);
+      coreInnerMat.opacity = clamp(0.35 + surge * 0.5 + audioAmp * 0.45, 0.1, 0.95);
+      nucleusShell.rotation.y -= dt * 0.06 * spin;
+      nucleusShell.rotation.x += dt * 0.02 * spin;
+
+      // Feature nodes: decay their flash, gate label visibility by depth so the
+      // near side of each ring is readable and the far side is not shouting.
+      features.forEach((node) => {
+        if (node.pulse > 0) node.pulse = Math.max(0, node.pulse - dt * 0.30);
+        const active = node.pulse;
+        node.mesh.scale.setScalar(1 + active * 1.35);
+        node.mesh.material.color.copy(node.baseColor).lerp(target.accent, active);
+        node.mesh.material.opacity = 0.75 + active * 0.25;
+        node.filament.material.opacity = 0.09 + active * 0.5 + (stateName === "SCANNING" ? 0.05 : 0);
+        node.mesh.getWorldPosition(tmpVec);
+        const depth = clamp((tmpVec.z + 18) / 36, 0, 1);
+        const facing = clamp(1 - Math.abs(tmpVec.y) / 26, 0, 1);
+        node.tag.material.opacity = (0.16 + active * 0.72 + depth * 0.16) * facing;
+        node.tag.material.color.copy(node.baseColor).lerp(target.accent, active);
+        node.tag.position.copy(node.mesh.position).multiplyScalar(1.06 + active * 0.05);
+      });
+
+      // Automation chains: run the spark, light the steps behind it.
+      automations.forEach((chain) => {
+        const lineOpacity = chain.active ? 0.9 : 0.20;
+        chain.line.material.opacity += (lineOpacity - chain.line.material.opacity) * 0.08;
+        chain.line.material.color.lerp(chain.active ? target.accent : chainIdleColor, 0.08);
+
+        if (chain.active) {
+          if (chain.step >= 0) {
+            chain.progress = clamp(chain.step / Math.max(1, chain.count - 1), 0, 1);
+          } else {
+            chain.progress = (chain.progress + dt * 0.28) % 1;
+          }
+        }
+        chain.curve.getPoint(chain.progress, tmpVecB);
+        chain.spark.position.copy(tmpVecB);
+        chain.spark.material.opacity += ((chain.active ? 0.95 : 0.0) - chain.spark.material.opacity) * 0.1;
+        chain.spark.material.color.copy(chain.active ? target.accent : sparkIdleColor);
+        chain.spark.scale.setScalar(1.2 + (chain.active ? Math.sin(elapsed * 6) * 0.25 : 0));
+
+        chain.steps.forEach((step, i) => {
+          const reached = chain.active && i <= Math.round(chain.progress * (chain.count - 1));
+          step.material.color.lerp(reached ? target.accent : stepIdleColor, 0.09);
+          step.material.opacity = reached ? 0.95 : 0.45;
+          step.scale.setScalar(reached ? 1.5 : 1.0);
+          chain.tags[i].material.opacity += (((chain.active ? (reached ? 0.9 : 0.45) : 0.05)) - chain.tags[i].material.opacity) * 0.07;
+        });
+      });
+
+      // Shockwaves expand and fade.
+      shockwaves.forEach((wave) => {
+        if (wave.life <= 0) return;
+        wave.life -= dt * 0.55 * wave.speed;
+        const t = 1 - clamp(wave.life, 0, 1);
+        wave.mesh.scale.setScalar(1.5 + t * 26);
+        wave.mesh.material.opacity = Math.max(0, 0.5 * (1 - t) * energy);
+        if (wave.life <= 0) wave.mesh.visible = false;
+      });
+
+      // Error state jitters the camera; everything else drifts.
+      shake *= 0.92;
+      const drift = Math.sin(elapsed * 0.08) * 0.35;
+      camera.position.y += ((13 + Math.sin(elapsed * 0.11) * 1.6 + shake * gauss() * 0.6) - camera.position.y) * 0.03;
+      camera.position.x += ((drift + shake * gauss() * 0.4) - camera.position.x) * 0.03;
+      camera.position.z += ((target.camera + audioAmp * 0.8) - camera.position.z) * 0.02;
+      controls.update();
+
+      gradePass.uniforms.uTime.value = elapsed;
+      gradePass.uniforms.uWarp.value += (target.warp - gradePass.uniforms.uWarp.value) * 0.05;
+      composer.render();
+
+      if (!diagnostics.ready) diagnostics.ready = true;
+    }
+
+    // Scratch colours/vectors reused every frame so the loop allocates nothing.
+    const tmpVec = new THREE.Vector3();
+    const tmpVecB = new THREE.Vector3();
+    const chainIdleColor = new THREE.Color(C.chain);
+    const stepIdleColor = new THREE.Color(0x5f8fc0);
+    const sparkIdleColor = new THREE.Color(0x8899aa);
+
+    // ── Boot ─────────────────────────────────────────────────────────────────
+    buildFeatures(DEFAULT_FEATURES);
+    buildAutomations(DEFAULT_AUTOMATIONS);
+    applyState("IDLE");
+    applyQuality(0);
+    animate();
+    elapsed = 0;
+
+    window.addEventListener("resize", () => {
+      const w = Math.max(1, window.innerWidth);
+      const h = Math.max(1, window.innerHeight);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.35);
+      renderer.setPixelRatio(dpr);
+      galaxyPoints.material.uniforms.uPixelRatio.value = dpr;
+      dustLanes.material.uniforms.uPixelRatio.value = dpr;
+      distantStars.material.uniforms.uPixelRatio.value = dpr;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+      composer.setSize(w, h);
+      applyQuality(quality.level);
+    });
+  })();
+  </script>
+</body>
+</html>

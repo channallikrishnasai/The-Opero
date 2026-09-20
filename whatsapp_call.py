@@ -10,9 +10,11 @@ import sys
 import time
 import json
 import os
+import re
 import threading
 import shutil
 import numpy as np
+from collections import deque
 from pathlib import Path
 from typing import Optional, Callable
 
@@ -34,6 +36,17 @@ BRIDGE_DIR = Path(__file__).parent / "whatsapp_bridge"
 BRIDGE_JS = BRIDGE_DIR / "bridge.js"
 BRIDGE_PORT = 8099
 BRIDGE_URL = f"http://127.0.0.1:{BRIDGE_PORT}"
+
+# The API answers almost immediately; Chromium reaching the QR stage takes much
+# longer, and that is what the poll loop waits for instead of blocking startup.
+READY_TIMEOUT = 6.0
+MAX_BRIDGE_RESTARTS = 3
+RESTART_BACKOFF = 10.0
+HEALTHY_RESET_SECONDS = 60.0
+
+# Node prints the pairing QR as block art. It must not crowd out the diagnostic
+# lines kept for "why did the bridge die" reporting.
+_QR_ART = re.compile(r"^[\u2580-\u259f #.\-\s]+$")
 
 
 class WhatsAppCallManager:
@@ -68,9 +81,25 @@ class WhatsAppCallManager:
         self._connected = False
         self._last_qr = ""
         self._log_thread: Optional[threading.Thread] = None
+        self._bridge_lines: deque = deque(maxlen=40)
+        self._spawned_at = 0.0
+        self._restarts = 0
+        self._restarts_paused = False
+        self._next_restart_at = 0.0
+        self._healthy_since: Optional[float] = None
+        self._start_lock = threading.Lock()
 
     def start(self) -> bool:
-        """Start the Node.js bridge process."""
+        """Start the Node.js bridge process.
+
+        Returns True when a bridge process is up (its HTTP API may still be
+        coming up), False only when it could not be started at all.  The UI and
+        the poll loop both call this, so spawning is serialised.
+        """
+        with self._start_lock:
+            return self._start_locked()
+
+    def _start_locked(self) -> bool:
         if not BRIDGE_JS.exists():
             self._log("❌ bridge.js not found — run: cd whatsapp_bridge && npm install")
             return False
@@ -91,6 +120,8 @@ class WhatsAppCallManager:
             self._log("❌ Node.js was not found. Install Node.js LTS or set OPERO_NODE.")
             return False
 
+        self._bridge_lines.clear()
+        self._spawned_at = time.monotonic()
         try:
             self._proc = subprocess.Popen(
                 [node, str(BRIDGE_JS)],
@@ -100,33 +131,136 @@ class WhatsAppCallManager:
                 text=True,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
-            self._log(f"🚀 Bridge started (PID {self._proc.pid})")
-            # Drain the child pipe continuously.  Leaving it unread can freeze
-            # Node once its stdout buffer fills (especially while it prints QR).
-            self._log_thread = threading.Thread(target=self._drain_bridge_log, daemon=True)
-            self._log_thread.start()
-            self._start_polling()
-            return True
         except Exception as e:
             self._log(f"❌ Failed to start bridge: {e}")
             return False
 
+        self._log(f"🚀 Bridge started (PID {self._proc.pid})")
+        # Drain the child pipe continuously.  Leaving it unread can freeze
+        # Node once its stdout buffer fills (especially while it prints QR); the
+        # drain thread also reports a bridge that dies on launch.  Startup is
+        # deliberately not blocked on the API: Chromium needs seconds to reach a
+        # QR, and the caller (voice session) must not wait for that.
+        self._log_thread = threading.Thread(target=self._drain_bridge_log, daemon=True)
+        self._log_thread.start()
+        self._start_polling()
+        return True
+
     def stop(self):
-        """Stop the bridge process."""
+        """Stop the bridge process and the Chromium it launched."""
         self._polling = False
-        if self._poll_thread:
+        if self._poll_thread and self._poll_thread is not threading.current_thread():
             self._poll_thread.join(timeout=3)
-        if self._proc:
-            try:
-                self._proc.terminate()
-                self._proc.wait(timeout=5)
-            except Exception:
-                try:
-                    self._proc.kill()
-                except Exception as e:
-                    log.debug("%s", e)
-            self._proc = None
+        proc, self._proc = self._proc, None
+        if proc is not None and proc.poll() is None:
+            self._kill_tree(proc)
         self._log("🛑 Bridge stopped")
+
+    @staticmethod
+    def _kill_tree(proc: subprocess.Popen) -> None:
+        """Kill the bridge and its Chromium children.
+
+        Windows TerminateProcess only ends the direct child, which would leave a
+        headless Chromium holding the WhatsApp profile lock and block the next
+        start with "browser is already running".
+        """
+        if os.name == "nt":
+            try:
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                    capture_output=True, timeout=10,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
+                proc.wait(timeout=5)
+                return
+            except Exception as e:
+                log.debug("%s", e)
+        try:
+            proc.terminate()
+            proc.wait(timeout=5)
+        except Exception:
+            try:
+                proc.kill()
+            except Exception as e:
+                log.debug("%s", e)
+
+    # ── Bridge health ────────────────────────────────────────────────────
+
+    def _ping(self) -> bool:
+        """True when something answers the bridge API on the port."""
+        if requests is None:
+            return False
+        try:
+            requests.get(f"{BRIDGE_URL}/status", timeout=2)
+            return True
+        except Exception:
+            return False
+
+    def _wait_until_ready(self, timeout: float) -> bool:
+        """Wait for the API port to answer, giving up early if Node exits."""
+        deadline = time.monotonic() + max(0.0, timeout)
+        while time.monotonic() < deadline:
+            if self._proc is not None and self._proc.poll() is not None:
+                return False
+            if self._ping():
+                return True
+            time.sleep(0.5)
+        return self._ping()
+
+    def ensure_running(self, timeout: float = 10.0) -> bool:
+        """Guarantee a bridge is answering, starting one when it is not.
+
+        The UI calls this before asking for a pairing QR: a bridge that died
+        days ago must be brought back rather than reported as unreachable.
+        """
+        if requests is None:
+            return False
+        if self._ping():
+            return True
+
+        # An explicit request is allowed to override the crash-loop guard.
+        self._restarts = 0
+        self._restarts_paused = False
+        if self._proc is None or self._proc.poll() is not None:
+            self._log("Bridge is not running — starting it.")
+            if not self.start():
+                return False
+        return self._wait_until_ready(timeout)
+
+    def _mark_healthy(self) -> None:
+        """Clear the restart budget only after a sustained healthy period."""
+        now = time.monotonic()
+        if self._healthy_since is None:
+            self._healthy_since = now
+        elif now - self._healthy_since > HEALTHY_RESET_SECONDS:
+            self._restarts = 0
+            self._restarts_paused = False
+
+    def _ensure_bridge_alive(self) -> None:
+        """Respawn the bridge after an unexpected exit, with a bounded backoff."""
+        proc = self._proc
+        if not self._polling or proc is None or proc.poll() is None:
+            return
+        now = time.monotonic()
+        if now < self._next_restart_at:
+            return
+        if self._restarts >= MAX_BRIDGE_RESTARTS:
+            if not self._restarts_paused:
+                self._restarts_paused = True
+                self._log("❌ WhatsApp bridge keeps exiting. " + self._bridge_tail())
+            return
+        self._restarts += 1
+        self._next_restart_at = now + RESTART_BACKOFF * self._restarts
+        self._log(f"🔄 Restarting the WhatsApp bridge (attempt {self._restarts}).")
+        self.start()
+
+    def _bridge_tail(self, limit: int = 3) -> str:
+        """Last diagnostic lines from the bridge, squashed into one log line."""
+        interesting = ("bridge", "error", "fail", "reject", "exception")
+        picked = [ln for ln in self._bridge_lines
+                  if any(k in ln.lower() for k in interesting)]
+        picked = (picked or list(self._bridge_lines))[-limit:]
+        return " | ".join(picked)
 
     def _drain_bridge_log(self) -> None:
         proc = self._proc
@@ -135,15 +269,47 @@ class WhatsAppCallManager:
         try:
             for line in proc.stdout:
                 line = line.strip()
-                if line and ("connected" in line.lower() or "incoming" in line.lower()
-                             or "fatal" in line.lower() or "error" in line.lower()):
+                if not line or _QR_ART.match(line):
+                    # Pairing QR art would otherwise evict the useful lines.
+                    continue
+                self._bridge_lines.append(line)
+                low = line.lower()
+                if any(k in low for k in ("connected", "incoming", "fatal", "error",
+                                          "failed", "unhandled", "rejection", "exception")):
                     self._log(f"Bridge: {line}")
         except Exception as e:
             log.debug("%s", e)
+        finally:
+            self._report_early_exit(proc)
+
+    def _report_early_exit(self, proc: subprocess.Popen) -> None:
+        """Explain a bridge that died on launch, instead of a silent refused port.
+
+        A bridge that dies later is reported by the poll loop, which also brings
+        it back; only a launch failure needs the child's own output.
+        """
+        if not self._polling or time.monotonic() - self._spawned_at > 60:
+            return
+        # stdout reaches EOF slightly before Windows reaps the child, so give the
+        # process a moment to finish rather than reporting nothing at all.
+        code = None
+        for _ in range(10):
+            try:
+                code = proc.poll()
+            except Exception:
+                return
+            if code is not None:
+                break
+            time.sleep(0.2)
+        if code is None:
+            return
+        self._log(f"❌ Bridge exited on startup (code {code}). {self._bridge_tail()}")
 
     def _start_polling(self):
-        """Start polling the bridge for calls in a background thread."""
+        """Start polling the bridge for calls (idempotent across restarts)."""
         self._polling = True
+        if self._poll_thread and self._poll_thread.is_alive():
+            return
         self._poll_thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._poll_thread.start()
 
@@ -155,6 +321,7 @@ class WhatsAppCallManager:
                 resp = requests.get(f"{BRIDGE_URL}/status", timeout=3)
                 data = resp.json()
                 self._connected = data.get("status") == "connected"
+                self._mark_healthy()
 
                 if data.get("hasQr"):
                     qr = self.get_qr()
@@ -175,12 +342,14 @@ class WhatsAppCallManager:
                     calls_data = calls_resp.json()
                     current_calls = {c["id"]: c for c in calls_data.get("calls", [])}
 
-            except requests.ConnectionError:
+            except requests.exceptions.RequestException:
                 if self._connected:
                     self._log("⚠️ Bridge connection lost")
-                    self._connected = False
+                self._connected = False
+                self._healthy_since = None
+                self._ensure_bridge_alive()
             except Exception as e:
-                pass  # silently retry
+                log.debug("%s", e)
 
             # whatsapp-web.js is not guaranteed to emit personal-call events.
             # Fall back to the visible Desktop UI: detect the green circular

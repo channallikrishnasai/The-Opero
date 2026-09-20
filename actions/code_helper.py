@@ -15,15 +15,7 @@ BASE_DIR           = get_base_dir()
 API_CONFIG_PATH    = BASE_DIR / "config" / "api_keys.json"
 DESKTOP            = Path.home() / "Desktop"
 MAX_BUILD_ATTEMPTS = 3
-# Model choice lives in core/gemini.py, and so does the timeout and the
-# fallback ladder. Writing a model name here is what left this file hanging
-# forever whenever that one alias was unwell.
-from core import gemini
-
-from core.logger import get_logger
-from core.validator import validate_params, ValidationError
-
-log = get_logger(__name__)
+GEMINI_MODEL       = "gemini-flash-latest"
 
 
 def _get_api_key() -> str:
@@ -31,15 +23,13 @@ def _get_api_key() -> str:
         return json.load(f)["gemini_api_key"]
 
 
-def _get_gemini(tier: str = gemini.SMART):
-    """Writing and fixing code is the reasoning tier; a 60s deadline because a
-    whole file can come back."""
+def _get_gemini(model: str = GEMINI_MODEL):
+    from google import genai
+    _c = genai.Client(api_key=_get_api_key())
+
     class _W:
         def generate_content(self, contents):
-            resp = gemini.call(contents, tier=tier, timeout_ms=60000)
-            if resp is None:
-                raise RuntimeError("every Gemini model on the ladder failed")
-            return resp
+            return _c.models.generate_content(model=model, contents=contents)
 
     return _W()
 
@@ -65,7 +55,7 @@ def _resolve_save_path(output_path: str, language: str) -> Path:
         p = Path(output_path)
         return p if p.is_absolute() else DESKTOP / p
     ext = ext_map.get((language or "python").lower(), ".py")
-    return DESKTOP / f"opero_code{ext}"
+    return DESKTOP / f"brahma_code{ext}"
 
 
 def _read_file(file_path: str) -> tuple[str, str]:
@@ -105,13 +95,13 @@ def _has_error(output: str) -> bool:
 def _take_screenshot() -> Path | None:
     try:
         import pyautogui
-        screenshot_path = Path.home() / "Desktop" / f"opero_debug_{int(time.time())}.png"
+        screenshot_path = Path.home() / "Desktop" / f"brahma_debug_{int(time.time())}.png"
         screenshot = pyautogui.screenshot()
         screenshot.save(str(screenshot_path))
-        log.info(f"[Code] 📸 Screenshot: {screenshot_path}")
+        print(f"[Code] 📸 Screenshot: {screenshot_path}")
         return screenshot_path
     except Exception as e:
-        log.error(f"[Code] ⚠️ Screenshot failed: {e}")
+        print(f"[Code] ⚠️ Screenshot failed: {e}")
         return None
 
 
@@ -125,10 +115,10 @@ _VALID_INTENTS = {"write", "edit", "explain", "run", "build", "screen_debug", "o
 
 def _detect_intent(description: str, file_path: str, code: str) -> str:
     """
-    Language-independent intent detection — NO fixed keyword list.
-    Whatever language the user speaks, the description is classified by
-    Gemini. If the API is unreachable, it falls back to language-agnostic
-    structural hints (does the file exist on disk, was code provided).
+    Dil bağımsız niyet tespiti — sabit anahtar kelime listesi YOK.
+    Kullanıcı hangi dilde konuşursa konuşsun, açıklama Gemini'ye
+    sınıflandırtılır. API'ye ulaşılamazsa dile bakmayan yapısal
+    ipuçlarına (dosya diskte var mı, kod verilmiş mi) düşülür.
     """
     desc        = (description or "").strip()
     file_exists = bool(file_path) and Path(file_path).exists()
@@ -160,9 +150,9 @@ def _detect_intent(description: str, file_path: str, code: str) -> str:
             if ans in _VALID_INTENTS:
                 return ans
         except Exception as e:
-            log.error(f"[Code] Intent classification failed ({e}) — structural fallback")
+            print(f"[Code] Intent classification failed ({e}) — structural fallback")
 
-    # Structural fallback — not tied to any language
+    # Yapısal geri dönüş — hiçbir dile bağlı değil
     if file_exists:
         return "edit" if desc else "explain"
     if code:
@@ -260,7 +250,7 @@ def _build(description, language, output_path, args, timeout, speak=None, player
 
     try:
         code, path = _write(description, lang, output_path, player)
-        log.info(f"[Code] ✅ Written: {path}")
+        print(f"[Code] ✅ Written: {path}")
     except Exception as e:
         msg = f"Could not write initial code: {e}"
         if speak: speak(msg)
@@ -268,7 +258,7 @@ def _build(description, language, output_path, args, timeout, speak=None, player
 
     last_output = ""
     for attempt in range(1, MAX_BUILD_ATTEMPTS + 1):
-        log.info(f"[Code] 🔄 Attempt {attempt}/{MAX_BUILD_ATTEMPTS}")
+        print(f"[Code] 🔄 Attempt {attempt}/{MAX_BUILD_ATTEMPTS}")
         if player:
             player.write_log(f"[Code] Attempt {attempt}...")
 
@@ -283,7 +273,7 @@ def _build(description, language, output_path, args, timeout, speak=None, player
             if speak: speak(msg)
             return f"{msg}\n\nOutput:\n{last_output}"
 
-        log.error(f"[Code] ⚠️ Error on attempt {attempt}, fixing...")
+        print(f"[Code] ⚠️ Error on attempt {attempt}, fixing...")
         if player:
             player.write_log(f"[Code] Fixing (attempt {attempt})...")
 
@@ -309,7 +299,7 @@ def _write_action(description, language, output_path, player) -> str:
         player.write_log("[Code] Writing code...")
     try:
         code, path = _write(description, language, output_path, player)
-        log.info(f"[Code] ✅ Written: {path}")
+        print(f"[Code] ✅ Written: {path}")
         return f"Code written. Saved to: {path}\n\nPreview:\n{_preview(code)}"
     except Exception as e:
         return f"Could not generate code: {e}"
@@ -347,7 +337,7 @@ Updated code:"""
         return f"Could not edit code: {e}"
 
     status = _save_file(Path(file_path), edited)
-    log.info(f"[Code] ✅ Edited: {file_path}")
+    print(f"[Code] ✅ Edited: {file_path}")
     return f"File edited. {status}\n\nPreview:\n{_preview(edited)}"
 
 
@@ -432,7 +422,7 @@ Optimized code:"""
         save_path = _resolve_save_path(output_path, lang)
 
     status = _save_file(save_path, optimized)
-    log.info(f"[Code] ✅ Optimized: {save_path}")
+    print(f"[Code] ✅ Optimized: {save_path}")
 
     original_lines  = len(code.splitlines())
     optimized_lines = len(optimized.splitlines())
@@ -451,7 +441,7 @@ def _screen_debug_action(description, file_path, player, speak=None) -> str:
     if player:
         player.write_log("[Code] Taking screenshot for analysis...")
 
-    log.debug("[Code] 📸 Capturing screen for debug...")
+    print("[Code] 📸 Capturing screen for debug...")
 
 
     screenshot_path = _take_screenshot()
@@ -463,10 +453,13 @@ def _screen_debug_action(description, file_path, player, speak=None) -> str:
     if file_path:
         file_content, err = _read_file(file_path)
         if err:
-            log.info(f"[Code] ⚠️ Could not read file: {err}")
+            print(f"[Code] ⚠️ Could not read file: {err}")
 
     try:
+        from google import genai
         from google.genai import types
+
+        client = genai.Client(api_key=_get_api_key())
 
         image_bytes  = screenshot_path.read_bytes()
         image_base64 = _image_to_base64(screenshot_path)
@@ -494,17 +487,18 @@ Be specific and actionable. If you see an error message, quote it exactly."""
             analysis_prompt,
         ]
 
-        response = gemini.call(contents, tier=gemini.SMART, timeout_ms=45_000)
-        if response is None:
-            return "Sir, I couldn't reach Gemini to analyse that screenshot."
+        response = client.models.generate_content(
+            model="gemini-flash-latest",
+            contents=contents,
+        )
 
-        analysis = (response.text or "").strip()
-        log.info(f"[Code] ✅ Screen analysis complete")
+        analysis = response.text.strip()
+        print(f"[Code] ✅ Screen analysis complete")
 
         try:
             screenshot_path.unlink()
-        except Exception as e:
-            log.debug("%s", e)
+        except Exception:
+            pass
 
         if file_path and file_content:
 
@@ -514,7 +508,7 @@ Be specific and actionable. If you see an error message, quote it exactly."""
                 save_path  = Path(file_path)
                 _save_file(save_path, fixed_code)
                 analysis += f"\n\n✅ Fixed code has been saved to: {file_path}"
-                log.info(f"[Code] ✅ Fixed code saved: {file_path}")
+                print(f"[Code] ✅ Fixed code saved: {file_path}")
 
         return analysis
 
@@ -522,8 +516,8 @@ Be specific and actionable. If you see an error message, quote it exactly."""
 
         try:
             screenshot_path.unlink()
-        except Exception as e:
-            log.debug("%s", e)
+        except Exception:
+            pass
         return f"Screen analysis failed: {e}"
 
 
@@ -548,7 +542,6 @@ def code_helper(
         timeout     : Execution timeout in seconds (default: 30)
     """
     p           = parameters or {}
-    p           = validate_params(p, VALIDATOR, tool_name="code_helper")
     action      = p.get("action", "auto").lower().strip()
     description = p.get("description", "").strip()
     language    = p.get("language", "python").strip()
@@ -560,7 +553,7 @@ def code_helper(
 
     if action == "auto":
         action = _detect_intent(description, file_path, code)
-        log.info(f"[Code] 🤖 Auto-detected: {action}")
+        print(f"[Code] 🤖 Auto-detected: {action}")
 
     if action == "write":
         return _write_action(description, language, output_path, player)
@@ -589,58 +582,3 @@ def code_helper(
 
     else:
         return f"Unknown action: '{action}'. Use write, edit, explain, run, build, optimize, or screen_debug."
-
-
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
-TOOL = {
-    "name": "code_helper",
-    "description": "Writes, edits, explains, runs, or builds code files.",
-    "parameters": {
-        "type": "OBJECT",
-        "properties": {
-            "action": {
-                "type": "STRING",
-                "description": "write | edit | explain | run | build | auto (default: auto)"
-            },
-            "description": {
-                "type": "STRING",
-                "description": "What the code should do or what change to make"
-            },
-            "language": {
-                "type": "STRING",
-                "description": "Programming language (default: python)"
-            },
-            "output_path": {
-                "type": "STRING",
-                "description": "Where to save the file"
-            },
-            "file_path": {
-                "type": "STRING",
-                "description": "Path to existing file for edit/explain/run/build"
-            },
-            "code": {
-                "type": "STRING",
-                "description": "Raw code string for explain"
-            },
-            "args": {
-                "type": "STRING",
-                "description": "CLI arguments for run/build"
-            },
-            "timeout": {
-                "type": "INTEGER",
-                "description": "Execution timeout in seconds (default: 30)"
-            }
-        },
-        "required": [
-            "action"
-        ]
-    },
-    "handler": code_helper,
-}
-
-VALIDATOR = {
-    "action":      [{"type": str, "max_len": 50}],
-    "description": [{"type": str, "max_len": 5000}],
-    "language":    [{"type": str, "max_len": 30}],
-    "code":        [{"type": str, "max_len": 50000}],
-}

@@ -270,7 +270,7 @@ class ToolDispatcher:
 
             elif name == "screen_process":
                 import time as _t_mod
-                from actions.screen_processor import _capture_camera, _capture_screen
+                from actions.screen_processor import _capture_camera, _capture_screenshot
                 _now = _t_mod.monotonic()
                 _cooldown = 4.0
                 if opero._vision_busy or (_now - opero._vision_last_time) < _cooldown:
@@ -289,7 +289,7 @@ class ToolDispatcher:
                         log.info(f"[Vision] 📷 Camera: {len(img_b):,} bytes")
                         _stall = "camera"
                     else:
-                        img_b, mime_t = await loop.run_in_executor(None, _capture_screen)
+                        img_b, mime_t = await loop.run_in_executor(None, _capture_screenshot)
                         log.info(f"[Vision] 🖥️  Screen: {len(img_b):,} bytes")
                         _stall = "screen"
                     opero._pending_vision = (img_b, mime_t, user_text, angle)

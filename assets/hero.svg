@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="100%">
+  <style>
+    .bg { fill: #00060a; }
+    .title { font-family: 'Courier New', monospace; font-size: 64px; font-weight: 900; fill: #00d4ff; letter-spacing: 12px; }
+    .subtitle { font-family: 'Arial', sans-serif; font-size: 16px; font-weight: bold; fill: #8ffcff; letter-spacing: 5px; }
+    .ring1 { stroke: #00d4ff; stroke-width: 2.5; fill: none; stroke-dasharray: 60 20 10 20; transform-origin: 500px 140px; }
+    .ring2 { stroke: #ff6b00; stroke-width: 1.5; fill: none; stroke-dasharray: 40 30; transform-origin: 500px 140px; }
+    .ring3 { stroke: #00ff88; stroke-width: 1; fill: none; stroke-dasharray: 10 30 5 15; transform-origin: 500px 140px; }
+    .scanline { fill: rgba(0,212,255,0.05); }
+    
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
+    @keyframes pulse { 0%, 100% { opacity: 0.6; r: 140px; } 50% { opacity: 0.2; r: 160px; } }
+    @keyframes glitch { 
+      0%, 100% { transform: translate(0); } 
+      20% { transform: translate(-2px, 1px); } 
+      40% { transform: translate(2px, -1px); } 
+      60% { transform: translate(-1px, 2px); }
+    }
+    @keyframes scan { 0% { transform: translateY(-300px); } 100% { transform: translateY(300px); } }
+
+    .r1 { animation: spin 25s linear infinite; }
+    .r2 { animation: spin-rev 20s linear infinite; }
+    .r3 { animation: spin 15s linear infinite; }
+    .glow { animation: pulse 4s ease-in-out infinite; fill: #00d4ff; }
+    .glitch-text { animation: glitch 5s infinite; }
+    .scan-bar { animation: scan 3s linear infinite; }
+  </style>
+  
+  <rect width="1000" height="300" class="bg" />
+  
+  <!-- Grid Background -->
+  <g stroke="rgba(0,212,255,0.05)" stroke-width="1">
+    <line x1="0" y1="50" x2="1000" y2="50" />
+    <line x1="0" y1="100" x2="1000" y2="100" />
+    <line x1="0" y1="200" x2="1000" y2="200" />
+    <line x1="0" y1="250" x2="1000" y2="250" />
+    <line x1="250" y1="0" x2="250" y2="300" />
+    <line x1="500" y1="0" x2="500" y2="300" />
+    <line x1="750" y1="0" x2="750" y2="300" />
+  </g>
+
+  <!-- Animated Orb -->
+  <circle cx="500" cy="140" r="140" class="glow" />
+  <circle cx="500" cy="140" r="120" class="ring1 r1" />
+  <circle cx="500" cy="140" r="135" class="ring2 r2" />
+  <circle cx="500" cy="140" r="105" class="ring3 r3" />
+  
+  <!-- Text -->
+  <text x="500" y="150" text-anchor="middle" class="title glitch-text">O.P.E.R.O</text>
+  <text x="500" y="185" text-anchor="middle" class="subtitle">AUTONOMOUS AI DESKTOP OPERATOR</text>
+
+  <!-- Scanline effect -->
+  <rect width="1000" height="20" class="scanline scan-bar" />
+</svg>

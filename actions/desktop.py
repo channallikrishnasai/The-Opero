@@ -9,11 +9,6 @@ import platform
 from pathlib import Path
 from datetime import datetime
 
-from core.logger import get_logger
-from core.validator import validate_params, ValidationError
-
-log = get_logger(__name__)
-
 try:
     import pyautogui
     _PYAUTOGUI = True
@@ -28,11 +23,6 @@ def _get_base_dir() -> Path:
         return Path(sys.executable).parent
     return Path(__file__).resolve().parent.parent
 
-def _get_api_key() -> str:
-    path = _get_base_dir() / "config" / "api_keys.json"
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)["gemini_api_key"]
-    
 def _get_desktop() -> Path:
     if _OS == "Linux":
         xdg = os.environ.get("XDG_DESKTOP_DIR", "")
@@ -42,7 +32,6 @@ def _get_desktop() -> Path:
 
 def _build_sandbox() -> dict:
     import time
-    import urllib.request
 
     safe_builtins = {
         "print": print,
@@ -63,8 +52,7 @@ def _build_sandbox() -> dict:
             "copytree":   shutil.copytree,
             "disk_usage": shutil.disk_usage,
         })(),
-        "os_path": os.path,
-        "urllib_request": urllib.request,
+        "os_path": os.path,  
     }
 
     if _PYAUTOGUI:
@@ -74,16 +62,15 @@ def _build_sandbox() -> dict:
         try:
             import ctypes
             import winreg
-            import tempfile
             sandbox["ctypes"] = ctypes
-            sandbox["tempfile"] = tempfile
             sandbox["winreg"] = type("winreg", (), {
+                # Sadece okuma
                 "OpenKey":      winreg.OpenKey,
                 "QueryValueEx": winreg.QueryValueEx,
                 "HKEY_CURRENT_USER": winreg.HKEY_CURRENT_USER,
             })()
-        except ImportError as e:
-            log.debug("%s", e)
+        except ImportError:
+            pass
 
     return sandbox
 
@@ -102,31 +89,25 @@ def _execute_generated_code(code: str, player=None) -> str:
     sandbox["__builtins__"]["print"] = lambda *a: output_lines.append(" ".join(str(x) for x in a))
 
     try:
-        exec(compile(code, "<opero_desktop>", "exec"), sandbox)
+        exec(compile(code, "<brahma_desktop>", "exec"), sandbox)
         return "\n".join(output_lines) if output_lines else "Done."
     except Exception as e:
-        log.error(f"[Desktop] Exec error: {e}\nCode:\n{code[:300]}")
+        print(f"[Desktop] Exec error: {e}\nCode:\n{code[:300]}")
         return f"Execution error: {e}"
 
-
 def _ask_gemini_for_desktop_action(task: str) -> str:
-
-    from google import genai as _genai
+    from llm_client import client
 
     desktop = str(_get_desktop())
-
-    os_specific = ""
-    if _OS == "Windows":
-        os_specific = "- ctypes (Windows API calls, read-only)\n- winreg (registry READ only)"
-    elif _OS == "Darwin":
-        os_specific = "- subprocess is NOT available; use pyautogui or Path only"
-    else:
-        os_specific = "- subprocess is NOT available; use pyautogui or Path only"
+    os_specific = {
+        "Windows": "- ctypes (Windows API calls, read-only)\n- winreg (registry READ only)",
+        "Darwin":  "- subprocess is NOT available; use pyautogui or Path only",
+        "Linux":   "- subprocess is NOT available; use pyautogui or Path only",
+    }.get(_OS, "")
 
     prompt = f"""You are a desktop automation assistant.
 Current OS: {_OS}
 Desktop path: {desktop}
-
 Generate safe Python code to accomplish the task below.
 Allowed modules ONLY:
 - pyautogui (mouse, keyboard — if needed)
@@ -134,37 +115,19 @@ Allowed modules ONLY:
 - shutil.copy2, shutil.copytree, shutil.disk_usage (NO move, NO rmtree)
 - os_path (os.path equivalent, read-only)
 - time.sleep
-- urllib_request (urllib.request for downloads)
-- tempfile (for temp files)
 {os_specific}
-
 Hard rules:
-- NO file deletion (no unlink, no rmtree, no remove)
-- NO subprocess calls
-- NO exec() or eval() inside the code
-- NO import statements (modules are pre-injected)
-- NO file write operations except explicitly requested
-- CRITICAL: Always use QUOTED strings — use "path" not rpath, and r"path" not rpath
-- CRITICAL: Use double quotes for strings with paths: "C:\\\\Users\\\\..."
+- NO file deletion, NO subprocess, NO exec/eval inside the code
+- NO import statements, NO file write except explicitly requested
 - If task cannot be done safely with these tools, output exactly: UNSAFE
-
 Output ONLY the Python code. No explanation, no markdown, no backticks.
-
 Task: {task}"""
 
     try:
-        from core import gemini
-        response = gemini.call(prompt, tier=gemini.SMART, timeout_ms=30_000)
-        if response is None:
-            return "ERROR: every Gemini model on the ladder failed"
-        code = (response.text or "").strip()
-        if code.startswith("```"):
-            lines = code.split("\n")
-            code  = "\n".join(lines[1:-1]).strip()
-        return code
+        return client.chat(prompt, system="You are a code generator. Output only raw Python code.")
     except Exception as e:
         return f"ERROR: {e}"
-
+        
 def set_wallpaper(image_path: str) -> str:
     path = Path(image_path).expanduser().resolve()
     if not path.exists():
@@ -181,11 +144,9 @@ def set_wallpaper(image_path: str) -> str:
                     bmp_path = Path(tempfile.mktemp(suffix=".bmp"))
                     Image.open(path).convert("RGB").save(bmp_path, "BMP")
                     path = bmp_path
-                except ImportError as e:
-                    log.debug("%s", e)
-            ok = ctypes.windll.user32.SystemParametersInfoW(20, 0, str(path), 3)
-            if not ok:
-                return "Windows rejected the wallpaper update. Check the image and desktop policy settings."
+                except ImportError:
+                    pass 
+            ctypes.windll.user32.SystemParametersInfoW(20, 0, str(path), 3)
             return f"Wallpaper set: {path.name}"
 
         elif _OS == "Darwin":
@@ -255,16 +216,14 @@ def set_wallpaper_from_url(url: str) -> str:
     try:
         import urllib.request
         suffix = Path(url.split("?")[0]).suffix or ".jpg"
-        if suffix.lower() not in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}:
-            suffix = ".jpg"
-        # Windows stores a path to the selected image.  A TemporaryDirectory
-        # file was deleted immediately after setting it, so downloaded
-        # wallpapers disappeared or reverted after a refresh/restart.
-        store = _get_base_dir() / "config" / "wallpapers"
-        store.mkdir(parents=True, exist_ok=True)
-        target = store / f"wallpaper-{datetime.now():%Y%m%d-%H%M%S}{suffix}"
-        urllib.request.urlretrieve(url, str(target))
-        return set_wallpaper(str(target))
+        tmp    = Path(tempfile.mktemp(suffix=suffix))
+        urllib.request.urlretrieve(url, str(tmp))
+        result = set_wallpaper(str(tmp))
+        try:
+            tmp.unlink()
+        except Exception:
+            pass
+        return result
     except Exception as e:
         return f"Could not download wallpaper: {e}"
 
@@ -323,46 +282,8 @@ _SKIP_EXTENSIONS = {
 
 
 def organize_desktop(mode: str = "by_type") -> str:
-    desktop       = _get_desktop()
-    skip_exts     = _SKIP_EXTENSIONS.get(_OS, set())
-    moved, skipped = [], []
-
-    for item in desktop.iterdir():
-        if item.is_dir() or item.name.startswith("."):
-            continue
-        if item.suffix.lower() in skip_exts:
-            continue
-
-        if mode == "by_date":
-            mtime       = datetime.fromtimestamp(item.stat().st_mtime)
-            folder_name = mtime.strftime("%Y-%m")
-        else:
-            ext         = item.suffix.lower()
-            folder_name = "Others"
-            for folder, exts in FILE_TYPE_MAP.items():
-                if ext in exts:
-                    folder_name = folder
-                    break
-
-        target_dir = desktop / folder_name
-        target_dir.mkdir(exist_ok=True)
-        new_path = target_dir / item.name
-
-        if new_path.exists():
-            skipped.append(item.name)
-            continue
-
-        shutil.move(str(item), str(new_path))
-        moved.append(f"{item.name} → {folder_name}/")
-
-    result = f"Desktop organized ({mode}): {len(moved)} files moved."
-    if moved:
-        result += "\n" + "\n".join(moved[:8])
-        if len(moved) > 8:
-            result += f"\n... and {len(moved) - 8} more."
-    if skipped:
-        result += f"\n{len(skipped)} file(s) skipped (name conflict)."
-    return result
+    from actions.desktop_organizer_mcp import get_organizer_engine
+    return get_organizer_engine().organize(target="desktop", mode=mode)
 
 
 def list_desktop() -> str:
@@ -391,24 +312,8 @@ def list_desktop() -> str:
 
 
 def clean_desktop() -> str:
-    desktop     = _get_desktop()
-    skip_exts   = _SKIP_EXTENSIONS.get(_OS, set())
-    today       = datetime.now().strftime("%Y-%m-%d")
-    archive_dir = desktop / f"Desktop Archive {today}"
-    archive_dir.mkdir(exist_ok=True)
-
-    moved = 0
-    for item in desktop.iterdir():
-        if item.is_dir() or item.name.startswith("."):
-            continue
-        if item.suffix.lower() in skip_exts:
-            continue
-        new_path = archive_dir / item.name
-        if not new_path.exists():
-            shutil.move(str(item), str(new_path))
-            moved += 1
-
-    return f"Desktop cleaned: {moved} files archived to '{archive_dir.name}'."
+    from actions.desktop_organizer_mcp import get_organizer_engine
+    return get_organizer_engine().clean_empty_folders(target="desktop")
 
 
 def get_desktop_stats() -> str:
@@ -445,7 +350,6 @@ def desktop_control(
         task   : natural language description for AI-powered actions
     """
     params = parameters or {}
-    params = validate_params(params, VALIDATOR, tool_name="desktop_control")
     action = params.get("action", "").lower().strip()
     task   = params.get("task", "").strip()
 
@@ -464,11 +368,27 @@ def desktop_control(
         elif action == "current_wallpaper":
             return get_current_wallpaper()
 
-        elif action == "organize":
+        elif action in ("organize", "organize_desktop"):
             return organize_desktop(params.get("mode", "by_type"))
 
-        elif action == "clean":
+        elif action in ("preview", "preview_organize", "dry_run", "dryrun", "inspect"):
+            from actions.desktop_organizer_mcp import get_organizer_engine
+            return get_organizer_engine().preview(target="desktop", mode=params.get("mode", "by_type"))
+
+        elif action in ("clean", "clean_empty_folders", "clean_empty"):
             return clean_desktop()
+
+        elif action in ("undo", "rollback", "revert"):
+            from actions.desktop_organizer_mcp import get_organizer_engine
+            return get_organizer_engine().undo()
+
+        elif action in ("find_duplicates", "duplicates", "dupes"):
+            from actions.desktop_organizer_mcp import get_organizer_engine
+            return get_organizer_engine().find_duplicates(target="desktop")
+
+        elif action in ("archive_old", "archive"):
+            from actions.desktop_organizer_mcp import get_organizer_engine
+            return get_organizer_engine().archive_old(target="desktop", days=int(params.get("days", 30)))
 
         elif action == "list":
             return list_desktop()
@@ -481,18 +401,7 @@ def desktop_control(
             if not actual_task:
                 return "Please describe what you want to do on the desktop."
 
-            # Shortcut: wallpaper download + set (no code generation needed)
-            lower_task = actual_task.lower()
-            if any(w in lower_task for w in ("wallpaper", "background", "desktop image")):
-                import re
-                # Try to extract a URL
-                url_match = re.search(r'https?://[^\s"\'<>]+', actual_task)
-                if url_match:
-                    url = url_match.group(0).rstrip(".,;:)")
-                    log.info(f"[Desktop] Downloading wallpaper from URL")
-                    return set_wallpaper_from_url(url)
-
-            log.info(f"[Desktop] Asking Gemini: {actual_task}")
+            print(f"[Desktop] Asking Gemini: {actual_task}")
             if player:
                 player.write_log("[Desktop] Generating action...")
 
@@ -506,48 +415,5 @@ def desktop_control(
             return "No action or task specified."
 
     except Exception as e:
-        log.error(f"[Desktop] Error: {e}")
+        print(f"[Desktop] Error: {e}")
         return f"Desktop control error: {e}"
-
-
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
-TOOL = {
-    "name": "desktop_control",
-    "description": "Controls the desktop: wallpaper, organize, clean, list, stats.",
-    "parameters": {
-        "type": "OBJECT",
-        "properties": {
-            "action": {
-                "type": "STRING",
-                "description": "wallpaper | wallpaper_url | organize | clean | list | stats | task"
-            },
-            "path": {
-                "type": "STRING",
-                "description": "Image path for wallpaper"
-            },
-            "url": {
-                "type": "STRING",
-                "description": "Image URL for wallpaper_url"
-            },
-            "mode": {
-                "type": "STRING",
-                "description": "by_type or by_date for organize"
-            },
-            "task": {
-                "type": "STRING",
-                "description": "Natural language desktop task"
-            }
-        },
-        "required": [
-            "action"
-        ]
-    },
-    "handler": desktop_control,
-}
-
-VALIDATOR = {
-    "action": [{"type": str, "required": True, "max_len": 200}],
-    "path":   [{"type": str, "max_len": 500, "safe_path": True}],
-    "url":    [{"type": str, "max_len": 2000}],
-    "task":   [{"type": str, "max_len": 2000}],
-}

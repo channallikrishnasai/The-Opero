@@ -1,435 +1,286 @@
-import json
-import subprocess
-import sys
+# actions/send_message.py
+# Universal messaging — WhatsApp & Instagram
+# Uses lightweight pyautogui browser automation.
+
+from __future__ import annotations
+
 import time
 from pathlib import Path
 
-from core.logger import get_logger
-from core.validator import validate_params, ValidationError
+import pyautogui
+import pyperclip
 
-log = get_logger(__name__)
+pyautogui.FAILSAFE = True
+pyautogui.PAUSE = 0.08
 
-try:
-    import pyautogui
-    pyautogui.FAILSAFE = True
-    pyautogui.PAUSE    = 0.06
-    _PYAUTOGUI = True
-except ImportError:
-    _PYAUTOGUI = False
-
-try:
-    import pyperclip
-    _PYPERCLIP = True
-except ImportError:
-    _PYPERCLIP = False
-
-def _base_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent
-    return Path(__file__).resolve().parent.parent
-
-def _get_os() -> str:
-    try:
-        cfg = json.loads(
-            (_base_dir() / "config" / "api_keys.json").read_text(encoding="utf-8")
-        )
-        return cfg.get("os_system", "windows").lower()
-    except Exception:
-        return "windows"
+VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
-def _require_pyautogui():
-    if not _PYAUTOGUI:
-        raise RuntimeError("PyAutoGUI not installed. Run: pip install pyautogui")
+def _normalize_path(value: str) -> Path | None:
+    if not value:
+        return None
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    return path
 
-
-def _paste_text(text: str) -> None:
-    _require_pyautogui()
-
-    os_name = _get_os()
-    paste_hotkey = ("command", "v") if os_name == "mac" else ("ctrl", "v")
-
-    if _PYPERCLIP:
-        pyperclip.copy(text)
-        time.sleep(0.15)
-        pyautogui.hotkey(*paste_hotkey)
-        time.sleep(0.1)
-    else:
-        pyautogui.write(text, interval=0.03)
-
-
-def _clear_and_paste(text: str) -> None:
-    _require_pyautogui()
-    os_name = _get_os()
-    select_all = ("command", "a") if os_name == "mac" else ("ctrl", "a")
-    pyautogui.hotkey(*select_all)
-    time.sleep(0.1)
-    pyautogui.press("delete")
-    time.sleep(0.1)
-    _paste_text(text)
 
 def _open_app(app_name: str) -> bool:
-    _require_pyautogui()
-    os_name = _get_os()
-
+    """Opens an app via Windows search."""
     try:
-        if os_name == "windows":
-            pyautogui.press("win")
-            time.sleep(0.5)
-            _paste_text(app_name)
-            time.sleep(0.6)
-            pyautogui.press("enter")
-            time.sleep(2.5)
-            return True
-
-        elif os_name == "mac":
-            result = subprocess.run(
-                ["open", "-a", app_name],
-                capture_output=True, text=True, timeout=10,
-            )
-            if result.returncode != 0:
-                result = subprocess.run(
-                    ["open", "-a", f"{app_name}.app"],
-                    capture_output=True, text=True, timeout=10,
-                )
-            time.sleep(2.5)
-            return result.returncode == 0
-
-        else: 
-            launched = False
-            for launcher in [
-                ["gtk-launch", app_name.lower()],
-                [app_name.lower()],
-            ]:
-                try:
-                    subprocess.Popen(
-                        launcher,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                    )
-                    launched = True
-                    break
-                except FileNotFoundError:
-                    continue
-            time.sleep(2.5)
-            return launched
-
-    except Exception as e:
-        log.info(f"[SendMessage] ⚠️ Could not open {app_name}: {e}")
-        return False
-
-
-def _open_browser_url(url: str) -> bool:
-    import webbrowser
-    try:
-        webbrowser.open(url)
-        time.sleep(4.0) 
+        pyautogui.press("win")
+        time.sleep(0.4)
+        pyautogui.write(app_name, interval=0.04)
+        time.sleep(0.5)
+        pyautogui.press("enter")
+        time.sleep(2.0)
         return True
     except Exception as e:
-        log.info(f"[SendMessage] ⚠️ Could not open browser: {e}")
+        print(f"[SendMessage] Could not open {app_name}: {e}")
         return False
 
-def _search_in_app(query: str) -> None:
-    _require_pyautogui()
-    os_name = _get_os()
-    search_hotkey = ("command", "f") if os_name == "mac" else ("ctrl", "f")
 
-    pyautogui.hotkey(*search_hotkey)
-    time.sleep(0.5)
-    _clear_and_paste(query)
-    time.sleep(1.0)
-
-def _desktop_send(app_name: str, receiver: str, message: str) -> str:
-    if not _open_app(app_name):
-        return f"Could not open {app_name}."
-
-    time.sleep(1.0)
-    _search_in_app(receiver)
-    pyautogui.press("enter")
-    time.sleep(0.8)
-
-    _paste_text(message)
-    time.sleep(0.2)
-    pyautogui.press("enter")
-    time.sleep(0.3)
-    return f"Message sent to {receiver} via {app_name}."
 def _send_whatsapp(receiver: str, message: str) -> str:
-    return _desktop_send("WhatsApp", receiver, message)
-
-
-def _whatsapp_call(receiver: str, call_type: str = "voice") -> str:
-    """Make a WhatsApp voice or video call via WhatsApp Desktop automation."""
-    _require_pyautogui()
-
-    if not _open_app("WhatsApp"):
-        return "Could not open WhatsApp Desktop."
-
-    time.sleep(1.5)
-
-    # Search for the contact
-    _search_in_app(receiver)
-    time.sleep(0.8)
-    pyautogui.press("enter")
-    time.sleep(1.0)
-
-    # Click the call button (top-right area of chat)
-    # In WhatsApp Desktop, the phone icon is near the top-right
-    # Use keyboard shortcut: Ctrl+Shift+C opens call menu, or click the icon
-    # Safer approach: use Alt+C shortcut to start a voice call in the chat
-    # Actually, WhatsApp Desktop doesn't have a reliable keyboard shortcut for calls.
-    # We'll click the call icon by locating it on screen.
-
-    import pyautogui
-
-    # Try to find and click the call button by image or position
-    # WhatsApp Desktop call button is typically in the top toolbar area
-    # We'll use a reliable coordinate-based approach
-
-    # Anchor to WhatsApp's own window rather than the full screen.  A full-screen
-    # percentage breaks as soon as the app sits on a second monitor or is tiled.
     try:
-        import pygetwindow as gw
-        windows = [w for w in gw.getAllWindows() if "whatsapp" in w.title.lower()]
-        wa = next((w for w in windows if w.width > 300 and w.height > 300), None)
-        if wa:
-            wa.activate()
-            time.sleep(0.3)
-            call_x = wa.left + int(wa.width * 0.86)
-            call_y = wa.top + int(wa.height * 0.055)
-        else:
-            raise RuntimeError("WhatsApp window not found")
-    except Exception:
-        screen_w, screen_h = pyautogui.size()
-        call_x, call_y = int(screen_w * 0.80), int(screen_h * 0.04)
+        if not _open_app("WhatsApp"):
+            return "Could not open WhatsApp."
 
-    if call_type == "video":
-        # Video call is slightly to the right of voice call
-        call_x = int(screen_w * 0.84)
-
-    pyautogui.click(call_x, call_y)
-    time.sleep(1.0)
-
-    # If it's a video call, there might be a confirmation dialog
-    if call_type == "video":
-        time.sleep(0.5)
-
-    return f"WhatsApp {call_type} call started with {receiver}."
+        time.sleep(1.5)
+        pyautogui.hotkey("ctrl", "f")
+        time.sleep(0.4)
+        pyautogui.hotkey("ctrl", "a")
+        pyautogui.write(receiver, interval=0.04)
+        time.sleep(1.0)
+        pyautogui.press("enter")
+        time.sleep(0.8)
+        pyautogui.write(message, interval=0.03)
+        time.sleep(0.2)
+        pyautogui.press("enter")
+        return f"Message sent to {receiver} via WhatsApp."
+    except Exception as e:
+        return f"WhatsApp error: {e}"
 
 
-def _whatsapp_end_call() -> str:
-    """End the current WhatsApp call."""
-    _require_pyautogui()
-    import pyautogui
+def _open_instagram_home() -> None:
+    import webbrowser
 
-    # The end call button is typically in the center-bottom area
-    # Red phone icon
-    screen_w, screen_h = pyautogui.size()
-    end_x = int(screen_w * 0.50)
-    end_y = int(screen_h * 0.85)
-
-    pyautogui.click(end_x, end_y)
-    time.sleep(0.5)
-    return "Call ended."
+    webbrowser.open("https://www.instagram.com/")
+    time.sleep(6.0)
 
 
-def _send_telegram(receiver: str, message: str) -> str:
-    return _desktop_send("Telegram", receiver, message)
+def _open_instagram_post_dialog() -> None:
+    """
+    Open Instagram's create dialog directly so the upload flow starts on
+    Create / Post instead of landing on the feed or another sidebar item.
+    """
+    import webbrowser
 
-def _send_signal(receiver: str, message: str) -> str:
-    return _desktop_send("Signal", receiver, message)
+    webbrowser.open("https://www.instagram.com/create/select/")
+    time.sleep(6.0)
 
-
-def _send_discord(receiver: str, message: str) -> str:
-    return _desktop_send("Discord", receiver, message)
-
-
-def _send_instagram(receiver: str, message: str) -> str:
-    _require_pyautogui()
-
-    if not _open_browser_url("https://www.instagram.com/direct/new/"):
-        return "Could not open Instagram in browser."
-
-    _paste_text(receiver)
-    time.sleep(1.5)
-
-    pyautogui.press("down")
-    time.sleep(0.3)
-    pyautogui.press("enter")   
-    time.sleep(0.4)
-
-    for _ in range(4):
+    # Instagram usually shows a modal with "Select from computer".
+    # Give it a few chances to focus that action without using the left nav.
+    for _ in range(5):
         pyautogui.press("tab")
         time.sleep(0.15)
     pyautogui.press("enter")
-    time.sleep(2.0)
-
-    _paste_text(message)
-    time.sleep(0.2)
-    pyautogui.press("enter")
-    time.sleep(0.3)
-
-    return f"Message sent to {receiver} via Instagram."
+    time.sleep(2.5)
 
 
-def _send_messenger(receiver: str, message: str) -> str:
-    _require_pyautogui()
-
-    if not _open_browser_url("https://www.messenger.com/"):
-        return "Could not open Messenger in browser."
-
-
-    _search_in_app(receiver)
-    time.sleep(0.5)
-    pyautogui.press("down")
-    time.sleep(0.3)
-    pyautogui.press("enter")
-    time.sleep(1.0)
-
-    _paste_text(message)
-    time.sleep(0.2)
-    pyautogui.press("enter")
-    time.sleep(0.3)
-
-    return f"Message sent to {receiver} via Messenger."
-
-_PLATFORM_MAP = [
-    ({"whatsapp", "wp", "wapp"},              _send_whatsapp),
-    ({"telegram", "tg"},                      _send_telegram),
-    ({"instagram", "ig", "insta"},            _send_instagram),
-    ({"signal"},                               _send_signal),
-    ({"discord"},                              _send_discord),
-    ({"messenger", "facebook", "fb"},         _send_messenger),
-]
+def _send_instagram(receiver: str, message: str) -> str:
+    """
+    Sends an Instagram DM via API and opens the thread in the browser.
+    """
+    try:
+        from actions.instagram_mcp import InstagramService
+        res = InstagramService.instance().send_dm(receiver, message, open_in_browser=True)
+        return f"Message sent to @{receiver} via Instagram. Thread opened in browser."
+    except Exception as e:
+        try:
+            _open_instagram_home()
+            return f"Opened Instagram in browser: {e}"
+        except Exception:
+            return f"Instagram error: {e}"
 
 
-def _resolve_platform(platform_str: str):
-    key = platform_str.lower().strip()
-    for keywords, handler in _PLATFORM_MAP:
-        if any(k in key for k in keywords):
-            return handler
-    return lambda r, m: _desktop_send(platform_str.strip().title(), r, m)
+def _upload_instagram_media(media_path: str, caption: str = "", mode: str = "post") -> str:
+    """
+    Upload a photo/video directly to Instagram via API and auto-open in browser.
+    """
+    try:
+        path = _normalize_path(media_path)
+        if not path or not path.exists():
+            return f"Instagram upload error: media file not found: {media_path}"
+
+        if path.suffix.lower() not in VIDEO_EXTS | IMAGE_EXTS:
+            return f"Instagram upload error: unsupported media type: {path.suffix}"
+
+        from actions.instagram_mcp import InstagramService
+        svc = InstagramService.instance()
+        if path.suffix.lower() in VIDEO_EXTS:
+            res = svc.post_reel(str(path), caption=caption, open_in_browser=True)
+            return f"Instagram Reel published: {res.get('reel_url')} (opened in browser)"
+        else:
+            res = svc.post_photo(str(path), caption=caption, open_in_browser=True)
+            return f"Instagram Photo published: {res.get('post_url')} (opened in browser)"
+    except Exception as e:
+        return f"Instagram API upload error: {e}"
+
+
+
+def _send_telegram(receiver: str, message: str) -> str:
+    """Sends a Telegram message via Windows desktop app."""
+    try:
+        if not _open_app("Telegram"):
+            return "Could not open Telegram."
+
+        time.sleep(1.5)
+        pyautogui.hotkey("ctrl", "f")
+        time.sleep(0.4)
+        pyautogui.write(receiver, interval=0.04)
+        time.sleep(1.0)
+        pyautogui.press("enter")
+        time.sleep(0.8)
+        pyautogui.write(message, interval=0.03)
+        time.sleep(0.2)
+        pyautogui.press("enter")
+        return f"Message sent to {receiver} via Telegram."
+    except Exception as e:
+        return f"Telegram error: {e}"
+
+
+def _send_email_via_browser(platform: str, receiver: str, message: str) -> str:
+    try:
+        import urllib.parse
+        import webbrowser
+        import psutil
+        import time
+        import pyautogui
+        
+        # Check if Chrome or Edge is running
+        browser_name = "browser"
+        for proc in psutil.process_iter(["name"]):
+            try:
+                name = proc.info["name"].lower()
+                if "chrome" in name:
+                    browser_name = "Chrome"
+                    break
+                elif "msedge" in name:
+                    browser_name = "Edge"
+                    break
+                elif "firefox" in name:
+                    browser_name = "Firefox"
+                    break
+            except Exception:
+                continue
+
+        subject = "Message from Brahma Echo"
+        
+        plat_lower = platform.lower()
+        if "gmail" in plat_lower or "chrome" in plat_lower or "browser" in plat_lower:
+            quoted_recipient = urllib.parse.quote(receiver)
+            quoted_subject = urllib.parse.quote(subject)
+            quoted_body = urllib.parse.quote(message)
+            url = f"https://mail.google.com/mail/?view=cm&fs=1&to={quoted_recipient}&su={quoted_subject}&body={quoted_body}"
+            app_name = f"Gmail in {browser_name}"
+            
+            print(f"[SendMessage] Automating Chrome to open: {url}")
+            webbrowser.open(url)
+            
+        elif "outlook" in plat_lower:
+            quoted_recipient = urllib.parse.quote(receiver)
+            quoted_subject = urllib.parse.quote(subject)
+            quoted_body = urllib.parse.quote(message)
+            url = f"https://outlook.live.com/default/?path=/mail/action/compose&to={quoted_recipient}&subject={quoted_subject}&body={quoted_body}"
+            app_name = f"Outlook in {browser_name}"
+            webbrowser.open(url)
+        else:
+            quoted_recipient = urllib.parse.quote(receiver)
+            quoted_subject = urllib.parse.quote(subject)
+            quoted_body = urllib.parse.quote(message)
+            url = f"mailto:{quoted_recipient}?subject={quoted_subject}&body={quoted_body}"
+            app_name = "Default Mail Client"
+            webbrowser.open(url)
+            
+        return f"Opened {app_name} to compose email to {receiver}."
+    except Exception as e:
+        return f"Email browser compose error: {e}"
+
+
+def _send_generic(platform: str, receiver: str, message: str) -> str:
+    try:
+        if not _open_app(platform):
+            return f"Could not open {platform}."
+
+        time.sleep(1.5)
+        pyautogui.hotkey("ctrl", "f")
+        time.sleep(0.4)
+        pyautogui.write(receiver, interval=0.04)
+        time.sleep(1.0)
+        pyautogui.press("enter")
+        time.sleep(0.8)
+        pyautogui.write(message, interval=0.03)
+        time.sleep(0.2)
+        pyautogui.press("enter")
+        return f"Message sent to {receiver} via {platform}."
+    except Exception as e:
+        return f"{platform} error: {e}"
 
 
 def send_message(
     parameters: dict,
     response=None,
     player=None,
-    speak=None,
-    session_memory=None,
+    session_memory=None
 ) -> str:
+    """
+    Called from main.py.
+
+    parameters:
+        receiver     : Contact name to send to
+        message_text : The message content / caption
+        platform     : whatsapp | instagram | telegram | <any app name>
+                       Default: whatsapp
+        mode         : dm | upload (instagram only; default: dm)
+        media_path   : Optional media file path for Instagram uploads
+    """
     params       = parameters or {}
-    params       = validate_params(params, VALIDATOR, tool_name="send_message")
     receiver     = params.get("receiver", "").strip()
     message_text = params.get("message_text", "").strip()
-    platform     = params.get("platform", "whatsapp").strip()
-    action       = params.get("action", "message").strip().lower()
+    platform     = params.get("platform", "whatsapp").strip().lower()
+    mode         = params.get("mode", "dm").strip().lower()
+    media_path   = params.get("media_path", "").strip()
 
-    if not _PYAUTOGUI:
-        return "PyAutoGUI is not installed — cannot control the desktop."
+    if mode != "upload" and not receiver:
+        return "Please specify who to send the message to, sir."
+    if mode != "upload" and not message_text:
+        return "Please specify what message to send, sir."
+    if mode == "upload" and not media_path:
+        return "Please specify a media file to upload, sir."
 
-    # ── Call actions ──────────────────────────────────────────────────────
-    if action in ("voice_call", "video_call", "call"):
-        if not receiver:
-            return "Please specify who to call."
-        call_type = "video" if action == "video_call" else "voice"
-        log.info(f"[SendMessage] 📞 WhatsApp {call_type} call → {receiver}")
-        if player:
-            player.write_log(f"[msg] WhatsApp {call_type} call → {receiver}")
-        try:
-            result = _whatsapp_call(receiver, call_type)
-            # A virtual microphone is intentionally a user-controlled routing
-            # choice: without it, playing TTS locally must never be claimed as
-            # speech delivered to the person on the call.
-            if "started" in result.lower() and message_text and callable(speak):
-                speak(
-                    "Read this call opener exactly, with no introduction or extra words: "
-                    + message_text
-                )
-                result += (
-                    " OPERO is reading the supplied opener now. It reaches the caller "
-                    "only when WhatsApp's microphone is routed to OPERO audio (for example, VB-CABLE)."
-                )
-        except Exception as e:
-            result = f"Could not start call: {e}"
-        log.info(f"[SendMessage] {'✅' if 'started' in result.lower() else '❌'} {result}")
-        if player:
-            player.write_log(f"[msg] {result}")
-        return result
-
-    if action == "end_call":
-        log.info("[SendMessage] 📞 Ending call")
-        if player:
-            player.write_log("[msg] Ending call")
-        try:
-            result = _whatsapp_end_call()
-        except Exception as e:
-            result = f"Could not end call: {e}"
-        return result
-
-    # ── Message actions ───────────────────────────────────────────────────
-    if not receiver:
-        return "Please specify a recipient."
-    if not message_text:
-        return "Please specify the message content."
-
-    preview = message_text[:50] + ("…" if len(message_text) > 50 else "")
-    log.info(f"[SendMessage] 📨 {platform} → {receiver}: {preview}")
+    print(f"[SendMessage] 📨 {platform} → {receiver}: {message_text[:40]}")
     if player:
-        player.write_log(f"[msg] {platform} → {receiver}")
+        if mode == "upload" and "instagram" in platform:
+            player.write_log(f"[msg] Uploading {media_path} to Instagram...")
+        else:
+            player.write_log(f"[msg] Sending to {receiver} via {platform}...")
 
-    try:
-        handler = _resolve_platform(platform)
-        result  = handler(receiver, message_text)
-    except Exception as e:
-        result = f"Could not send message: {e}"
+    if "instagram" in platform and mode == "upload":
+        result = _upload_instagram_media(media_path, caption=message_text, mode="post")
+    elif "gmail" in platform or "outlook" in platform or platform in ("email", "mail"):
+        result = _send_email_via_browser(platform, receiver, message_text)
+    elif "whatsapp" in platform or "wp" in platform or "wapp" in platform:
+        result = _send_whatsapp(receiver, message_text)
+    elif "instagram" in platform or "ig" in platform or "insta" in platform:
+        result = _send_instagram(receiver, message_text)
+    elif "telegram" in platform or "tg" in platform:
+        result = _send_telegram(receiver, message_text)
+    else:
+        result = _send_generic(platform, receiver, message_text)
 
-    log.info(f"[SendMessage] {'✅' if 'sent' in result.lower() else '❌'} {result}")
+    print(f"[SendMessage] ✅ {result}")
     if player:
         player.write_log(f"[msg] {result}")
 
     return result
-
-
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
-TOOL = {
-    "name": "send_message",
-    "description": (
-        "Sends a message or makes a call via WhatsApp, Telegram, or other platform. "
-        "Supports: message, voice_call, video_call, end_call actions. "
-        "For WhatsApp calls, it opens WhatsApp Desktop and clicks the call button."
-    ),
-    "parameters": {
-        "type": "OBJECT",
-        "properties": {
-            "receiver": {
-                "type": "STRING",
-                "description": "Recipient contact name",
-            },
-            "message_text": {
-                "type": "STRING",
-                "description": "The message to send (required for message action)",
-            },
-            "platform": {
-                "type": "STRING",
-                "description": "Platform: WhatsApp, Telegram, Signal, Discord, etc.",
-            },
-            "action": {
-                "type": "STRING",
-                "description": (
-                    "Action to perform: message (default), voice_call, video_call, end_call. "
-                    "For a call, message_text is the optional opening line OPERO reads after the call starts. "
-                    "voice_call/video_call open WhatsApp Desktop and start a call with the receiver."
-                ),
-            },
-        },
-        "required": ["receiver", "platform"],
-    },
-    "handler": send_message,
-}
-
-VALIDATOR = {
-    "receiver":     [{"type": str, "required": True, "max_len": 100}],
-    "message_text": [{"type": str, "max_len": 4000}],
-    "platform":     [{"type": str, "required": True, "max_len": 50}],
-    "action":       [{"type": str, "max_len": 50}],
-}

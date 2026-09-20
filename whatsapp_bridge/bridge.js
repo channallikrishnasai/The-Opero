@@ -6,6 +6,8 @@
  * 
  * API:
  *   GET  /status          - Bridge status (connected/disconnected/scanning)
+ *   GET  /qr              - Current pairing QR payload, if any
+ *   POST /qr/refresh      - Discard the session and emit a fresh pairing QR
  *   GET  /calls           - List active incoming calls
  *   POST /calls/:id/answer - Answer a call (clicks WhatsApp Web UI)
  *   POST /calls/:id/reject - Reject a call
@@ -36,6 +38,14 @@ let qrCode = null;
 let incomingCalls = [];          // [{ id, from, fromName, isVideo, timestamp, answered }]
 let activeCall = null;           // currently active call object
 let client = null;
+let initializing = false;        // guards overlapping client (re)initialisations
+let resetting = false;           // guards overlapping pairing resets
+let shuttingDown = false;
+let consecutiveResets = 0;       // breaks a LOGOUT -> reset -> LOGOUT loop
+let lastProgressAt = Date.now(); // last sign of life from the WhatsApp client
+
+// LocalAuth stores the WhatsApp Web profile in <dataPath>/session.
+const SESSION_DIR = path.join(DATA_DIR, 'session');
 
 // ── WhatsApp Client ──────────────────────────────────────────────────────────
 function createClient() {
@@ -46,14 +56,16 @@ function createClient() {
       // whatsapp-web.js pulls puppeteer-core, which does not download a
       // browser. Prefer a user-supplied path, then the installed Chrome/Edge.
       ...(CHROME_PATH ? { executablePath: CHROME_PATH } : {}),
+      // Do NOT add --single-process / --no-zygote here. Chromium then never
+      // commits a main frame before the client navigates, and puppeteer throws
+      // "Requesting main frame too early!" — which kills the bridge on startup
+      // and leaves port 8099 refusing connections.
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
-        '--no-zygote',
-        '--single-process',
         '--disable-gpu',
       ],
     },
@@ -62,6 +74,8 @@ function createClient() {
   client.on('qr', (qr) => {
     bridgeStatus = 'scanning';
     qrCode = qr;
+    lastProgressAt = Date.now();
+    consecutiveResets = 0;   // a fresh QR means the session is making progress
     console.log('[Bridge] Scan QR code with WhatsApp:');
     qrcode.generate(qr, { small: true });
     // Write QR to file for OPERO to read
@@ -71,11 +85,13 @@ function createClient() {
   client.on('ready', () => {
     bridgeStatus = 'connected';
     qrCode = null;
+    lastProgressAt = Date.now();
     console.log('[Bridge] ✅ WhatsApp Web connected');
     try { fs.unlinkSync(path.join(__dirname, 'qr.txt')); } catch {}
   });
 
   client.on('authenticated', () => {
+    lastProgressAt = Date.now();
     console.log('[Bridge] Authenticated');
   });
 
@@ -87,6 +103,11 @@ function createClient() {
   client.on('disconnected', (reason) => {
     bridgeStatus = 'disconnected';
     console.log('[Bridge] Disconnected:', reason);
+    // A revoked device can only be fixed by re-pairing. Purge the dead session
+    // instead of staying offline until somebody restarts the desktop app.
+    if (reason === 'LOGOUT') {
+      setTimeout(() => { void resetForPairing(false); }, 1000);
+    }
   });
 
   // ── Call Detection ──────────────────────────────────────────────────────
@@ -176,22 +197,12 @@ app.get('/qr', (req, res) => {
   }
 });
 
-// Force a new QR code by logging out and reconnecting
-app.post('/qr/refresh', async (req, res) => {
-  try {
-    if (client) {
-      await client.logout();
-      qrCode = null;
-      bridgeStatus = 'scanning';
-      // Client will reconnect and emit a new 'qr' event automatically
-      console.log('[Bridge] 🔄 Logged out — new QR will be generated');
-      res.json({ ok: true });
-    } else {
-      res.status(503).json({ error: 'Client not running' });
-    }
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+// Force a new QR code by discarding the session and reconnecting.
+// Responds immediately: tearing down and restarting Chromium takes seconds,
+// and OPERO polls /status + /qr for the code this produces.
+app.post('/qr/refresh', (req, res) => {
+  res.json({ ok: true, message: 'Session reset — a new QR code will appear shortly.' });
+  void resetForPairing(true);
 });
 
 // List incoming calls
@@ -272,21 +283,190 @@ app.get('/contacts/:phone', async (req, res) => {
   }
 });
 
+// ── Session recovery ─────────────────────────────────────────────────────────
+
+/**
+ * Chromium keeps a lock on its user-data-dir while it runs, so the profile may
+ * only be removed once the browser is gone. whatsapp-web.js attempts this from
+ * inside its own navigation handler and throws EBUSY on Windows — that rejected
+ * promise used to take the whole bridge process down with it.
+ */
+async function removeSessionDir() {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      fs.rmSync(SESSION_DIR, { recursive: true, force: true });
+      return true;
+    } catch (e) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+  console.warn('[Bridge] Could not delete the session directory — pairing may reuse stale credentials.');
+  return false;
+}
+
+function destroyClient() {
+  const previous = client;
+  client = null;
+  if (!previous) return;
+  try {
+    previous.removeAllListeners();
+    previous.destroy();
+  } catch (e) {
+    // A half-dead browser is expected here; the next init starts a clean one.
+  }
+}
+
+/** True once the underlying browser is gone and the client cannot recover. */
+function clientLooksDead() {
+  if (!client) return true;
+  try {
+    const page = client.pupPage;
+    if (!page) return false;            // still starting up
+    return typeof page.isClosed === 'function' ? page.isClosed() : false;
+  } catch (e) {
+    return true;                        // the browser connection is gone
+  }
+}
+
+/**
+ * Chromium marks a profile as in-use with a 'lockfile' next to it, and on
+ * Windows puppeteer refuses to launch while one exists. A bridge killed from the
+ * desktop app leaves that file behind, so drop it when — and only when — nobody
+ * holds it: Windows refuses the delete while a live browser has it open.
+ */
+function clearStaleProfileLock() {
+  const lockfile = path.join(SESSION_DIR, 'lockfile');
+  try {
+    if (!fs.existsSync(lockfile)) return false;
+    fs.rmSync(lockfile, { force: true });
+    console.log('[Bridge] Removed a stale Chromium profile lock.');
+    return true;
+  } catch (e) {
+    console.warn('[Bridge] A live Chromium holds the WhatsApp profile — close it and reconnect.');
+    return false;
+  }
+}
+
+function scheduleInit(delayMs) {
+  setTimeout(() => { void initializeClient(); }, delayMs);
+}
+
+async function initializeClient() {
+  if (initializing || resetting || shuttingDown) return;
+  initializing = true;
+  try {
+    destroyClient();
+    qrCode = null;
+    bridgeStatus = 'starting';
+    const waClient = createClient();
+    client = waClient;
+    await waClient.initialize();
+    console.log('[Bridge] WhatsApp client initialized');
+  } catch (e) {
+    const message = (e && e.message) || String(e);
+    console.error('[Bridge] Client init failed:', message);
+    // whatsapp-web.js sometimes rejects initialize() while the client it built
+    // is still perfectly healthy and about to emit 'qr'/'ready' — tearing that
+    // one down would throw away a working link, so let it prove itself first.
+    if (Date.now() - lastProgressAt < 15000) {
+      console.log('[Bridge] Client made progress after the init error — keeping it.');
+    } else {
+      bridgeStatus = 'disconnected';
+      destroyClient();
+      const profileTaken = /already running/i.test(message);
+      if (profileTaken && !clearStaleProfileLock()) {
+        scheduleInit(30000);   // a real browser owns the profile; do not fight it
+      } else {
+        scheduleInit(5000);
+      }
+    }
+  } finally {
+    initializing = false;
+  }
+}
+
+/**
+ * Throw away the current session and bring up a fresh client, which makes
+ * WhatsApp Web emit a new pairing QR code.
+ *
+ * @param {boolean} force - honour an explicit request even after repeated
+ *   LOGOUT cycles, which otherwise stop auto-recovery to protect the account.
+ */
+async function resetForPairing(force) {
+  if (shuttingDown) return false;
+  if (resetting) return true;
+  if (!force && consecutiveResets >= 4) {
+    console.warn('[Bridge] Repeated logouts — waiting for an explicit QR refresh.');
+    return false;
+  }
+  resetting = true;
+  consecutiveResets += 1;
+  try {
+    console.log('[Bridge] 🔄 Resetting session to generate a new QR code');
+    bridgeStatus = 'scanning';
+    qrCode = null;
+    destroyClient();
+    await removeSessionDir();
+    return true;
+  } catch (e) {
+    console.error('[Bridge] Reset failed:', (e && e.message) || e);
+    return false;
+  } finally {
+    resetting = false;
+    // Re-initialising without a session is what produces the new 'qr' event.
+    scheduleInit(500);
+  }
+}
+
+// The HTTP API is what OPERO talks to, so nothing here may ever take the
+// process down: a silent exit leaves port 8099 refusing connections forever.
+process.on('unhandledRejection', (reason) => {
+  console.error('[Bridge] Unhandled rejection (bridge stays up):', (reason && reason.message) || reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Bridge] Uncaught exception (bridge stays up):', (err && err.message) || err);
+});
+
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    shuttingDown = true;
+    destroyClient();
+    process.exit(0);
+  });
+}
+
 // ── Start ────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('[Bridge] Starting OPERO WhatsApp Bridge...');
 
-  const waClient = createClient();
-
-  app.listen(API_PORT, '127.0.0.1', () => {
+  const server = app.listen(API_PORT, '127.0.0.1', () => {
     console.log(`[Bridge] API server listening on http://127.0.0.1:${API_PORT}`);
   });
 
-  await waClient.initialize();
-  console.log('[Bridge] WhatsApp client initialized');
+  server.on('error', (err) => {
+    // Two bridges would fight over one Chromium profile, so refuse to continue.
+    const hint = err.code === 'EADDRINUSE'
+      ? `port ${API_PORT} is already in use by another bridge`
+      : err.message;
+    console.error(`[Bridge] Cannot serve the API — ${hint}`);
+    process.exit(1);
+  });
+
+  // Safety net: if Chromium dies without an event, bring the client back rather
+  // than serving a permanently 'disconnected' status.
+  setInterval(() => {
+    if (shuttingDown || initializing || resetting) return;
+    if (clientLooksDead()) {
+      console.warn('[Bridge] No live WhatsApp client — reinitialising.');
+      void initializeClient();
+    }
+  }, 15000).unref();
+
+  await initializeClient();
 }
 
 main().catch((err) => {
-  console.error('[Bridge] Fatal error:', err);
-  process.exit(1);
+  console.error('[Bridge] Fatal error:', (err && err.message) || err);
+  scheduleInit(5000);
 });

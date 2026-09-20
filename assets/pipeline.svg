@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 200" width="100%">
+  <style>
+    .bg { fill: #00060a; }
+    .box { fill: rgba(1, 21, 32, 0.9); stroke: #00d4ff; stroke-width: 2; rx: 12px; }
+    .box-brain { stroke: #aa44ff; }
+    .box-exec { stroke: #00ff88; }
+    .text-title { font-family: 'Arial', sans-serif; font-size: 16px; fill: #ffffff; font-weight: bold; }
+    .text-sub { font-family: 'Arial', sans-serif; font-size: 12px; fill: #8ffcff; }
+    .icon { font-size: 24px; }
+    
+    .arrow-line { stroke: #ff6b00; stroke-width: 3; fill: none; stroke-dasharray: 8 6; }
+    .arrow-head { fill: #ff6b00; }
+    
+    @keyframes flow { to { stroke-dashoffset: -28; } }
+    @keyframes pulse { 0%, 100% { filter: drop-shadow(0 0 8px rgba(0,212,255,0.2)); } 50% { filter: drop-shadow(0 0 16px rgba(0,212,255,0.8)); } }
+    @keyframes pulse-brain { 0%, 100% { filter: drop-shadow(0 0 8px rgba(170,68,255,0.2)); } 50% { filter: drop-shadow(0 0 16px rgba(170,68,255,0.8)); } }
+    @keyframes pulse-exec { 0%, 100% { filter: drop-shadow(0 0 8px rgba(0,255,136,0.2)); } 50% { filter: drop-shadow(0 0 16px rgba(0,255,136,0.8)); } }
+
+    .animated-flow { animation: flow 1s linear infinite; }
+    .glow-box { animation: pulse 3s infinite; }
+    .glow-brain { animation: pulse-brain 3s infinite 1s; }
+    .glow-exec { animation: pulse-exec 3s infinite 2s; }
+  </style>
+  
+  <rect width="1000" height="200" class="bg" />
+
+  <!-- Node 1: Input -->
+  <g class="glow-box" transform="translate(60, 50)">
+    <rect width="200" height="90" class="box" />
+    <text x="100" y="40" text-anchor="middle" class="text-title">🎙️ 1. Input Layer</text>
+    <text x="100" y="65" text-anchor="middle" class="text-sub">Voice • Screen • Clipboard</text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <path d="M 270 95 L 390 95" class="arrow-line animated-flow" />
+  <polygon points="385,88 398,95 385,102" class="arrow-head" />
+
+  <!-- Node 2: Brain -->
+  <g class="glow-brain" transform="translate(400, 50)">
+    <rect width="200" height="90" class="box box-brain" />
+    <text x="100" y="40" text-anchor="middle" class="text-title">🧠 2. Gemini Brain</text>
+    <text x="100" y="65" text-anchor="middle" class="text-sub">Reasoning &amp; Tool Selection</text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <path d="M 610 95 L 730 95" class="arrow-line animated-flow" />
+  <polygon points="725,88 738,95 725,102" class="arrow-head" />
+
+  <!-- Node 3: Execution -->
+  <g class="glow-exec" transform="translate(740, 50)">
+    <rect width="200" height="90" class="box box-exec" />
+    <text x="100" y="40" text-anchor="middle" class="text-title">⚡ 3. Action Engine</text>
+    <text x="100" y="65" text-anchor="middle" class="text-sub">50+ Local Automations</text>
+  </g>
+</svg>

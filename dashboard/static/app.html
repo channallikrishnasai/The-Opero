@@ -131,6 +131,10 @@
       pointer-events:none; white-space:nowrap;
     }
     #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    @keyframes modalPop {
+      0% { opacity: 0; transform: scale(0.85) translateY(20px) rotateX(10deg); }
+      100% { opacity: 1; transform: scale(1) translateY(0) rotateX(0deg); }
+    }
   </style>
 </head>
 <body>
@@ -139,6 +143,21 @@
     <div class="logo"><em>O</em>PERO</div>
     <div class="pill" id="pill"><span class="dot"></span><span id="st">Connecting</span></div>
     <div class="enc-badge" id="enc">AES-256</div>
+    <div class="nav-links" style="display:flex;gap:10px;align-items:center;">
+      <a href="https://github.com/channallikrishnasai/The-Opero" target="_blank" style="color:var(--text);text-decoration:none;font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;background:var(--surface);padding:4px 10px;border-radius:6px;border:1px solid var(--border)">
+        <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="https://www.linkedin.com/in/krishna-sai-channalli-4528262b3" target="_blank" style="color:#0077b5;text-decoration:none;font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;background:var(--surface);padding:4px 10px;border-radius:6px;border:1px solid var(--border)">
+        Founder: Krishna Sai
+      </a>
+      <a href="/portfolio" target="_blank" style="color:#54b9ff;text-decoration:none;font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;background:rgba(84,185,255,0.15);padding:4px 10px;border-radius:6px;border:1px solid rgba(84,185,255,0.3)">
+        🎨 3D Portfolio & Galaxy
+      </a>
+      <button onclick="toggleIntegrationsModal()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">
+        🔗 Link Accounts
+      </button>
+    </div>
     <div class="spacer"></div>
     <div class="url">__IP__:__PORT__</div>
   </header>
@@ -555,5 +574,216 @@
       _micIdle();
     }
   </script>
+
+  <!-- Integrations / Link Accounts Modal -->
+  <div id="int-modal" style="display:none;position:fixed;inset:0;background:rgba(2,6,19,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:linear-gradient(135deg, rgba(9,29,56,0.95), rgba(6,20,43,0.98));border:1px solid rgba(84,185,255,0.3);border-radius:20px;max-width:620px;width:100%;max-height:92vh;overflow-y:auto;padding:28px;box-shadow:0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(45,109,255,0.2);animation:modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#377ed4,#80c3ff);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 15px rgba(84,185,255,0.4)">🔗</div>
+          <div>
+            <h2 style="font-size:18px;font-weight:800;color:#c7ecff;letter-spacing:0.5px">Link Accounts & Automation Studio</h2>
+            <p style="font-size:11px;color:#8aafd0;margin-top:2px">Configure credentials directly — zero code editing required</p>
+          </div>
+        </div>
+        <button onclick="toggleIntegrationsModal()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#8aafd0;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.2)';this.style.color='#f87171'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='#8aafd0'">✕</button>
+      </div>
+
+      <!-- Gmail Section -->
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);padding:18px;border-radius:14px;margin-bottom:18px;transition:all 0.3s;" onmouseover="this.style.borderColor='rgba(84,185,255,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;">📧</span>
+            <strong style="color:#c7ecff;font-size:15px;">Gmail Automation Engine</strong>
+          <a href="https://console.cloud.google.com/apis/credentials/oauthclient" target="_blank" style="font-size:11px;color:#54b9ff;text-decoration:underline;margin-left:10px;font-weight:700;">🔗 Get Google Client ID & Secret Guide</a>
+          </div>
+          <span id="st-gmail" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#1e293b;color:#94a3b8">Checking...</span>
+        </div>
+        
+        <details style="margin-bottom:12px;font-size:11px;color:#8aafd0;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:8px;border:1px dashed rgba(255,255,255,0.1)">
+          <summary style="cursor:pointer;font-weight:700;color:#54b9ff">📖 How to get your Gmail Credentials (Step-by-Step)</summary>
+          <ol style="margin-top:8px;margin-left:16px;line-height:1.6">
+            <li>Go to <a href="https://console.cloud.google.com/" target="_blank" style="color:#54b9ff">Google Cloud Console</a> & create a project.</li>
+            <li>Enable <strong>Gmail API</strong> in APIs & Services.</li>
+            <li>Go to <strong>Credentials</strong> → <strong>Create Credentials</strong> → <strong>OAuth client ID</strong>.</li>
+            <li>Select Application Type: <strong>Desktop App</strong>.</li>
+            <li>Copy your <strong>Client ID</strong> and <strong>Client Secret</strong> below.</li>
+          </ol>
+        </details>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#8aafd0;display:block;margin-bottom:4px">Client ID</label>
+            <input id="gmail-id-inp" type="text" placeholder="apps.googleusercontent.com" style="width:100%;background:#030816;border:1px solid rgba(84,185,255,0.2);border-radius:8px;color:#fff;font-size:11px;padding:8px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#8aafd0;display:block;margin-bottom:4px">Client Secret</label>
+            <input id="gmail-sec-inp" type="password" placeholder="GOCSPX-..." style="width:100%;background:#030816;border:1px solid rgba(84,185,255,0.2);border-radius:8px;color:#fff;font-size:11px;padding:8px;box-sizing:border-box">
+          </div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          <label style="font-size:10px;font-weight:700;color:#8aafd0;display:block;margin-bottom:4px">Or Paste Full Google OAuth JSON</label>
+          <textarea id="gmail-json-inp" placeholder="Paste raw google_oauth_client.json here if preferred..." style="width:100%;height:50px;background:#030816;border:1px solid rgba(84,185,255,0.2);border-radius:8px;color:#fff;font-family:monospace;font-size:10px;padding:8px;box-sizing:border-box"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button onclick="saveGmailConfig()" style="background:linear-gradient(135deg,#377ed4,#54b9ff);color:#020613;border:none;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 0 12px rgba(84,185,255,0.3)">Save Gmail Credentials</button>
+          <button onclick="sendAppMsg('connect gmail')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#c7ecff;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">Auth & Sign In</button>
+        </div>
+      </div>
+
+      <!-- Instagram Section -->
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);padding:18px;border-radius:14px;margin-bottom:18px;transition:all 0.3s;" onmouseover="this.style.borderColor='rgba(84,185,255,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;">📸</span>
+            <strong style="color:#c7ecff;font-size:15px;">Instagram DM Messaging</strong>
+          <a href="https://developers.facebook.com/tools/explorer/" target="_blank" style="font-size:11px;color:#54b9ff;text-decoration:underline;margin-left:10px;font-weight:700;">🔗 Get Meta Graph Token Guide</a>
+          </div>
+          <span id="st-insta" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#1e293b;color:#94a3b8">Checking...</span>
+        </div>
+
+        <details style="margin-bottom:12px;font-size:11px;color:#8aafd0;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:8px;border:1px dashed rgba(255,255,255,0.1)">
+          <summary style="cursor:pointer;font-weight:700;color:#54b9ff">📖 How to get your Meta Instagram Credentials</summary>
+          <ol style="margin-top:8px;margin-left:16px;line-height:1.6">
+            <li>Switch your Instagram account to a <strong>Creator/Business Account</strong>.</li>
+            <li>Go to <a href="https://developers.facebook.com/" target="_blank" style="color:#54b9ff">Meta for Developers</a> & create a Business App.</li>
+            <li>Add <strong>Instagram Graph API</strong> product.</li>
+            <li>Generate an Access Token in Graph API Explorer with <code>instagram_manage_messages</code> permission.</li>
+          </ol>
+        </details>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#8aafd0;display:block;margin-bottom:4px">Instagram Account ID</label>
+            <input id="insta-acc-inp" type="text" placeholder="178414..." style="width:100%;background:#030816;border:1px solid rgba(84,185,255,0.2);border-radius:8px;color:#fff;font-size:11px;padding:8px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#8aafd0;display:block;margin-bottom:4px">Meta Access Token</label>
+            <input id="insta-token-inp" type="password" placeholder="EAAG..." style="width:100%;background:#030816;border:1px solid rgba(84,185,255,0.2);border-radius:8px;color:#fff;font-size:11px;padding:8px;box-sizing:border-box">
+          </div>
+        </div>
+
+        <button onclick="saveInstaConfig()" style="background:linear-gradient(135deg,#377ed4,#54b9ff);color:#020613;border:none;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 0 12px rgba(84,185,255,0.3)">Save Instagram Credentials</button>
+      </div>
+
+      <!-- WhatsApp Call & Chat -->
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);padding:18px;border-radius:14px;margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;">💬</span>
+            <strong style="color:#c7ecff;font-size:15px;">WhatsApp Calling & Auto-Answer</strong>
+          </div>
+          <span id="st-wa" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#1e293b;color:#94a3b8">Checking...</span>
+        </div>
+        <p style="font-size:11px;color:#8aafd0;margin-bottom:12px">Pair your phone via QR code. OPERO will automatically detect and lift incoming voice calls on WhatsApp Desktop.</p>
+        <button onclick="sendAppMsg('whatsapp qr')" style="background:rgba(84,185,255,0.1);border:1px solid #54b9ff;color:#54b9ff;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer">Generate WhatsApp Pairing QR</button>
+      </div>
+
+      <!-- MOSS Plagiarism Checker -->
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);padding:18px;border-radius:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;">🔍</span>
+            <strong style="color:#c7ecff;font-size:15px;">Stanford MOSS Plagiarism Checker</strong>
+          </div>
+          <span id="st-moss" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#1e293b;color:#94a3b8">Checking...</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input id="moss-userid-inp" type="text" placeholder="Stanford MOSS Numeric User ID (e.g. 123456789)" style="flex:1;background:#030816;border:1px solid rgba(84,185,255,0.2);border-radius:8px;color:#fff;font-size:11px;padding:8px;box-sizing:border-box">
+          <button onclick="saveMossConfig()" style="background:linear-gradient(135deg,#377ed4,#54b9ff);color:#020613;border:none;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer">Save ID</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function toggleIntegrationsModal() {
+      const m = document.getElementById('int-modal');
+      m.style.display = m.style.display === 'none' ? 'flex' : 'none';
+      if (m.style.display === 'flex') fetchIntegrationsStatus();
+    }
+
+    async function fetchIntegrationsStatus() {
+      try {
+        const res = await _authFetch('/api/integrations');
+        const d = await res.json();
+        
+        const setBadge = (id, connected, text) => {
+          const el = document.getElementById(id);
+          el.innerText = text || (connected ? 'CONNECTED' : 'NOT LINKED');
+          el.style.background = connected ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)';
+          el.style.color = connected ? '#4ade80' : '#f87171';
+        };
+
+        setBadge('st-gmail', d.gmail.connected, d.gmail.connected ? 'CONNECTED' : (d.gmail.has_client ? 'CLIENT SET' : 'NOT LINKED'));
+        setBadge('st-insta', d.instagram.connected);
+        setBadge('st-wa', d.whatsapp.connected);
+        setBadge('st-moss', d.moss.connected, d.moss.connected ? `ID: ${d.moss.user_id}` : 'NOT SET');
+        if (d.moss.user_id) document.getElementById('moss-userid-inp').value = d.moss.user_id;
+      } catch (e) {
+        console.error('Integrations error', e);
+      }
+    }
+
+    async function saveGmailConfig() {
+      const client_id = document.getElementById('gmail-id-inp').value.trim();
+      const client_secret = document.getElementById('gmail-sec-inp').value.trim();
+      const client_json = document.getElementById('gmail-json-inp').value.trim();
+
+      if (!client_id && !client_secret && !client_json) {
+        return alert('Please enter Client ID & Client Secret or paste the OAuth JSON');
+      }
+
+      const res = await _authFetch('/api/config/gmail', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({client_id, client_secret, client_json})
+      });
+      const data = await res.json();
+      if (data.ok) { 
+        alert('Gmail Credentials Saved! Click "Auth & Sign In" to complete Google authorization.'); 
+        fetchIntegrationsStatus(); 
+      } else {
+        alert('Error: ' + data.error);
+      }
+    }
+
+    async function saveInstaConfig() {
+      const access_token = document.getElementById('insta-token-inp').value.trim();
+      const account_id = document.getElementById('insta-acc-inp').value.trim();
+      if (!access_token || !account_id) return alert('Both token & account ID required');
+      const res = await _authFetch('/api/config/instagram', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({access_token, account_id})
+      });
+      const data = await res.json();
+      if (data.ok) { alert('Instagram Credentials Saved!'); fetchIntegrationsStatus(); }
+      else alert('Error: ' + data.error);
+    }
+
+    async function saveMossConfig() {
+      const moss_user_id = document.getElementById('moss-userid-inp').value.trim();
+      const res = await _authFetch('/api/config/moss', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({moss_user_id})
+      });
+      const data = await res.json();
+      if (data.ok) { alert('MOSS User ID Saved!'); fetchIntegrationsStatus(); }
+      else alert('Error: ' + data.error);
+    }
+
+    function sendAppMsg(text) {
+      toggleIntegrationsModal();
+      document.getElementById('inp').value = text;
+      doSend();
+    }
+  </script>
+
 </body>
 </html>

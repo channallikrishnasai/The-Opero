@@ -11,10 +11,10 @@ from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import (
     QEasingCurve, QLineF, QPointF, QPropertyAnimation, QRect, QRectF, QSize,
-    Qt, QTimer, pyqtSignal, pyqtSlot,
+    Qt, QTimer, QUrl, pyqtSignal, pyqtSlot,
 )
 from PyQt6.QtGui import (
-    QBrush, QColor, QConicalGradient, QFont, QPainter, QPen, QPixmap,
+    QBrush, QColor, QConicalGradient, QDesktopServices, QFont, QPainter, QPen, QPixmap,
     QPolygonF,
 )
 from PyQt6.QtWidgets import (
@@ -818,6 +818,27 @@ class WhatsAppPairingOverlay(_HudOverlay):
         lay.addWidget(close)
 
 
+# The automations OPERO can walk through, from trigger to result. This is the one
+# source of truth: the studio draws it, and the 3D background renders the same
+# flows as step chains around the galaxy.
+AUTOMATION_FLOWS = {
+    "WhatsApp busy reply": [("Trigger", "Incoming WhatsApp call"), ("Condition", "Auto-answer window active"), ("Action", "Answer in Desktop"), ("Voice", "Say busy message")],
+    "Internship application": [("Trigger", "Resume uploaded"), ("Research", "Find matching internships"), ("Rank", "Score roles and links"), ("Action", "Fill known form fields"), ("Review", "Wait before submit")],
+    "Smart reminder": [("Trigger", "Reminder due"), ("Condition", "User is available"), ("Action", "Speak and show alert")],
+    "Desktop command": [("Trigger", "Voice or text command"), ("Plan", "Resolve available tool"), ("Action", "Run desktop task"), ("Result", "Report outcome")],
+    "Auto-heal": [("Watch", "Background monitor spots a fault"), ("Diagnose", "Identify the failing component"), ("Repair", "Apply the safe recovery step"), ("Verify", "Confirm the system is healthy")],
+    "Daily briefing": [("Trigger", "First wake or scheduled time"), ("Gather", "Calendar, mail and weather"), ("Compose", "Rank what matters today"), ("Voice", "Speak the briefing")],
+}
+
+
+def automation_payload() -> list[dict]:
+    """AUTOMATION_FLOWS as compact dicts, for consumers outside Qt."""
+    return [
+        {"name": name, "steps": [f"{kind}: {label}" for kind, label in steps]}
+        for name, steps in AUTOMATION_FLOWS.items()
+    ]
+
+
 class AutomationStudioOverlay(_HudOverlay):
     """Visual workflow map inspired by node-based automation tools."""
 
@@ -829,12 +850,7 @@ class AutomationStudioOverlay(_HudOverlay):
         self.setFixedWidth(self._OW)
         self.setStyleSheet(f"""AutomationStudioOverlay {{ background: rgba(1, 9, 16, 252);
             border: 1px solid {C.PRI_DIM}; border-radius: 8px; }}""")
-        self._flows = {
-            "WhatsApp busy reply": [("Trigger", "Incoming WhatsApp call"), ("Condition", "Auto-answer window active"), ("Action", "Answer in Desktop"), ("Voice", "Say busy message")],
-            "Internship application": [("Trigger", "Resume uploaded"), ("Research", "Find matching internships"), ("Rank", "Score roles and links"), ("Action", "Fill known form fields"), ("Review", "Wait before submit")],
-            "Smart reminder": [("Trigger", "Reminder due"), ("Condition", "User is available"), ("Action", "Speak and show alert")],
-            "Desktop command": [("Trigger", "Voice or text command"), ("Plan", "Resolve available tool"), ("Action", "Run desktop task"), ("Result", "Report outcome")],
-        }
+        self._flows = AUTOMATION_FLOWS
         lay = QVBoxLayout(self); lay.setContentsMargins(18, 16, 18, 16); lay.setSpacing(9)
         title = QLabel("◈  AUTOMATION STUDIO")
         title.setFont(QFont("Courier New", 12, QFont.Weight.Bold))
@@ -2187,3 +2203,290 @@ class MiniModeWidget(QWidget):
             mid_y = cy + math.sin(rad) * 28
             p.drawLine(int(cx + 20), int(cy + 10), int(mid_x), int(mid_y - 5))
             p.drawLine(int(mid_x), int(mid_y - 5), int(ex), int(ey))
+
+
+class IntegrationOverlay(QWidget):
+    """Interactive Link Accounts Overlay — enter credentials directly inside OPERO."""
+
+    _OW = 580
+    _status_sig = pyqtSignal(str)   # worker thread -> status label
+
+    def __init__(self, connect_gmail=None, connect_gmail_apppass=None, parent=None):
+        super().__init__(parent)
+        self._connect_gmail = connect_gmail
+        self._connect_gmail_apppass = connect_gmail_apppass
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setStyleSheet(f"""
+            IntegrationOverlay {{
+                background: #061426;
+                border: 1px solid {C.PRI_DIM};
+                border-radius: 12px;
+            }}
+        """)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(24, 20, 24, 20)
+        root.setSpacing(12)
+
+        hdr = QHBoxLayout()
+        title = QLabel("🔗 LINK ACCOUNTS STUDIO")
+        title.setFont(QFont("Courier New", 13, QFont.Weight.Bold))
+        title.setStyleSheet(f"color: {C.PRI}; background: transparent;")
+        hdr.addWidget(title); hdr.addStretch()
+        close = QPushButton("✕")
+        close.setFixedSize(24, 24)
+        close.setCursor(Qt.CursorShape.PointingHandCursor)
+        close.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent; border: none; font-size: 14px;")
+        close.clicked.connect(self.hide)
+        hdr.addWidget(close)
+        root.addLayout(hdr)
+
+        note = QLabel("Enter your API credentials directly below. OPERO stores them locally in your config folder.")
+        note.setWordWrap(True)
+        note.setFont(QFont("Segoe UI", 9))
+        note.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
+        root.addWidget(note)
+
+        # ── Gmail Section ──
+        g_box = QWidget()
+        g_box.setStyleSheet(f"background: #020914; border: 1px solid {C.BORDER}; border-radius: 8px;")
+        g_lay = QVBoxLayout(g_box)
+        g_lay.setContentsMargins(14, 12, 14, 12); g_lay.setSpacing(8)
+        
+        g_lbl = QLabel("📧 GMAIL AUTOMATION (OAuth Client ID & Secret)")
+        g_lbl.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
+        g_lbl.setStyleSheet(f"color: {C.PRI}; background: transparent;")
+        g_lay.addWidget(g_lbl)
+
+        g_link_btn = QPushButton("📖 HOW TO GET GMAIL CLIENT ID & SECRET (OPEN GOOGLE CONSOLE)")
+        g_link_btn.setFixedHeight(22)
+        g_link_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        g_link_btn.setStyleSheet(f"QPushButton {{ color: {C.ACC2}; background: transparent; border: none; text-align: left; font-size: 9px; font-weight: bold; }} QPushButton:hover {{ text-decoration: underline; color: {C.PRI}; }}")
+        g_link_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://console.cloud.google.com/apis/credentials/oauthclient")))
+        g_lay.addWidget(g_link_btn)
+
+        g_row = QHBoxLayout(); g_row.setSpacing(8)
+        self._gmail_id = QLineEdit()
+        self._gmail_id.setPlaceholderText("Google Client ID")
+        self._gmail_id.setFont(QFont("Segoe UI", 8))
+        self._gmail_id.setStyleSheet(f"background: {C.PANEL}; color: {C.TEXT}; border: 1px solid {C.BORDER}; border-radius: 4px; padding: 4px 8px;")
+        g_row.addWidget(self._gmail_id)
+
+        self._gmail_sec = QLineEdit()
+        self._gmail_sec.setEchoMode(QLineEdit.EchoMode.Password)
+        self._gmail_sec.setPlaceholderText("Google Client Secret")
+        self._gmail_sec.setFont(QFont("Segoe UI", 8))
+        self._gmail_sec.setStyleSheet(f"background: {C.PANEL}; color: {C.TEXT}; border: 1px solid {C.BORDER}; border-radius: 4px; padding: 4px 8px;")
+        g_row.addWidget(self._gmail_sec)
+        g_lay.addLayout(g_row)
+
+        g_btn_row = QHBoxLayout()
+        save_g = QPushButton("SAVE GMAIL CREDENTIALS")
+        save_g.setFixedHeight(28); save_g.setCursor(Qt.CursorShape.PointingHandCursor)
+        save_g.setStyleSheet(self._primary_style())
+        save_g.clicked.connect(self._save_gmail)
+        g_btn_row.addWidget(save_g)
+
+        auth_g = QPushButton("CONNECT & SIGN IN")
+        auth_g.setFixedHeight(28); auth_g.setCursor(Qt.CursorShape.PointingHandCursor)
+        auth_g.setStyleSheet(self._secondary_style())
+        auth_g.clicked.connect(self._run_gmail_connect)
+        g_btn_row.addWidget(auth_g)
+        g_lay.addLayout(g_btn_row)
+
+        # ── App-password route: the quick path when there is no Google Cloud project ──
+        g_sep = QLabel("— OR SIGN IN WITH A GMAIL APP PASSWORD (NO GOOGLE CLOUD PROJECT) —")
+        g_sep.setFont(QFont("Courier New", 8))
+        g_sep.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
+        g_lay.addWidget(g_sep)
+
+        g_app_link = QPushButton("📖  GET AN APP PASSWORD  (GOOGLE ACCOUNT → SECURITY → APP PASSWORDS)")
+        g_app_link.setFixedHeight(22)
+        g_app_link.setCursor(Qt.CursorShape.PointingHandCursor)
+        g_app_link.setStyleSheet(f"QPushButton {{ color: {C.ACC2}; background: transparent; border: none; text-align: left; font-size: 9px; font-weight: bold; }} QPushButton:hover {{ text-decoration: underline; color: {C.PRI}; }}")
+        g_app_link.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://myaccount.google.com/apppasswords")))
+        g_lay.addWidget(g_app_link)
+
+        g_app_row = QHBoxLayout(); g_app_row.setSpacing(8)
+        self._gmail_addr = QLineEdit()
+        self._gmail_addr.setPlaceholderText("you@gmail.com")
+        self._gmail_addr.setFont(QFont("Segoe UI", 8))
+        self._gmail_addr.setStyleSheet(f"background: {C.PANEL}; color: {C.TEXT}; border: 1px solid {C.BORDER}; border-radius: 4px; padding: 4px 8px;")
+        g_app_row.addWidget(self._gmail_addr)
+
+        self._gmail_apppw = QLineEdit()
+        self._gmail_apppw.setEchoMode(QLineEdit.EchoMode.Password)
+        self._gmail_apppw.setPlaceholderText("16-character App Password")
+        self._gmail_apppw.setFont(QFont("Segoe UI", 8))
+        self._gmail_apppw.setStyleSheet(f"background: {C.PANEL}; color: {C.TEXT}; border: 1px solid {C.BORDER}; border-radius: 4px; padding: 4px 8px;")
+        self._gmail_apppw.returnPressed.connect(self._connect_apppass)
+        g_app_row.addWidget(self._gmail_apppw)
+        g_lay.addLayout(g_app_row)
+
+        g_app_btn = QPushButton("🔑  CONNECT WITH APP PASSWORD")
+        g_app_btn.setFixedHeight(28); g_app_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        g_app_btn.setStyleSheet(self._primary_style())
+        g_app_btn.clicked.connect(self._connect_apppass)
+        g_lay.addWidget(g_app_btn)
+        root.addWidget(g_box)
+
+        # ── Instagram Section ──
+        i_box = QWidget()
+        i_box.setStyleSheet(f"background: #020914; border: 1px solid {C.BORDER}; border-radius: 8px;")
+        i_lay = QVBoxLayout(i_box)
+        i_lay.setContentsMargins(14, 12, 14, 12); i_lay.setSpacing(8)
+
+        i_lbl = QLabel("📸 INSTAGRAM MESSAGING (Meta Token & Account ID)")
+        i_lbl.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
+        i_lbl.setStyleSheet(f"color: {C.PRI}; background: transparent;")
+        i_lay.addWidget(i_lbl)
+
+        i_link_btn = QPushButton("📖 HOW TO GET META GRAPH TOKEN & INSTAGRAM ID (OPEN GRAPH EXPLORER)")
+        i_link_btn.setFixedHeight(22)
+        i_link_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        i_link_btn.setStyleSheet(f"QPushButton {{ color: {C.ACC2}; background: transparent; border: none; text-align: left; font-size: 9px; font-weight: bold; }} QPushButton:hover {{ text-decoration: underline; color: {C.PRI}; }}")
+        i_link_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://developers.facebook.com/tools/explorer/")))
+        i_lay.addWidget(i_link_btn)
+
+        i_row = QHBoxLayout(); i_row.setSpacing(8)
+        self._insta_acc = QLineEdit()
+        self._insta_acc.setPlaceholderText("Instagram Account ID")
+        self._insta_acc.setFont(QFont("Segoe UI", 8))
+        self._insta_acc.setStyleSheet(f"background: {C.PANEL}; color: {C.TEXT}; border: 1px solid {C.BORDER}; border-radius: 4px; padding: 4px 8px;")
+        i_row.addWidget(self._insta_acc)
+
+        self._insta_token = QLineEdit()
+        self._insta_token.setEchoMode(QLineEdit.EchoMode.Password)
+        self._insta_token.setPlaceholderText("Meta Graph Access Token")
+        self._insta_token.setFont(QFont("Segoe UI", 8))
+        self._insta_token.setStyleSheet(f"background: {C.PANEL}; color: {C.TEXT}; border: 1px solid {C.BORDER}; border-radius: 4px; padding: 4px 8px;")
+        i_row.addWidget(self._insta_token)
+        i_lay.addLayout(i_row)
+
+        save_i = QPushButton("SAVE INSTAGRAM CREDENTIALS")
+        save_i.setFixedHeight(28); save_i.setCursor(Qt.CursorShape.PointingHandCursor)
+        save_i.setStyleSheet(self._primary_style())
+        save_i.clicked.connect(self._save_insta)
+        i_lay.addWidget(save_i)
+        root.addWidget(i_box)
+
+        # Status & Quick links
+        self._status = QLabel("")
+        self._status.setWordWrap(True)
+        self._status.setStyleSheet(f"color: {C.GREEN}; background: transparent; font-size: 11px;")
+        self._status_sig.connect(self._status.setText)
+        root.addWidget(self._status)
+
+        # Prefill existing if present
+        self._load_existing()
+
+    def _load_existing(self):
+        try:
+            cfg_dir = BASE_DIR / "config"
+            g_file = cfg_dir / "google_oauth_client.json"
+            if g_file.exists():
+                d = json.loads(g_file.read_text(encoding="utf-8"))
+                inst = d.get("installed") or d.get("web") or {}
+                if inst.get("client_id"):
+                    self._gmail_id.setText(inst.get("client_id"))
+            
+            wa = cfg_dir / "email_credentials.json"
+            if wa.exists():
+                d = json.loads(wa.read_text(encoding="utf-8"))
+                if d.get("email"):
+                    self._gmail_addr.setText(str(d.get("email")))
+
+            i_file = cfg_dir / "instagram.json"
+            if i_file.exists():
+                d = json.loads(i_file.read_text(encoding="utf-8"))
+                if d.get("account_id"):
+                    self._insta_acc.setText(d.get("account_id"))
+        except Exception:
+            pass
+
+    def _connect_apppass(self):
+        """Check a Gmail address + App Password off the UI thread.
+
+        The IMAP handshake takes a second or two, so it runs in a worker and
+        reports back through a signal rather than freezing the overlay.
+        """
+        addr = self._gmail_addr.text().strip()
+        pw = self._gmail_apppw.text().strip()
+        if not addr or not pw:
+            self._status.setText("⚠️ Enter both your Gmail address and its App Password.")
+            return
+        self._status.setText("⏳ Checking the App Password with Gmail…")
+        connector = self._connect_gmail_apppass
+
+        def worker():
+            try:
+                if callable(connector):
+                    result = connector(addr, pw)
+                else:
+                    from actions.gmail import execute
+                    result = execute({"action": "connect_app_passcode",
+                                      "email": addr, "password": pw})
+                self._status_sig.emit(str(result))
+            except Exception as exc:
+                self._status_sig.emit(f"ERR: {exc}")
+
+        threading.Thread(target=worker, daemon=True, name="gmail-app-password").start()
+
+    def _save_gmail(self):
+        cid = self._gmail_id.text().strip()
+        csec = self._gmail_sec.text().strip()
+        if not cid or not csec:
+            self._status.setText("⚠️ Enter both Client ID and Client Secret.")
+            return
+        try:
+            cfg_dir = BASE_DIR / "config"
+            cfg_dir.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "installed": {
+                    "client_id": cid,
+                    "project_id": "opero-assistant",
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                    "client_secret": csec,
+                    "redirect_uris": ["http://localhost"]
+                }
+            }
+            (cfg_dir / "google_oauth_client.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            self._status.setText("✓ Gmail Client Credentials Saved! Click 'CONNECT & SIGN IN'.")
+        except Exception as e:
+            self._status.setText(f"ERR: {e}")
+
+    def _save_insta(self):
+        acc = self._insta_acc.text().strip()
+        tok = self._insta_token.text().strip()
+        if not acc or not tok:
+            self._status.setText("⚠️ Enter both Account ID and Access Token.")
+            return
+        try:
+            cfg_dir = BASE_DIR / "config"
+            cfg_dir.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "access_token": tok,
+                "account_id": acc,
+                "api_version": "v25.0",
+                "base_url": "https://graph.instagram.com"
+            }
+            (cfg_dir / "instagram.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            self._status.setText("✓ Instagram Credentials Saved successfully!")
+        except Exception as e:
+            self._status.setText(f"ERR: {e}")
+
+    def _run_gmail_connect(self):
+        if not callable(self._connect_gmail):
+            self._status.setText("Gmail connect is initializing...")
+            return
+        self._status.setText("Opening official Google OAuth login window...")
+        self._connect_gmail()
+
+    @staticmethod
+    def _primary_style() -> str:
+        return f"QPushButton {{ color: {C.BG}; background: {C.PRI}; border: 1px solid {C.PRI}; border-radius: 4px; font-weight: bold; font-size: 11px; }} QPushButton:hover {{ background: {C.TEXT}; }}"
+
+    @staticmethod
+    def _secondary_style() -> str:
+        return f"QPushButton {{ color: {C.PRI}; background: transparent; border: 1px solid {C.PRI_DIM}; border-radius: 4px; font-size: 11px; }} QPushButton:hover {{ background: {C.PRI_GHO}; border-color: {C.PRI}; }}"

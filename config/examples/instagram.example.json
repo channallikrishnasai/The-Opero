@@ -1,0 +1,7 @@
+{
+  "api_version": "v25.0",
+  "base_url": "https://graph.instagram.com",
+  "account_id": "YOUR_INSTAGRAM_PROFESSIONAL_ACCOUNT_ID",
+  "access_token": "YOUR_META_ACCESS_TOKEN"
+}
+

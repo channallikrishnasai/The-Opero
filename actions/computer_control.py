@@ -1,24 +1,13 @@
 #computer_control.py
 import io
 import json
-import platform
 import re
 import string
 import subprocess
 import sys
-
-if platform.system() == "Windows":
-    _WIN_HIDE: dict = {"creationflags": subprocess.CREATE_NO_WINDOW}
-else:
-    _WIN_HIDE: dict = {}
 import time
 import random
 from pathlib import Path
-
-from core.logger import get_logger
-from core.validator import validate_params, ValidationError
-
-log = get_logger(__name__)
 
 try:
     import pyautogui
@@ -50,24 +39,15 @@ def _load_config() -> dict:
     except Exception:
         return {}
 
-def _platform_os() -> str:
-    return {"Windows": "windows", "Darwin": "mac", "Linux": "linux"}.get(
-        platform.system(), "linux"
-    )
-
 def _get_os() -> str:
-    return _load_config().get("os_system", _platform_os()).lower()
-
-
-def _get_api_key() -> str:
-    return _load_config().get("gemini_api_key", "")
+    return _load_config().get("os_system", "windows").lower()
 
 _SAFE_SCREENSHOT_ROOTS = (
     Path.home(),
 )
 
 def _safe_screenshot_path(requested: str | None) -> Path:
-    fallback = Path.home() / "Desktop" / "opero_screenshot.png"
+    fallback = Path.home() / "Desktop" / "brahma_screenshot.png"
     if not requested:
         return fallback
     try:
@@ -76,8 +56,8 @@ def _safe_screenshot_path(requested: str | None) -> Path:
             if p.is_relative_to(root.resolve()):
                 p.parent.mkdir(parents=True, exist_ok=True)
                 return p
-    except Exception as e:
-        log.debug("%s", e)
+    except Exception:
+        pass
     return fallback
 
 def _require_pyautogui():
@@ -155,8 +135,8 @@ def _user_profile() -> dict:
             data     = json.loads(_MEMORY_PATH.read_text(encoding="utf-8"))
             identity = data.get("identity", {})
             return {k: v.get("value", "") for k, v in identity.items()}
-    except Exception as e:
-        log.debug("%s", e)
+    except Exception:
+        pass
     return {}
 
 def _type(text: str, interval: float = 0.03) -> str:
@@ -175,8 +155,7 @@ def _smart_type(text: str, clear_first: bool = True) -> str:
     if len(text) > 20 and _PYPERCLIP:
         pyperclip.copy(text)
         time.sleep(0.1)
-        paste_key = "command" if _get_os() == "mac" else "ctrl"
-        pyautogui.hotkey(paste_key, "v")
+        pyautogui.hotkey("ctrl", "v")
         return f"Smart-typed (clipboard): {text[:60]}{'…' if len(text) > 60 else ''}"
 
     pyautogui.typewrite(text, interval=0.04)
@@ -238,8 +217,7 @@ def _clipboard_paste(text: str) -> str:
         pyperclip.copy(text)
         time.sleep(0.1)
         _require_pyautogui()
-        paste_key = "command" if _get_os() == "mac" else "ctrl"
-        pyautogui.hotkey(paste_key, "v")
+        pyautogui.hotkey("ctrl", "v")
         return f"Pasted: {text[:60]}{'…' if len(text) > 60 else ''}"
     return "pyperclip not available"
 
@@ -254,8 +232,7 @@ def _screenshot(save_path: str | None = None) -> str:
 
 def _clear_field() -> str:
     _require_pyautogui()
-    select_key = "command" if _get_os() == "mac" else "ctrl"
-    pyautogui.hotkey(select_key, "a")
+    pyautogui.hotkey("ctrl", "a")
     time.sleep(0.1)
     pyautogui.press("delete")
     return "Field cleared"
@@ -268,7 +245,7 @@ def _focus_window(title: str) -> str:
             script = f'(New-Object -ComObject WScript.Shell).AppActivate("{title}")'
             subprocess.run(
                 ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-                capture_output=True, timeout=5, **_WIN_HIDE,
+                capture_output=True, timeout=5,
             )
             time.sleep(0.3)
             return f"Focused window: {title}"
@@ -299,8 +276,8 @@ def _focus_window(title: str) -> str:
             if result.returncode == 0:
                 time.sleep(0.3)
                 return f"Focused window: {title}"
-        except FileNotFoundError as e:
-            log.debug("%s", e)
+        except FileNotFoundError:
+            pass
         try:
             result = subprocess.run(
                 ["xdotool", "search", "--name", title, "windowactivate"],
@@ -314,50 +291,33 @@ def _focus_window(title: str) -> str:
             return f"focus_window (Linux) failed: {e}"
 
     return f"focus_window: unknown OS '{os_name}'"
-
 def _screen_find(description: str) -> tuple[int, int] | None:
-    api_key = _get_api_key()
-    if not api_key:
-        log.info("[ComputerControl] ⚠️ No API key for screen_find")
-        return None
-
     try:
-        from google import genai
-        from google.genai import types as gtypes
+        import base64
+        from llm_client import client
 
         _require_pyautogui()
         w, h  = pyautogui.size()
         img   = pyautogui.screenshot()
         buf   = io.BytesIO()
         img.save(buf, format="PNG")
-        image_bytes = buf.getvalue()
+        b64 = base64.b64encode(buf.getvalue()).decode()
 
-        prompt = (
+        text = client.vision(
             f"This is a screenshot of a {w}×{h} pixel screen. "
-            f"Locate the UI element described as: '{description}'. "
-            f"Reply with ONLY the center coordinates as: x,y "
-            f"If the element is not visible, reply: NOT_FOUND"
+            f"Locate the UI element: '{description}'. "
+            f"Reply ONLY with center coordinates as: x,y — or NOT_FOUND",
+            image_b64=b64,
+            mime="image/png",
         )
 
-        from core import gemini
-        response = gemini.call(
-            [gtypes.Part.from_bytes(data=image_bytes, mime_type="image/png"), prompt],
-            tier=gemini.FAST, timeout_ms=20_000,
-        )
-        if response is None:
-            return None
-
-        text = (response.text or "").strip()
         if "NOT_FOUND" in text.upper():
             return None
-
         match = re.search(r"(\d+)\s*,\s*(\d+)", text)
         if match:
             return int(match.group(1)), int(match.group(2))
-
     except Exception as e:
-        log.error(f"[ComputerControl] ⚠️ screen_find failed: {e}")
-
+        print(f"[ComputerControl] ⚠️ screen_find failed: {e}")
     return None
 
 def computer_control(
@@ -409,7 +369,6 @@ def computer_control(
       user_data     — pull real data from memory
     """
     params = parameters or {}
-    params = validate_params(params, VALIDATOR, tool_name="computer_control")
     action = params.get("action", "").lower().strip()
 
     if not action:
@@ -418,7 +377,7 @@ def computer_control(
     if player:
         player.write_log(f"[Computer] {action}")
 
-    log.info(f"[ComputerControl] ▶ {action}  {params}")
+    print(f"[ComputerControl] ▶ {action}  {params}")
 
     try:
 
@@ -500,7 +459,7 @@ def computer_control(
         if action == "random_data":
             dt     = params.get("type", "name")
             result = _random_data(dt)
-            log.info(f"[ComputerControl] 🎲 random {dt} → {result}")
+            print(f"[ComputerControl] 🎲 random {dt} → {result}")
             return result
 
         if action == "user_data":
@@ -509,92 +468,11 @@ def computer_control(
             value   = profile.get(field, "")
             if not value:
                 value = _random_data(field)
-                log.info(f"[ComputerControl] ⚠️ No '{field}' in memory, using random: {value}")
+                print(f"[ComputerControl] ⚠️ No '{field}' in memory, using random: {value}")
             return value
 
         return f"Unknown action: '{action}'"
 
     except Exception as e:
-        log.info(f"[ComputerControl] ❌ {action}: {e}")
+        print(f"[ComputerControl] ❌ {action}: {e}")
         return f"computer_control '{action}' failed: {e}"
-
-
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
-TOOL = {
-    "name": "computer_control",
-    "description": "Direct computer control: type, click, hotkeys, scroll, move mouse, screenshots, find elements on screen.",
-    "parameters": {
-        "type": "OBJECT",
-        "properties": {
-            "action": {
-                "type": "STRING",
-                "description": "type | smart_type | click | double_click | right_click | hotkey | press | scroll | move | copy | paste | screenshot | wait | clear_field | focus_window | screen_find | screen_click | random_data | user_data"
-            },
-            "text": {
-                "type": "STRING",
-                "description": "Text to type or paste"
-            },
-            "x": {
-                "type": "INTEGER",
-                "description": "X coordinate"
-            },
-            "y": {
-                "type": "INTEGER",
-                "description": "Y coordinate"
-            },
-            "keys": {
-                "type": "STRING",
-                "description": "Key combination e.g. 'ctrl+c'"
-            },
-            "key": {
-                "type": "STRING",
-                "description": "Single key e.g. 'enter'"
-            },
-            "direction": {
-                "type": "STRING",
-                "description": "up | down | left | right"
-            },
-            "amount": {
-                "type": "INTEGER",
-                "description": "Scroll amount (default: 3)"
-            },
-            "seconds": {
-                "type": "NUMBER",
-                "description": "Seconds to wait"
-            },
-            "title": {
-                "type": "STRING",
-                "description": "Window title for focus_window"
-            },
-            "description": {
-                "type": "STRING",
-                "description": "Element description for screen_find/screen_click"
-            },
-            "type": {
-                "type": "STRING",
-                "description": "Data type for random_data"
-            },
-            "field": {
-                "type": "STRING",
-                "description": "Field for user_data: name|email|city"
-            },
-            "clear_first": {
-                "type": "BOOLEAN",
-                "description": "Clear field before typing (default: true)"
-            },
-            "path": {
-                "type": "STRING",
-                "description": "Save path for screenshot"
-            }
-        },
-        "required": [
-            "action"
-        ]
-    },
-    "handler": computer_control,
-}
-
-VALIDATOR = {
-    "action": [{"type": str, "required": True, "max_len": 200, "no_shell": True}],
-    "text":   [{"type": str, "max_len": 10000}],
-}
