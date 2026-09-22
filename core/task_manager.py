@@ -18,10 +18,11 @@ class TaskState(StrEnum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+    UNCERTAIN = "uncertain"
     CANCELLED = "cancelled"
 
 
-_TERMINAL = {TaskState.SUCCEEDED, TaskState.FAILED, TaskState.CANCELLED}
+_TERMINAL = {TaskState.SUCCEEDED, TaskState.FAILED, TaskState.UNCERTAIN, TaskState.CANCELLED}
 
 
 @dataclass
@@ -73,6 +74,10 @@ class TaskJournal:
 
     def fail(self, task_id: str, error: str) -> TaskRecord | None:
         return self._transition(task_id, TaskState.FAILED, error=error)
+
+    def uncertain(self, task_id: str, detail: str) -> TaskRecord | None:
+        """Close a task whose outcome has not been independently verified."""
+        return self._transition(task_id, TaskState.UNCERTAIN, detail=detail)
 
     def cancel(self, task_id: str, detail: str = "Cancelled by user") -> TaskRecord | None:
         return self._transition(task_id, TaskState.CANCELLED, detail=detail)

@@ -46,7 +46,7 @@ log = get_logger(__name__)
 # A pending confirmation is abandoned after this long. Chosen to outlast a
 # normal "hang on, let me look at the screen" pause without leaving a live
 # shutdown button sitting on the HUD for the rest of the day.
-TIMEOUT_SECONDS = 90.0
+TIMEOUT_SECONDS = 300.0
 
 
 @dataclass

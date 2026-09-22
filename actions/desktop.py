@@ -76,24 +76,12 @@ def _build_sandbox() -> dict:
 
 
 def _execute_generated_code(code: str, player=None) -> str:
-    if not code or code.strip() == "UNSAFE":
-        return "This action cannot be performed safely."
+    """Refuse dynamic code: a prompt is not an execution authority."""
+    return (
+        "Dynamic AI-generated desktop code is disabled for safety. "
+        "Use a supported, fixed desktop action instead."
+    )
 
-    # Kod temizleme
-    if code.startswith("```"):
-        lines = code.split("\n")
-        code  = "\n".join(lines[1:-1]).strip()
-
-    sandbox      = _build_sandbox()
-    output_lines = []
-    sandbox["__builtins__"]["print"] = lambda *a: output_lines.append(" ".join(str(x) for x in a))
-
-    try:
-        exec(compile(code, "<brahma_desktop>", "exec"), sandbox)
-        return "\n".join(output_lines) if output_lines else "Done."
-    except Exception as e:
-        print(f"[Desktop] Exec error: {e}\nCode:\n{code[:300]}")
-        return f"Execution error: {e}"
 
 def _ask_gemini_for_desktop_action(task: str) -> str:
     from llm_client import client
@@ -397,22 +385,12 @@ def desktop_control(
             return get_desktop_stats()
 
         elif action == "task" or task:
-            actual_task = task or params.get("description", "")
-            if not actual_task:
-                return "Please describe what you want to do on the desktop."
+            return (
+                "Free-form desktop tasks are disabled for safety. "
+                "Use a supported fixed action such as wallpaper, list, stats, organize, or preview."
+            )
 
-            print(f"[Desktop] Asking Gemini: {actual_task}")
-            if player:
-                player.write_log("[Desktop] Generating action...")
-
-            code = _ask_gemini_for_desktop_action(actual_task)
-            return _execute_generated_code(code, player=player)
-
-        else:
-            if action:
-                code = _ask_gemini_for_desktop_action(action)
-                return _execute_generated_code(code, player=player)
-            return "No action or task specified."
+        return "No supported desktop action specified."
 
     except Exception as e:
         print(f"[Desktop] Error: {e}")

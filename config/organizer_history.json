@@ -611,5 +611,30 @@
         "current": "C:\\Users\\DELL\\Downloads\\Documents\\~$Stoxra_Backlink_Menu.xlsx"
       }
     ]
+  },
+  {
+    "id": "20260920_155849",
+    "timestamp": "2026-09-20T15:58:49.744750",
+    "target": "C:\\Users\\DELL\\Documents",
+    "target_name": "Documents",
+    "count": 4,
+    "moves": [
+      {
+        "original": "C:\\Users\\DELL\\Documents\\Gold Trend Summary.txt",
+        "current": "C:\\Users\\DELL\\Documents\\Documents\\Gold Trend Summary.txt"
+      },
+      {
+        "original": "C:\\Users\\DELL\\Documents\\Gold Trends Research.txt",
+        "current": "C:\\Users\\DELL\\Documents\\Documents\\Gold Trends Research.txt"
+      },
+      {
+        "original": "C:\\Users\\DELL\\Pictures",
+        "current": "C:\\Users\\DELL\\Documents\\Others\\My Pictures"
+      },
+      {
+        "original": "C:\\Users\\DELL\\Documents\\Sustainable_Home_Tech_Report.txt",
+        "current": "C:\\Users\\DELL\\Documents\\Documents\\Sustainable_Home_Tech_Report.txt"
+      }
+    ]
   }
 ]

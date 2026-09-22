@@ -10,6 +10,8 @@ from pathlib import Path
 import pyautogui
 import pyperclip
 
+from core import confirm
+
 pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.08
 
@@ -259,28 +261,25 @@ def send_message(
     if mode == "upload" and not media_path:
         return "Please specify a media file to upload, sir."
 
-    print(f"[SendMessage] 📨 {platform} → {receiver}: {message_text[:40]}")
-    if player:
-        if mode == "upload" and "instagram" in platform:
-            player.write_log(f"[msg] Uploading {media_path} to Instagram...")
-        else:
+    def execute() -> str:
+        if player:
             player.write_log(f"[msg] Sending to {receiver} via {platform}...")
+        if "instagram" in platform and mode == "upload":
+            result = _upload_instagram_media(media_path, caption=message_text, mode="post")
+        elif "gmail" in platform or "outlook" in platform or platform in ("email", "mail"):
+            result = _send_email_via_browser(platform, receiver, message_text)
+        elif "whatsapp" in platform or "wp" in platform or "wapp" in platform:
+            result = _send_whatsapp(receiver, message_text)
+        elif "instagram" in platform or "ig" in platform or "insta" in platform:
+            result = _send_instagram(receiver, message_text)
+        elif "telegram" in platform or "tg" in platform:
+            result = _send_telegram(receiver, message_text)
+        else:
+            result = _send_generic(platform, receiver, message_text)
+        if player:
+            player.write_log(f"[msg] {result}")
+        return result
 
-    if "instagram" in platform and mode == "upload":
-        result = _upload_instagram_media(media_path, caption=message_text, mode="post")
-    elif "gmail" in platform or "outlook" in platform or platform in ("email", "mail"):
-        result = _send_email_via_browser(platform, receiver, message_text)
-    elif "whatsapp" in platform or "wp" in platform or "wapp" in platform:
-        result = _send_whatsapp(receiver, message_text)
-    elif "instagram" in platform or "ig" in platform or "insta" in platform:
-        result = _send_instagram(receiver, message_text)
-    elif "telegram" in platform or "tg" in platform:
-        result = _send_telegram(receiver, message_text)
-    else:
-        result = _send_generic(platform, receiver, message_text)
-
-    print(f"[SendMessage] ✅ {result}")
-    if player:
-        player.write_log(f"[msg] {result}")
-
-    return result
+    target = media_path if mode == "upload" else receiver
+    detail = f"Send via {platform} to {target}: {message_text[:160]}"
+    return confirm.request(f"send-message:{platform}:{target}", "Send message", detail, execute)

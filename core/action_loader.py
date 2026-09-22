@@ -53,6 +53,16 @@ _BEHAVIORS = ("BLOCKING", "NON_BLOCKING")
 _SCHEDULING = ("WHEN_IDLE", "SILENT", "INTERRUPT")
 
 
+def _result_state(result: object) -> str:
+    """Classify a handler result without inventing external success."""
+    if not isinstance(result, str):
+        return "uncertain"
+    text = result.strip().casefold()
+    failures = ("error", "failed", "failure", "timeout", "timed out", "could not",
+                "unable", "not available", "not found", "missing", "invalid", "denied")
+    return "failed" if any(token in text for token in failures) else "uncertain"
+
+
 def _opt_upper(value, allowed: tuple[str, ...]) -> Optional[str]:
     v = str(value or "").strip().upper()
     return v if v in allowed else None
@@ -110,11 +120,14 @@ class ActionRegistry:
         )
         journal.start(task.task_id, "Running")
         try:
-            result = _call_handler(rec.handler, parameters, ctx or {}) or "Done."
-            # Action responses can contain private email, messages, or files. Keep the
-            # journal useful without retaining that response for later model calls.
-            journal.succeed(task.task_id, "Completed successfully.")
-            return result
+            result = _call_handler(rec.handler, parameters, ctx or {}) or ""
+            # A handler's prose is not evidence that an external side effect completed.
+            # Preserve it for the caller while recording only failed or uncertain state.
+            if _result_state(result) == "failed":
+                journal.fail(task.task_id, "Action handler reported a failure.")
+            else:
+                journal.uncertain(task.task_id, "Handler returned no independently verifiable outcome.")
+            return result or "Tool returned no result; its outcome is uncertain."
         except Exception as e:
             # Full diagnostics go to the local logger; the journal remains safe to display.
             journal.fail(task.task_id, f"Action failed ({type(e).__name__}).")

@@ -159,6 +159,13 @@ def save_hud_style(style: str) -> None:
 THEME_MODES = ("dark", "light")
 DEFAULT_THEME_MODE = "dark"
 
+# Presentation layout is deliberately separate from the colour theme.  A user
+# can prefer the cinematic OPERO layout while still choosing a light/dark
+# palette, and can always return to the original workspace without losing
+# any session state.
+UI_LAYOUTS = ("classic", "futuristic")
+DEFAULT_UI_LAYOUT = "classic"
+
 
 def get_theme_mode() -> str:
     """Return the stored theme mode, falling back to 'dark'."""
@@ -170,6 +177,18 @@ def save_theme_mode(mode: str) -> None:
     """Persist the chosen theme mode."""
     v = str(mode or "").strip().lower()
     _save_flag("theme_mode", v if v in THEME_MODES else DEFAULT_THEME_MODE)
+
+
+def get_ui_layout() -> str:
+    """Return the saved presentation layout, defaulting to the original UI."""
+    value = str(load_api_keys().get("ui_layout", DEFAULT_UI_LAYOUT)).strip().lower()
+    return value if value in UI_LAYOUTS else DEFAULT_UI_LAYOUT
+
+
+def save_ui_layout(layout: str) -> None:
+    """Persist the reversible Classic / Futuristic UI selection."""
+    value = str(layout or "").strip().lower()
+    _save_flag("ui_layout", value if value in UI_LAYOUTS else DEFAULT_UI_LAYOUT)
 
 
 # ── Live-session tuning ──────────────────────────────────────────────────────

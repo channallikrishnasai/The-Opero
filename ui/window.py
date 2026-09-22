@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import platform
 import subprocess
@@ -18,10 +19,11 @@ from PyQt6.QtCore import (
     Qt, QTimer, pyqtSignal, pyqtSlot,
 )
 from PyQt6.QtGui import (
-    QBrush, QColor, QFont, QPainter, QPen, QPixmap, QShortcut, QKeySequence,
+    QBrush, QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen,
+    QPixmap, QRadialGradient, QShortcut, QKeySequence,
 )
 from PyQt6.QtWidgets import (
-    QApplication, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+    QApplication, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMenu,
     QPushButton, QScrollArea, QSizePolicy, QSplitter, QStackedWidget,
     QTextEdit, QVBoxLayout, QWidget,
 )
@@ -42,7 +44,6 @@ from ui.overlays import (
     APIKeysOverlay, WhatsAppPairingOverlay, PluginManagerOverlay,
     PluginSettingsOverlay, IntegrationOverlay, MiniModeWidget, RemoteKeyOverlay,
     ConfirmBanner, IncomingCallBanner, AutomationStudioOverlay,
-    BASE_DIR, CONFIG_DIR, API_FILE,
 )
 
 log = get_logger(__name__)
@@ -78,6 +79,62 @@ _LEFT_W  = 148
 _RIGHT_W = 340
 
 _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
+
+
+class FuturisticAvatar(QWidget):
+    """A lightweight, live holographic AI visual used only by the new shell."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.state = "LISTENING"
+        self.speaking = False
+        self._level = 0.0
+        self._phase = 0.0
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._animate)
+        self._timer.start(40)
+
+    def set_audio_level(self, level: float):
+        self._level = max(0.0, min(1.0, float(level)))
+
+    def _animate(self):
+        self._phase += 0.055 + (0.035 if self.state in ("THINKING", "PROCESSING") else 0.0)
+        self._level *= 0.92
+        if self.isVisible():
+            self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self); p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height(); cx, cy = w / 2, h * .52
+        p.fillRect(self.rect(), QColor("#020A14"))
+        # Atmospheric stars + planetary horizon.
+        p.setPen(QPen(QColor(80, 185, 255, 110), 1))
+        for i in range(42):
+            x = (i * 83 + 37) % max(1, w); y = (i * 47 + 19) % max(1, int(h * .72))
+            p.drawPoint(x, y)
+        horizon = QPainterPath(); horizon.moveTo(0, h * .78)
+        horizon.quadTo(cx, h * .54, w, h * .78); horizon.lineTo(w, h); horizon.lineTo(0, h); horizon.closeSubpath()
+        grad = QLinearGradient(0, h * .58, 0, h); grad.setColorAt(0, QColor(22, 157, 255, 160)); grad.setColorAt(1, QColor(1, 9, 20, 0))
+        p.fillPath(horizon, grad)
+        p.setPen(QPen(QColor(53, 193, 255, 190), 2)); p.drawPath(horizon)
+        # Orbital rings.
+        amp = 1 + self._level * .22
+        for n, offset in enumerate((0, 1.05, 2.1)):
+            p.save(); p.translate(cx, cy); p.rotate(math.sin(self._phase + offset) * 13)
+            p.setPen(QPen(QColor(39, 194, 255, 150 - n * 25), 1.2))
+            p.drawEllipse(QRectF(-128 * amp, -31 - n * 12, 256 * amp, 62 + n * 24)); p.restore()
+        # Glowing head silhouette.
+        head = QRectF(cx - 72 * amp, cy - 112 * amp, 144 * amp, 190 * amp)
+        glow = QRadialGradient(cx, cy - 20, 135 * amp); glow.setColorAt(0, QColor(53, 201, 255, 205)); glow.setColorAt(.55, QColor(13, 86, 160, 125)); glow.setColorAt(1, QColor(2, 11, 26, 0))
+        p.setBrush(glow); p.setPen(Qt.PenStyle.NoPen); p.drawEllipse(QRectF(cx - 138, cy - 145, 276, 280))
+        p.setBrush(QColor(7, 53, 100, 225)); p.setPen(QPen(QColor(84, 220, 255), 2)); p.drawEllipse(head)
+        p.setPen(QPen(QColor(56, 210, 255, 165), 1))
+        for y in range(int(head.top()+18), int(head.bottom()-20), 12):
+            inset = abs(y - cy) * .16 + 10; p.drawLine(int(head.left()+inset), y, int(head.right()-inset), y)
+        # Eyes and a restrained facial geometry.
+        p.setBrush(QColor(137, 238, 255)); p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(QRectF(cx - 38, cy - 35, 18, 7)); p.drawEllipse(QRectF(cx + 20, cy - 35, 18, 7))
+        p.setPen(QPen(QColor(107, 224, 255, 180), 1.2)); p.drawLine(int(cx), int(cy-26), int(cx-4), int(cy+18)); p.drawArc(QRectF(cx-27, cy+15, 54, 24), 200 * 16, 140 * 16)
+        p.end()
 
 
 class MainWindow(QMainWindow):
@@ -150,6 +207,9 @@ class MainWindow(QMainWindow):
         self._voice_engine: str = (_cfg.get("voice_engine") or "opero").strip().lower()
         if self._voice_engine not in ("opero", "assemblyai"):
             self._voice_engine = "opero"
+        self._ui_layout = str(_cfg.get("ui_layout") or "classic").strip().lower()
+        if self._ui_layout not in ("classic", "futuristic"):
+            self._ui_layout = "classic"
 
         central = QWidget()
         central.setStyleSheet(f"background: {C.BG};")
@@ -158,7 +218,8 @@ class MainWindow(QMainWindow):
         root = QVBoxLayout(central)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(self._build_header())
+        self._header = self._build_header()
+        root.addWidget(self._header)
 
         body = QHBoxLayout()
         body.setContentsMargins(0, 0, 0, 0)
@@ -324,6 +385,19 @@ class MainWindow(QMainWindow):
         QApplication.clipboard().dataChanged.connect(self._on_clipboard_changed)
 
         self._mini_widget: MiniModeWidget | None = None
+
+        self._future_shell = self._build_future_shell()
+
+        # Keep the existing workspace intact.  The layout picker only changes
+        # presentation styles, so the active HUD, command input, panels and
+        # their backend callbacks remain the same live widgets.
+        self._classic_layout_styles = {
+            "central": central.styleSheet(),
+            "header": self._header.styleSheet(),
+            "left": self._left_panel.styleSheet(),
+            "right": self._right_panel.styleSheet(),
+        }
+        self._apply_ui_layout(self._ui_layout, persist=False)
 
         self._overlay: SetupOverlay | None = None
         self._ready = self._check_config()
@@ -798,6 +872,8 @@ class MainWindow(QMainWindow):
         """Feed audio level to both HUD and mini widget."""
         try:
             self.hud.set_audio_level(level)
+            if hasattr(self, "_future_hud"):
+                self._future_hud.set_audio_level(level)
         except Exception:
             pass
         if self._mini_widget and self._mini_widget.isVisible():
@@ -806,6 +882,8 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         cw = self.centralWidget()
+        if hasattr(self, "_future_shell") and self._future_shell.isVisible():
+            self._future_shell.setGeometry(cw.rect())
         if self._overlay and self._overlay.isVisible():
             ow, oh = 460, 390
             self._overlay.setGeometry(
@@ -852,6 +930,11 @@ class MainWindow(QMainWindow):
         # MEM
         mem = snap["mem"]
         self._bar_mem.set_value(mem, f"{mem:.0f}%")
+        if hasattr(self, "_future_metrics"):
+            disk = psutil.disk_usage(str(Path.home())).percent
+            self._future_metrics.setText(
+                f"CPU  {cpu:.0f}%     RAM  {mem:.0f}%\nSTORAGE  {disk:.0f}%\n\n▁▂▃▅▇▅▃▂▁   Listening…"
+            )
 
         # NET
         net = snap["net"]
@@ -910,6 +993,12 @@ class MainWindow(QMainWindow):
         lay.setContentsMargins(20, 0, 20, 0)
         lay.setSpacing(10)
 
+        self._layout_btn = QPushButton()
+        self._layout_btn.setFixedHeight(28)
+        self._layout_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._layout_btn.setToolTip("Choose Classic or Futuristic UI")
+        self._layout_btn.clicked.connect(self._show_layout_menu)
+        lay.addWidget(self._layout_btn)
         lay.addWidget(_badge(APP_VERSION, C.PRI_DIM))
         lay.addStretch()
 
@@ -979,6 +1068,179 @@ class MainWindow(QMainWindow):
         self._drawer_btn.clicked.connect(self._toggle_drawer)
         lay.addWidget(self._drawer_btn)
         return w
+
+    def _show_layout_menu(self) -> None:
+        """Top-left UI switcher; choosing a mode never resets the session."""
+        menu = QMenu(self)
+        menu.setStyleSheet(f"""
+            QMenu {{ background: #071322; color: #F1F7FF; border: 1px solid #216EA8;
+                     border-radius: 8px; padding: 5px; }}
+            QMenu::item {{ padding: 7px 26px 7px 12px; border-radius: 5px; }}
+            QMenu::item:selected {{ background: #0B3155; color: #60D9FF; }}
+        """)
+        classic = menu.addAction("Classic workspace")
+        future = menu.addAction("Futuristic AI workspace")
+        classic.setCheckable(True); future.setCheckable(True)
+        classic.setChecked(self._ui_layout == "classic")
+        future.setChecked(self._ui_layout == "futuristic")
+        choice = menu.exec(self._layout_btn.mapToGlobal(self._layout_btn.rect().bottomLeft()))
+        if choice is classic:
+            self._apply_ui_layout("classic")
+        elif choice is future:
+            self._apply_ui_layout("futuristic")
+
+    def _apply_ui_layout(self, layout: str, *, persist: bool = True) -> None:
+        """Apply a reversible visual shell without replacing functional widgets."""
+        mode = "futuristic" if layout == "futuristic" else "classic"
+        self._ui_layout = mode
+        if persist:
+            from memory.config_manager import save_ui_layout
+            save_ui_layout(mode)
+
+        if mode == "classic":
+            if hasattr(self, "_future_shell"):
+                self._future_shell.hide()
+            for name, widget in (("central", self.centralWidget()), ("header", self._header),
+                                 ("left", self._left_panel), ("right", self._right_panel)):
+                widget.setStyleSheet(self._classic_layout_styles[name])
+            self._layout_btn.setText("UI: CLASSIC  ▾")
+            self._layout_btn.setStyleSheet(f"""
+                QPushButton {{ color: {C.TEXT_MED}; background: transparent; border: 1px solid {C.BORDER};
+                               border-radius: 6px; padding: 0 8px; font: 8pt 'Segoe UI'; }}
+                QPushButton:hover {{ color: {C.PRI}; border-color: {C.PRI_DIM}; }}
+            """)
+            return
+
+        self.centralWidget().setStyleSheet("""
+            background: #020711;
+            selection-background-color: #15649B;
+            selection-color: #F1F7FF;
+        """)
+        self._header.setStyleSheet("""
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 #030B18, stop:0.5 #07172B, stop:1 #030B18);
+            border-bottom: 1px solid #1B5F91;
+        """)
+        self._left_panel.setStyleSheet("background: #030B16; border-right: 1px solid #15517C;")
+        self._right_panel.setStyleSheet("background: #030B16; border-left: 1px solid #15517C;")
+        self._layout_btn.setText("UI: FUTURISTIC  ▾")
+        self._layout_btn.setStyleSheet("""
+            QPushButton { color: #60D9FF; background: rgba(9, 49, 82, 170);
+                          border: 1px solid #2588C5; border-radius: 8px;
+                          padding: 0 9px; font: 8pt 'Segoe UI'; font-weight: 600; }
+            QPushButton:hover { background: rgba(16, 83, 132, 190); border-color: #67DFFF; }
+        """)
+        self._future_shell.setGeometry(self.centralWidget().rect())
+        self._future_shell.show()
+        self._future_shell.raise_()
+
+    def _future_button(self, text: str, callback=None, active: bool = False) -> QPushButton:
+        button = QPushButton(text)
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setMinimumHeight(34)
+        button.setStyleSheet("""
+            QPushButton { color: #A9C9E8; background: transparent; border: 1px solid transparent;
+                          border-radius: 8px; padding: 0 10px; text-align: left; font: 9pt 'Segoe UI'; }
+            QPushButton:hover { color: #F1F7FF; background: rgba(20, 101, 164, 90);
+                                border-color: rgba(73, 190, 255, 130); }
+        """ if not active else """
+            QPushButton { color: #DDF7FF; background: rgba(16, 105, 183, 150);
+                          border: 1px solid #38BFFF; border-radius: 9px; padding: 0 10px;
+                          text-align: left; font: 9pt 'Segoe UI'; font-weight: 600; }
+        """)
+        if callback:
+            button.clicked.connect(callback)
+        return button
+
+    def _build_future_shell(self) -> QWidget:
+        """Reference-inspired, live presentation shell for the existing session."""
+        shell = QWidget(self.centralWidget())
+        shell.setObjectName("FuturisticShell")
+        shell.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        shell.setStyleSheet("""
+            QWidget#FuturisticShell { background: #020711; }
+            QFrame#FutureCard { background: rgba(5, 18, 37, 218); border: 1px solid #1B5D90;
+                                border-radius: 14px; }
+            QLabel { background: transparent; }
+        """)
+        outer = QHBoxLayout(shell); outer.setContentsMargins(12, 12, 12, 12); outer.setSpacing(14)
+
+        nav = QFrame(); nav.setObjectName("FutureCard"); nav.setFixedWidth(160)
+        nl = QVBoxLayout(nav); nl.setContentsMargins(10, 14, 10, 12); nl.setSpacing(4)
+        logo = QLabel("◉  OPERO")
+        logo.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold)); logo.setStyleSheet("color:#5DD9FF; letter-spacing:2px;")
+        nl.addWidget(logo)
+        back = self._future_button("‹  Classic UI", lambda: self._apply_ui_layout("classic"))
+        nl.addWidget(back)
+        nl.addSpacing(12)
+        nav_specs = [("⌂  Home", None, True), ("▣  Chat", None, False), ("♩  Voice", self._toggle_mute, False),
+                     ("⌘  Tools", self._toggle_drawer_from_future, False), ("✦  Automation", self._open_automation_studio, False),
+                     ("◌  Browser", None, False), ("▱  Files", None, False), ("▣  Memory", self._open_memory_panel, False),
+                     ("◈  Plugins", self._open_plugin_manager, False), ("⚙  Settings", self._toggle_drawer_from_future, False)]
+        for text, callback, active in nav_specs:
+            nl.addWidget(self._future_button(text, callback, active))
+        nl.addStretch()
+        outer.addWidget(nav)
+
+        center = QVBoxLayout(); center.setSpacing(10)
+        head = QHBoxLayout(); head.addStretch()
+        title_box = QVBoxLayout(); title_box.setSpacing(0)
+        title = QLabel("OPERO"); title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setFont(QFont("Segoe UI", 26, QFont.Weight.DemiBold)); title.setStyleSheet("color:#43CCFF; letter-spacing:9px;")
+        sub = QLabel("A  F R I E N D L Y  A S S I S T A N T"); sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sub.setFont(QFont("Segoe UI", 8)); sub.setStyleSheet("color:#83B7E4; letter-spacing:4px;")
+        title_box.addWidget(title); title_box.addWidget(sub); head.addLayout(title_box); head.addStretch(); center.addLayout(head)
+        hero = QFrame(); hero.setObjectName("FutureCard")
+        hero_l = QVBoxLayout(hero); hero_l.setContentsMargins(18, 16, 18, 14); hero_l.setSpacing(8)
+        greeting = QLabel(f"GOOD EVENING\n<span style='font-size:24px; color:#55CCFF; font-weight:600'>{_read_full_config().get('user_name') or 'Operator'}</span><br><span style='color:#8FA7C2'>Ready when you are.</span>")
+        greeting.setTextFormat(Qt.TextFormat.RichText); greeting.setStyleSheet("color:#8FA7C2;")
+        hero_l.addWidget(greeting, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._future_hud = FuturisticAvatar()
+        self._future_hud.setMinimumHeight(260); self._future_hud.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        hero_l.addWidget(self._future_hud, stretch=1)
+        self._future_input = QLineEdit(); self._future_input.setPlaceholderText("How can I help you today?")
+        self._future_input.setFixedHeight(46); self._future_input.setFont(QFont("Segoe UI", 11))
+        self._future_input.setStyleSheet("QLineEdit { background: rgba(2, 12, 27, 225); color:#EAF7FF; border:1px solid #20A8E8; border-radius:23px; padding:0 18px; } QLineEdit:focus { border-color:#69E0FF; }")
+        self._future_input.returnPressed.connect(self._send_future)
+        hero_l.addWidget(self._future_input)
+        quick = QHBoxLayout(); quick.addStretch()
+        for label, cb in [("⌕  Search", None), ("◉  Open Apps", None), ("✦  Automate", self._open_automation_studio), ("◈  Analyze", None), ("⌘  Build", None), ("⋯  More", self._toggle_drawer_from_future)]:
+            quick.addWidget(self._future_button(label, cb))
+        quick.addStretch(); hero_l.addLayout(quick)
+        center.addWidget(hero, stretch=1); outer.addLayout(center, stretch=1)
+
+        right_panel = QWidget(); right_panel.setFixedWidth(330)
+        right = QVBoxLayout(right_panel); right.setContentsMargins(0, 0, 0, 0); right.setSpacing(12)
+        quote = QFrame(); quote.setObjectName("FutureCard"); ql = QVBoxLayout(quote)
+        quote_lbl = QLabel("“More than a tool,\na partner in progress.”\n\n<span style='color:#63D9FF; letter-spacing:2px'>OPERO</span>")
+        quote_lbl.setTextFormat(Qt.TextFormat.RichText); quote_lbl.setStyleSheet("color:#EAF7FF; font-size:15px;"); ql.addWidget(quote_lbl)
+        right.addWidget(quote)
+        status = QFrame(); status.setObjectName("FutureCard"); sl = QVBoxLayout(status)
+        online = QLabel("SYSTEM STATUS                         ● ONLINE"); online.setStyleSheet("color:#72DFFF; font-size:9px;"); sl.addWidget(online)
+        self._future_metrics = QLabel("CPU  --%     RAM  --%\nSTORAGE  --%\n\n▁▂▃▅▇▅▃▂▁   Listening…")
+        self._future_metrics.setStyleSheet("color:#D8EDFF; font-size:12px; line-height:22px;"); sl.addWidget(self._future_metrics)
+        right.addWidget(status)
+        model = QFrame(); model.setObjectName("FutureCard"); ml = QVBoxLayout(model)
+        model_name = _read_full_config().get("model") or "Configured Gemini model"
+        model_label = QLabel(f"ACTIVE MODEL<br><span style='color:#EAF7FF; font-size:14px'>{model_name}</span>")
+        model_label.setTextFormat(Qt.TextFormat.RichText); model_label.setStyleSheet("color:#72DFFF; font-size:9px;")
+        ml.addWidget(model_label)
+        right.addWidget(model); right.addStretch(); outer.addWidget(right_panel)
+        shell.hide()
+        return shell
+
+    def _toggle_drawer_from_future(self):
+        self._drawer_btn.setChecked(True)
+        self._toggle_drawer(True)
+
+    def _send_future(self):
+        text = self._future_input.text().strip()
+        if not text:
+            return
+        self._future_input.clear()
+        self._log.append_log(f"You: {text}")
+        if self.on_text_command:
+            threading.Thread(target=self.on_text_command, args=(text,), daemon=True).start()
 
     def _tick_clock(self):
         self._clock_lbl.setText(time.strftime("%H:%M:%S"))
@@ -2707,6 +2969,9 @@ class MainWindow(QMainWindow):
     def _apply_state(self, state: str):
         self.hud.state    = state
         self.hud.speaking = (state == "SPEAKING")
+        if hasattr(self, "_future_hud"):
+            self._future_hud.state = state
+            self._future_hud.speaking = (state == "SPEAKING")
         bg = getattr(self, "_webgl_bg", None)
         if bg is not None:
             bg.set_state(state)

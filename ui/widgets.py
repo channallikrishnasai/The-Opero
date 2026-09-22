@@ -82,8 +82,23 @@ def _add_qt6_dll_dirs() -> None:
                 log.debug("%s", e)
 
 
+def _webengine_process_available() -> bool:
+    """Return whether Qt's separate WebEngine helper executable exists."""
+    configured = os.environ.get("QTWEBENGINEPROCESS_PATH", "").strip()
+    if configured and Path(configured).is_file():
+        return True
+    try:
+        import PyQt6
+        name = "QtWebEngineProcess.exe" if platform.system() == "Windows" else "QtWebEngineProcess"
+        return (Path(PyQt6.__file__).parent / "Qt6" / "bin" / name).is_file()
+    except Exception:
+        return False
+
+
 try:
     _add_qt6_dll_dirs()
+    if not _webengine_process_available():
+        raise ImportError("QtWebEngineProcess is not installed")
     from PyQt6.QtWebEngineWidgets import QWebEngineView
     from PyQt6.QtWebEngineCore import QWebEngineSettings
     _WEBENGINE_AVAILABLE = True
