@@ -237,6 +237,11 @@ class MainWindow(QMainWindow):
         self._webgl_bg = WebGLBackground(str(_bg_html))
         self._webgl_bg.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # 3D is the primary renderer whenever WebGL is available; the QPainter
+        # HUD remains as automatic fallback.  `renderer_mode=2d` in
+        # config/api_keys.json forces the classic face.
+        _cfg_mode = str(_cfg.get("renderer_mode") or "3d").strip().lower()
+        self._renderer3d = self._webgl_bg is not None and _cfg_mode != "2d"
         self._content_panel = self._build_content_panel()
         self._quiz_panel = self._build_quiz_panel()
 
@@ -294,6 +299,10 @@ class MainWindow(QMainWindow):
             _inner_stack_layout.addWidget(self._webgl_bg)
             _inner_stack_layout.addWidget(self.hud)
             _inner_stack_layout.setCurrentIndex(1)
+            if self._renderer3d:
+                # The 3D scene IS the centrepiece now.  Keep the QPainter canvas
+                # alive (instant revert to 2D mode) but invisible.
+                self.hud.hide()
             _hud_wrapper_layout.addWidget(_inner_stack)
         else:
             _hud_wrapper_layout.addWidget(self.hud)
@@ -878,6 +887,12 @@ class MainWindow(QMainWindow):
             pass
         if self._mini_widget and self._mini_widget.isVisible():
             self._mini_widget.set_audio_level(level)
+        bg = getattr(self, "_webgl_bg", None)
+        if bg is not None:
+            try:
+                bg.set_audio_level(level)
+            except Exception:
+                pass
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -3010,6 +3025,32 @@ class MainWindow(QMainWindow):
     def set_background_active_automation(self, name: str, step: int = -1) -> None:
         """Animate a running automation (any thread)."""
         self._bg_sig.emit("active_automation", {"name": str(name or ""), "step": int(step)})
+
+    def apply_visual(self, directive: dict) -> None:
+        """Route a validated visual directive into the 3D scene host.
+
+        Called by the VisualDirector through core/visual/director._UiBridge.
+        Pure data only — directives were validated against the controlled
+        vocabulary before they ever reached this method.
+        """
+        bg = getattr(self, "_webgl_bg", None)
+        if bg is not None:
+            try:
+                bg.apply_intent(directive)
+            except Exception:
+                log.warning("visual directive dropped: %s", directive)
+
+    def push_face_mesh(self) -> None:
+        """Push the measured head geometry into the 3D renderer (one topology,
+        two renderers — the same arrays core/avatar_mesh builds for QPainter)."""
+        bg = getattr(self, "_webgl_bg", None)
+        if bg is None:
+            return
+        try:
+            from core.visual.assets import face_mesh_payload
+            bg.set_face_mesh(face_mesh_payload())
+        except Exception:
+            log.warning("face mesh could not be pushed to the 3D renderer", exc_info=True)
 
     def _check_config(self) -> bool:
         if not API_FILE.exists(): return False

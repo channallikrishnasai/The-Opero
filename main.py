@@ -2534,6 +2534,15 @@ def main():
     sentry.mark_boot_start()
     ui = OperaUI("face.png")
 
+    # Wire the 3D visual system (intent pipeline + director + face geometry).
+    # The QPainter HUD stays untouched as automatic fallback when WebGL is
+    # unavailable; a failure here must never stop OPERO from booting.
+    try:
+        from core.visual.director import setup_visual_system
+        setup_visual_system(ui)
+    except Exception:
+        log.exception("[Visual] visual system failed to initialise")
+
     def runner():
         ui.wait_for_api_key()
         opero = OperaLive(ui)

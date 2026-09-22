@@ -1608,6 +1608,20 @@ class WebGLBackground(QWidget):
         """Forward the assistant state to the galaxy core."""
         self._run("if(window.setOrbState) window.setOrbState({!r});".format(state))
 
+    def apply_intent(self, directive: dict) -> None:
+        """Forward a validated visual directive to the 3D scene host.
+
+        This is the only bridge from the VisualDirector into the renderer; the
+        directive is pure data and was validated in core.visual.intent already.
+        """
+        self._run("if(window.applyIntent) window.applyIntent({});".format(
+            json.dumps(dict(directive or {}), separators=(",", ":"))))
+
+    def set_face_mesh(self, payload: dict) -> None:
+        """Push the measured head geometry (core.avatar_mesh) to the 3D avatar."""
+        self._run("if(window.setFaceMesh) window.setFaceMesh({});".format(
+            json.dumps(payload, separators=(",", ":"))))
+
     def set_audio_level(self, level: float) -> None:
         """Forward audio amplitude (0.0-1.0) to the Three.js scene."""
         self._run("if(window.setAudioLevel) window.setAudioLevel({:.3f});".format(level))

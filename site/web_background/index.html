@@ -99,6 +99,10 @@
       SLEEPING:  { hot: 0xa9c6ff, mid: 0x243b78, dim: 0x050a1c, accent: 0x3f5ea8, spin: 0.30, bloom: 0.30, camera: 34, warp: 0.00, arcs: 0.10 },
       CINEMATIC: { hot: 0xffe9c9, mid: 0xff7fb0, dim: 0x3c1030, accent: 0xffc46b, spin: 0.40, bloom: 0.90, camera: 38, warp: 0.08, arcs: 0.60 },
       ERROR:     { hot: 0xffe3e3, mid: 0xff3b30, dim: 0x5c0a0a, accent: 0xff5c4d, spin: 1.40, bloom: 0.88, camera: 26, warp: 0.00, arcs: 0.90 },
+      // Visual-system states (avatar3d.js drives these while a scene is live).
+      VISUALIZING: { hot: 0xd6f6ff, mid: 0x00b4ff, dim: 0x071e33, accent: 0x2f9fff, spin: 1.15, bloom: 0.80, camera: 22, warp: 0.10, arcs: 0.60 },
+      STORY:       { hot: 0xfff2dd, mid: 0xffb45c, dim: 0x231305, accent: 0xffc46b, spin: 0.70, bloom: 0.90, camera: 30, warp: 0.16, arcs: 0.80 },
+      RETURN:      { hot: 0xcfeaff, mid: 0x3f9fd0, dim: 0x081f38, accent: 0x2f9fd0, spin: 1.05, bloom: 0.60, camera: 27, warp: 0.04, arcs: 0.35 },
     };
 
     // Feature buckets, matched on the tool name the registry reports.
@@ -855,6 +859,29 @@
     let shake = 0;           // error jitter
     let nebulaDrift = 0;
 
+    // ── Visual-host hooks (avatar3d.js plugs the 3D presence in here) ────────
+    // The galaxy and the avatar share one scene/renderer: the avatar registers
+    // a per-frame callback and optionally takes over the camera.  Everything is
+    // held behind getters so this export is safe regardless of definition order.
+    const frameCallbacks = [];
+    let cameraHost = null;                     // { step(dt) } | null
+    window.__operoWorld = {
+      get scene() { return scene; },
+      get camera() { return camera; },
+      get renderer() { return renderer; },
+      get composer() { return composer; },
+      get controls() { return controls; },
+      get target() { return target; },
+      get audioLevel() { return audioLevel; },
+      get audioAmp() { return audioAmp; },
+      get stateName() { return stateName; },
+      get stage() { return stage; },
+      get diagnostics() { return diagnostics; },
+      setCameraHost(host) { cameraHost = host; },
+      onFrame(fn) { if (typeof fn === "function") frameCallbacks.push(fn); },
+      fireState(name) { applyState(name); },
+    };
+
     function applyState(name) {
       const key = String(name || "IDLE").toUpperCase();
       const spec = STATES[key] || STATES.IDLE;
@@ -1000,6 +1027,12 @@
       const dt = Math.min(0.05, clock.getDelta());
       elapsed += dt;
 
+      // Let the 3D avatar (and any scene director) tick every frame.  Errors in
+      // a frame callback must never take the galaxy down.
+      frameCallbacks.forEach((fn) => {
+        try { fn(dt, elapsed); } catch (e) { diagnostics.errors.push("frame: " + e.message); }
+      });
+
       // Visibility pause: QWebEngine keeps a background widget compositing, and a
       // minimised window should not keep the GPU busy.
       if (document.hidden) return;
@@ -1116,13 +1149,22 @@
         if (wave.life <= 0) wave.mesh.visible = false;
       });
 
-      // Error state jitters the camera; everything else drifts.
-      shake *= 0.92;
-      const drift = Math.sin(elapsed * 0.08) * 0.35;
-      camera.position.y += ((13 + Math.sin(elapsed * 0.11) * 1.6 + shake * gauss() * 0.6) - camera.position.y) * 0.03;
-      camera.position.x += ((drift + shake * gauss() * 0.4) - camera.position.x) * 0.03;
-      camera.position.z += ((target.camera + audioAmp * 0.8) - camera.position.z) * 0.02;
-      controls.update();
+      // Error state jitters the camera; everything else drifts.  When the
+      // visual director holds the camera (avatar scenes, object focus), it
+      // steps instead of the default idle drift.
+      if (cameraHost) {
+        try { cameraHost.step(dt); } catch (e) { diagnostics.errors.push("camera: " + e.message); }
+        controls.autoRotate = false;
+        controls.update();
+      } else {
+        controls.autoRotate = true;
+        shake *= 0.92;
+        const drift = Math.sin(elapsed * 0.08) * 0.35;
+        camera.position.y += ((13 + Math.sin(elapsed * 0.11) * 1.6 + shake * gauss() * 0.6) - camera.position.y) * 0.03;
+        camera.position.x += ((drift + shake * gauss() * 0.4) - camera.position.x) * 0.03;
+        camera.position.z += ((target.camera + audioAmp * 0.8) - camera.position.z) * 0.02;
+        controls.update();
+      }
 
       gradePass.uniforms.uTime.value = elapsed;
       gradePass.uniforms.uWarp.value += (target.warp - gradePass.uniforms.uWarp.value) * 0.05;
@@ -1162,5 +1204,10 @@
     });
   })();
   </script>
+
+  <!-- OPERO 3D holographic presence: the visual-intelligence layer.  Loaded
+       after the galaxy so it can plug into window.__operoWorld; it shares the
+       same scene/renderer/camera and stays inert if the page has no WebGL. -->
+  <script src="avatar3d.js"></script>
 </body>
 </html>
