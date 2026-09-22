@@ -1,12 +1,25 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import sys
+import sysconfig
+from pathlib import Path
+
+# unicodedata is a CPython extension required by idna/httpx/google.genai.
+# Force-include it so COLLECT always ships it (missing → ModuleNotFoundError).
+_dll_dir = Path(sysconfig.get_path("platstdlib")) / "DLLs"
+if not (_dll_dir / "unicodedata.pyd").is_file():
+    _dll_dir = Path(sys.executable).parent / "DLLs"
+_unicodedata = _dll_dir / "unicodedata.pyd"
+_binaries = []
+if _unicodedata.is_file():
+    _binaries.append((str(_unicodedata), "."))
 
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
+    binaries=_binaries,
     datas=[('actions', 'actions'), ('ui', 'ui'), ('site', 'site'), ('assets', 'assets'), ('core/face_model.obj', 'core'), ('core/prompt.txt', 'core'), ('config/jarvis.ico', 'config'), ('config/api_keys.example.json', 'config')],
-    hiddenimports=[],
+    hiddenimports=['unicodedata', 'idna', 'idna.core', 'httpx'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -40,6 +53,6 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    upx_exclude=[],
+    upx_exclude=['unicodedata.pyd', 'python3.dll', 'python312.dll'],
     name='OPERO',
 )

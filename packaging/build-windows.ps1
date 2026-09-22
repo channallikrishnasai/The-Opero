@@ -12,6 +12,12 @@ python -m PyInstaller --noconfirm --clean --onedir --windowed --name OPERO --ico
     --exclude-module PyQt6.QtWebEngineWidgets `
     --exclude-module PyQt6.QtWebEngineCore `
     --exclude-module PyQt6.QtWebChannel `
+    --hidden-import unicodedata `
+    --hidden-import idna `
+    --hidden-import idna.core `
+    --hidden-import httpx `
+    --add-binary "$env:LOCALAPPDATA\Programs\Python\Python312\DLLs\unicodedata.pyd;." `
+    --upx-exclude unicodedata.pyd `
     --add-data "actions;actions" `
     --add-data "ui;ui" `
     --add-data "site;site" `
