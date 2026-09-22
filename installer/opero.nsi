@@ -7,14 +7,17 @@ RequestExecutionLevel user
 SetCompressor /SOLID zlib
 
 !include "MUI2.nsh"
+!include "LogicLib.nsh"
 
 !define StartMenuFolder "$SMPROGRAMS\OPERO"
 !define MUI_ICON "..\config\jarvis.ico"
 !define MUI_UNICON "..\config\jarvis.ico"
 
+; Finish page: Launch OPERO is checked by default.
 !define MUI_FINISHPAGE_RUN "$INSTDIR\OPERO.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Launch OPERO"
 !define MUI_FINISHPAGE_RUN_CHECKED
+!define MUI_FINISHPAGE_RUN_NOTIMMED
 
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -24,6 +27,16 @@ SetCompressor /SOLID zlib
 !insertmacro MUI_UNPAGE_FINISH
 
 !insertmacro MUI_LANGUAGE "English"
+
+Var LaunchOPERO
+
+Function .onInit
+  StrCpy $LaunchOPERO 1
+  ; Previous install may still be running and locking files.
+  nsExec::ExecToStack 'taskkill /F /IM OPERO.exe'
+  Pop $0
+  Pop $1
+FunctionEnd
 
 Section "Install"
   SetOutPath "$INSTDIR"
@@ -40,6 +53,9 @@ Section "Install"
 SectionEnd
 
 Section "Uninstall"
+  nsExec::ExecToStack 'taskkill /F /IM OPERO.exe'
+  Pop $0
+  Pop $1
   Delete "$DESKTOP\OPERO.lnk"
   Delete "${StartMenuFolder}\OPERO.lnk"
   RMDir "${StartMenuFolder}"

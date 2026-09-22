@@ -16,8 +16,17 @@ python -m PyInstaller --noconfirm --clean --onedir --windowed --name OPERO --ico
     --hidden-import idna `
     --hidden-import idna.core `
     --hidden-import httpx `
+    --runtime-hook hooks\rthook_opero_qt.py `
     --add-binary "$env:LOCALAPPDATA\Programs\Python\Python312\DLLs\unicodedata.pyd;." `
     --upx-exclude unicodedata.pyd `
+    --upx-exclude Qt6Core.dll `
+    --upx-exclude Qt6Gui.dll `
+    --upx-exclude Qt6Widgets.dll `
+    --upx-exclude Qt6Network.dll `
+    --upx-exclude Qt6Svg.dll `
+    --upx-exclude Qt6Pdf.dll `
+    --upx-exclude qwindows.dll `
+    --upx-exclude opengl32sw.dll `
     --add-data "actions;actions" `
     --add-data "ui;ui" `
     --add-data "site;site" `
