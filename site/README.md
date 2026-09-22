@@ -4,6 +4,5 @@
 
 No build step or third-party assets are required.
 
-The repository includes 
-etlify.toml; when connected to Netlify, it publishes this directory with defensive browser headers.
+The repository includes `netlify.toml`; when connected to Netlify, it publishes this directory with defensive browser headers.
 
