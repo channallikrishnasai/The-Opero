@@ -126,10 +126,10 @@ a{color:inherit}
 .moon{--x:115.0rem; --y:35.0rem; width:21rem;height:22rem;z-index:3}
 .mode{--x:44.5rem; --y:26.9rem; width:37.8rem;height:37.8rem;z-index:3}
 .headline{
-  --x:47.0rem; --dy:-38.5rem;
-  font-size:46rem;
-  line-height:55.0rem;
-  letter-spacing:1.2rem;
+  --x:47.0rem; --dy:-42.0rem;
+  font-size:58rem;
+  line-height:66.0rem;
+  letter-spacing:1.0rem;
   font-weight:400;
   white-space:nowrap;
   -webkit-text-stroke:0.791rem var(--bg);paint-order:fill stroke;
@@ -144,12 +144,12 @@ a{color:inherit}
 .headline .w4{letter-spacing:1.4rem;margin-left:-5.0rem}
 .headline b{
   font-weight:400;
-  -webkit-text-stroke:1.436rem var(--ink);paint-order:stroke fill;
+  -webkit-text-stroke:1.7rem var(--ink);paint-order:stroke fill;
   margin-left:-3.0rem;
-  letter-spacing:1.6rem;
+  letter-spacing:1.4rem;
 }
 .blurb{
-  --x:32.0rem; --dy:162.5rem;
+  --x:32.0rem; --dy:168.0rem;
   width:400.5rem;
   font-size:22.66rem;
   line-height:30.0rem;
@@ -254,7 +254,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   .tag:nth-child(3){width:96rem}
 }
 @media (min-aspect-ratio:13/10) and (max-aspect-ratio:31/20){
-  .headline{font-size:40rem;line-height:49.5rem}
+  .headline{font-size:50rem;line-height:58rem}
   .blurb{width:350rem}
 }
 @media (max-aspect-ratio:13/10), (max-width:899px){
@@ -286,14 +286,14 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   .headline{
     left:var(--col-x);right:auto;
     top:200rem;
-    font-size:52rem;line-height:60rem;letter-spacing:0;
+    font-size:64rem;line-height:72rem;letter-spacing:0;
   }
   .headline .w1,.headline .w2,.headline .w3,.headline .w4{letter-spacing:0;margin-left:0}
   .headline .l1,.headline .l2,.headline .l3,.blurb{-webkit-text-stroke-width:0}
   .headline b{margin-left:0;letter-spacing:0;-webkit-text-stroke:2.6rem var(--ink);paint-order:stroke fill}
   .blurb{
     left:var(--col-x);right:auto;width:var(--col-w);
-    top:400rem;
+    top:440rem;
     font-size:27rem;line-height:38rem;letter-spacing:0;
   }
   .bust{
@@ -333,7 +333,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
     border-radius:20px;border-width:1px;
     font-size:16px;line-height:24px;
   }
-  .headline{top:var(--text-top);left:24rem;right:24rem;font-size:30px;line-height:36px}
+  .headline{top:var(--text-top);left:24rem;right:24rem;font-size:36px;line-height:42px}
   .headline b{-webkit-text-stroke:1.5px var(--ink)}
   .blurb{top:calc(var(--text-top) + 120rem);left:24rem;right:24rem;width:auto;font-size:16px;line-height:24px}
   .bust{height:var(--fig-h)}
@@ -386,7 +386,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
 }
 .big-title{
   margin:0 0 20px;
-  font-size:clamp(42px,8vw,96px);
+  font-size:clamp(56px,10vw,128px);
   line-height:0.98;
   letter-spacing:-0.03em;
   font-weight:400;
@@ -602,7 +602,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   .stats,.grid,.auto-grid{grid-template-columns:1fr}
   .flow{grid-template-columns:repeat(2,minmax(0,1fr))}
   .panel{padding:56px 18px}
-  .big-title{font-size:clamp(36px,12vw,56px)}
+  .big-title{font-size:clamp(52px,14vw,88px)}
 }
 </style>
 <script>
@@ -633,9 +633,9 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
       <li><a href="#automations">Automations</a></li>
     </ul>
     <ul class="col-b">
-      <li><a class="lead" href="#architecture">Architecture</a></li>
-      <li><a href="https://github.com/channallikrishnasai/The-Opero/releases/download/v1.0.0/OPERO-Setup.exe" rel="noopener">Download</a></li>
-      <li><a href="https://github.com/channallikrishnasai/The-Opero" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+      <li><a class="lead" href="https://github.com/channallikrishnasai/The-Opero/releases" target="_blank" rel="noopener noreferrer">Resources</a></li>
+      <li><a href="#download">Download</a></li>
+      <li><a href="https://www.linkedin.com/in/channallikrishnasai" target="_blank" rel="noopener noreferrer">Connect</a></li>
     </ul>
   </nav>
   <svg class="logo pin pin-tc" viewBox="0 0 60 38" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OPERO">
@@ -868,13 +868,14 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
 
 <section class="panel alt" id="download" aria-labelledby="download-title">
   <div class="inner">
-    <p class="eyebrow">// Get OPERO</p>
+    <p class="eyebrow">// Get OPERO · Connect</p>
     <h2 class="big-title" id="download-title">Run the workspace<br>on your machine</h2>
-    <p class="lead">Windows installer, source, and full module docs live on GitHub. Local-first by design — your keys and credentials stay on device.</p>
+    <p class="lead">Windows installer, source, and full module docs live on GitHub. Local-first by design — your keys and credentials stay on device. Built by Krishna Sai Channalli.</p>
     <div class="cta-row">
       <a class="cta-btn" href="https://github.com/channallikrishnasai/The-Opero/releases/download/v1.0.0/OPERO-Setup.exe" rel="noopener">Download OPERO</a>
       <a class="cta-btn ghost" href="https://github.com/channallikrishnasai/The-Opero" target="_blank" rel="noopener noreferrer">View on GitHub</a>
       <a class="cta-btn ghost" href="https://github.com/channallikrishnasai/The-Opero#-autonomous-modules--capabilities" target="_blank" rel="noopener noreferrer">All capabilities</a>
+      <a class="cta-btn" href="https://www.linkedin.com/in/channallikrishnasai" target="_blank" rel="noopener noreferrer">Connect with me ↗</a>
     </div>
   </div>
 </section>
@@ -888,6 +889,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
     <a href="#architecture">Architecture</a>
     <a href="https://github.com/channallikrishnasai/The-Opero/releases" target="_blank" rel="noopener noreferrer">Releases</a>
     <a href="https://github.com/channallikrishnasai/The-Opero#readme" target="_blank" rel="noopener noreferrer">README</a>
+    <a href="https://www.linkedin.com/in/channallikrishnasai" target="_blank" rel="noopener noreferrer">Connect with me ↗</a>
   </nav>
 </footer>
 
