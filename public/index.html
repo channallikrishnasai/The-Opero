@@ -201,6 +201,100 @@ a{color:inherit}
   -webkit-text-stroke:0.2rem var(--bg);
 }
 .scroll-hint:hover{color:var(--ink)}
+.scroll-dl{
+  position:absolute;
+  left:50%;
+  bottom:72rem;
+  transform:translateX(-50%);
+  z-index:5;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12rem;
+  text-decoration:none;
+  color:var(--ink);
+  text-align:center;
+  white-space:nowrap;
+}
+.scroll-dl .sd-label{
+  font-size:22rem;
+  letter-spacing:0.28em;
+  text-transform:uppercase;
+  font-weight:400;
+  -webkit-text-stroke:0.35rem var(--bg);
+  paint-order:stroke fill;
+}
+.scroll-dl .sd-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10rem;
+  min-height:52rem;
+  padding:0 28rem;
+  border-radius:26rem;
+  border:1.6rem solid var(--ink);
+  background:var(--ink);
+  color:var(--bg);
+  font-size:16rem;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  box-shadow:0 8rem 24rem rgba(0,0,0,.12);
+}
+.scroll-dl .sd-btn svg{width:16rem;height:16rem;display:block;fill:currentColor}
+.scroll-dl:hover .sd-btn{opacity:.85}
+.scroll-dl:focus-visible .sd-btn{outline:2px solid #000;outline-offset:3px}
+.back-top{
+  position:fixed;
+  right:24px;
+  bottom:24px;
+  z-index:40;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:44px;
+  padding:0 16px;
+  border-radius:999px;
+  border:1.5px solid var(--ink);
+  background:var(--ink);
+  color:var(--bg);
+  font-size:12px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  text-decoration:none;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transform:translateY(8px);
+  transition:opacity .2s ease, transform .2s ease, visibility .2s ease;
+}
+.back-top.is-on{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+  transform:translateY(0);
+}
+.back-top:hover{opacity:.85}
+.back-top svg{width:12px;height:12px;display:block;fill:currentColor}
+.smartscreen-note{
+  margin-top:18px;
+  padding:14px 16px;
+  border:1px dashed rgba(0,0,0,.35);
+  border-radius:14px;
+  background:rgba(255,255,255,.45);
+  font-size:13px;
+  line-height:1.55;
+  color:var(--muted);
+  max-width:640px;
+}
+.smartscreen-note b{color:var(--ink);font-weight:400}
+.smartscreen-note code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:12px;
+  background:rgba(0,0,0,.06);
+  padding:1px 6px;
+  border-radius:6px;
+  color:var(--ink);
+}
 .instruments{display:contents}
 html[data-anim] .instruments{display:block;position:absolute;inset:0;pointer-events:none}
 html[data-anim] .instruments > *{pointer-events:auto}
@@ -309,6 +403,9 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   .tag:nth-child(2){width:104rem}
   .tag:nth-child(3){width:76rem}
   .scroll-hint{bottom:12rem;font-size:16rem}
+  .scroll-dl{bottom:88rem;gap:10rem}
+  .scroll-dl .sd-label{font-size:18rem}
+  .scroll-dl .sd-btn{min-height:48rem;font-size:15rem;padding:0 24rem}
 }
 @media (max-aspect-ratio:13/10) and (min-height:1px), (max-width:899px){
   @supports (height:100dvh){
@@ -343,6 +440,10 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   .tag{height:36px;padding:0 14px;border-radius:18px;font-size:14px;border-width:1px}
   .tag:nth-child(1),.tag:nth-child(2),.tag:nth-child(3){width:auto}
   .scroll-hint{display:none}
+  .scroll-dl{bottom:88rem;top:auto;left:24rem;right:24rem;transform:none;align-items:flex-start;gap:8px}
+  .scroll-dl .sd-label{font-size:13px;letter-spacing:0.18em}
+  .scroll-dl .sd-btn{min-height:40px;padding:0 18px;font-size:12px;border-radius:20px;border-width:1px}
+  .scroll-dl .sd-btn svg{width:12px;height:12px}
 }
 @media (max-width:520px){
   @supports (height:100dvh){
@@ -671,6 +772,13 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
       <span class="tag">Open</span>
     </div>
   </div>
+  <a class="scroll-dl" href="#download" aria-label="Scroll down to download OPERO">
+    <span class="sd-label">Scroll down to download</span>
+    <span class="sd-btn">
+      Get OPERO
+      <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8 2.2v9.1L3.4 7.1l1.1-1.1L8 9.5l3.5-3.5 1.1 1.1L8 11.3V2.2H8zM3 13.2h10v1.4H3v-1.4z"/></svg>
+    </span>
+  </a>
   <a class="scroll-hint" href="#workspace">Scroll · Functions &amp; Automations</a>
 </section>
 
@@ -878,9 +986,25 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
       <a class="cta-btn ghost" href="https://github.com/channallikrishnasai/The-Opero#-autonomous-modules--capabilities" target="_blank" rel="noopener noreferrer">All capabilities</a>
       <a class="cta-btn" href="https://www.linkedin.com/in/krishna-sai-channalli-4528262b3" target="_blank" rel="noopener noreferrer">Connect with me ↗</a>
     </div>
+    <p class="smartscreen-note" role="note">
+      <b>Windows SmartScreen says “Unknown publisher”?</b>
+      The installer is not code-signed yet, so Windows may show
+      <b>“Publisher: Unknown”</b> / <em>Windows protected your PC</em>.
+      Click <b>More info</b> → <b>Run anyway</b> (the file is safe —
+      source is on <a href="https://github.com/channallikrishnasai/The-Opero" target="_blank" rel="noopener noreferrer">GitHub</a>).
+      macOS: right-click the app → <b>Open</b> → <b>Open</b>.
+    </p>
+    <div class="cta-row" style="margin-top:20px">
+      <a class="cta-btn ghost" href="#top" id="end-scroll-top">↑ Scroll back to top</a>
+    </div>
   </div>
 </section>
 </main>
+
+<a class="back-top" href="#top" id="back-top" aria-label="Scroll back to top">
+  <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8 13.8V4.7l4.6 4.6-1.1 1.1L8 6.9l-3.5 3.5-1.1-1.1L8 4.7v9.1H8zM3 2.8h10v1.4H3V2.8z"/></svg>
+  Top
+</a>
 
 <footer class="footer">
   <div>OPERO — Open Personal Execution &amp; Response Operator · Local-first</div>
@@ -891,6 +1015,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
     <a href="https://github.com/channallikrishnasai/The-Opero/releases" target="_blank" rel="noopener noreferrer">Releases</a>
     <a href="https://github.com/channallikrishnasai/The-Opero#readme" target="_blank" rel="noopener noreferrer">README</a>
     <a href="https://www.linkedin.com/in/krishna-sai-channalli-4528262b3" target="_blank" rel="noopener noreferrer">Connect with me ↗</a>
+    <a href="#top">↑ Back to top</a>
   </nav>
 </footer>
 
@@ -1055,6 +1180,21 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
     document.documentElement.style.setProperty('--paper',dark?'#12121A':'#fff');
     mode.setAttribute('aria-pressed',dark?'true':'false');
   });
+})();
+(function(){
+  var btn=document.getElementById('back-top');
+  if(!btn)return;
+  var threshold=Math.max(480, Math.round(window.innerHeight*0.7));
+  function sync(){
+    if(window.scrollY>threshold)btn.classList.add('is-on');
+    else btn.classList.remove('is-on');
+  }
+  window.addEventListener('scroll',sync,{passive:true});
+  window.addEventListener('resize',function(){
+    threshold=Math.max(480, Math.round(window.innerHeight*0.7));
+    sync();
+  },{passive:true});
+  sync();
 })();
 </script>
 </body>
