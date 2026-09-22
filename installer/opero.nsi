@@ -6,7 +6,24 @@ InstallDir "$LOCALAPPDATA\OPERO"
 RequestExecutionLevel user
 SetCompressor /SOLID zlib
 
+!include "MUI2.nsh"
+
 !define StartMenuFolder "$SMPROGRAMS\OPERO"
+!define MUI_ICON "..\config\jarvis.ico"
+!define MUI_UNICON "..\config\jarvis.ico"
+
+!define MUI_FINISHPAGE_RUN "$INSTDIR\OPERO.exe"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch OPERO"
+!define MUI_FINISHPAGE_RUN_CHECKED
+
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_UNPAGE_FINISH
+
+!insertmacro MUI_LANGUAGE "English"
 
 Section "Install"
   SetOutPath "$INSTDIR"
