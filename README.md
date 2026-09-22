@@ -1,6 +1,6 @@
 # <div align="center">
 
-**📧** [channallikrishnasai@gmail.com](mailto:channallikrishnasai%40gmail.com) &nbsp;&nbsp;|&nbsp;&nbsp; **🔗** [LinkedIn](https://www.linkedin.com/in/channallikrishnasai)
+**📧** [channallikrishnasai@gmail.com](mailto:channallikrishnasai%40gmail.com) &nbsp;&nbsp;|&nbsp;&nbsp; **🔗** [LinkedIn](https://www.linkedin.com/in/krishna-sai-channalli-4528262b3)
 
 ```text
  ██████╗ ██████╗ ███████╗██████╗  ██████╗
@@ -230,10 +230,10 @@ The desktop HUD will appear, embedding the interactive **`site/index.html`** das
 ## 🤝 Connect & Contribute
 <div align="center">
 
-**Built by [Krishna Sai Channalli](https://www.linkedin.com/in/channallikrishnasai)**
+**Built by [Krishna Sai Channalli](https://www.linkedin.com/in/krishna-sai-channalli-4528262b3)**
 
 [![GitHub ★](https://img.shields.io/badge/⭐_Star_on_GitHub-181717?style=for-the-badge&logo=github)](https://github.com/channallikrishnasai/The-Opero)
-[![LinkedIn](https://img.shields.io/badge/Connect_on_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/channallikrishnasai)
+[![LinkedIn](https://img.shields.io/badge/Connect_on_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/krishna-sai-channalli-4528262b3)
 [![Issues](https://img.shields.io/badge/Report_a_Bug-ff3355?style=for-the-badge&logo=github)](https://github.com/channallikrishnasai/The-Opero/issues)
 
 </div>
