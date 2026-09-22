@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F6EAF2">
-<meta name="description" content="OPERO — Open Personal Execution &amp; Response Operator. Local-first AI desktop operator: understand tasks, choose supported tools, request confirmation, report what happened.">
+<meta name="description" content="OPERO — Your AI personal workspace. Local-first desktop operator: 50+ action modules, automations, voice, screen understanding, and real computer actions.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="OPERO — Where Your Mind Meets the Impossible">
-<meta property="og:description" content="Local-first AI desktop operator. Natural language becomes real computer actions with confirmation when needed.">
+<meta property="og:title" content="OPERO — Your AI Personal Workspace">
+<meta property="og:description" content="Local-first AI personal workspace. Natural language becomes real computer actions with confirmation when needed.">
 <meta property="og:url" content="https://github.com/channallikrishnasai/The-Opero">
-<title>OPERO — Where Your Mind Meets the Impossible</title>
+<title>OPERO — Your AI Personal Workspace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Questrial&display=block">
@@ -17,6 +17,7 @@
 html{
   font-size:min(calc(100vw / 1594), calc(100vh / 987), 1.75px);
   -webkit-text-size-adjust:100%;
+  scroll-behavior:smooth;
 }
 @supports (height:100dvh){
   html{font-size:min(calc(100vw / 1594), calc(100dvh / 987), 1.75px)}
@@ -30,13 +31,13 @@ html{
   --bust-zoom:1;
   --bust-nudge-x:0%;
   --bust-nudge-y:0%;
+  --paper:#fff;
+  --muted:rgba(0,0,0,.62);
+  --line:rgba(0,0,0,.14);
 }
+*{box-sizing:border-box}
 button{font:inherit;letter-spacing:inherit;color:inherit;background:none;border:0;cursor:pointer}
-html,body{
-  margin:0;
-  height:100%;
-  overflow:hidden;
-}
+html,body{margin:0;overflow-x:hidden}
 body{
   min-height:100vh;min-height:100dvh;
   background:var(--bg);
@@ -45,7 +46,13 @@ body{
   -webkit-font-smoothing:antialiased;
   text-rendering:geometricPrecision;
 }
-.stage{position:fixed;inset:0;isolation:isolate}
+a{color:inherit}
+.stage{
+  position:relative;
+  min-height:100vh;min-height:100dvh;
+  overflow:hidden;
+  isolation:isolate;
+}
 :focus-visible{outline:2px solid #000;outline-offset:3px}
 .pin{position:absolute}
 .pin-tl{top:var(--y);left:var(--x)}
@@ -120,27 +127,26 @@ body{
 .mode{--x:44.5rem; --y:26.9rem; width:37.8rem;height:37.8rem;z-index:3}
 .headline{
   --x:47.0rem; --dy:-38.5rem;
-  font-size:42.3rem;
+  font-size:46rem;
   line-height:55.0rem;
-  letter-spacing:1.5rem;
+  letter-spacing:1.2rem;
   font-weight:400;
   white-space:nowrap;
   -webkit-text-stroke:0.791rem var(--bg);paint-order:fill stroke;
   z-index:2;
   margin:0;
+  text-transform:uppercase;
 }
-.headline .l1,.headline .l2,.headline .ln{display:block}
-.headline .l2{word-spacing:0.0rem}
-.headline .w1{letter-spacing:3.25rem}
-.headline .w2{letter-spacing:3.167rem;margin-left:-7.0rem}
-.headline .w3{letter-spacing:1.167rem;margin-left:-7.0rem}
-.headline .w4{letter-spacing:1.5rem}
-.headline .w5{letter-spacing:2.5rem;margin-left:-5.0rem}
+.headline .l1,.headline .l2,.headline .l3,.headline .ln{display:block}
+.headline .w1{letter-spacing:2.4rem}
+.headline .w2{letter-spacing:1.8rem;margin-left:-4.0rem}
+.headline .w3{letter-spacing:1.1rem;margin-left:-6.0rem}
+.headline .w4{letter-spacing:1.4rem;margin-left:-5.0rem}
 .headline b{
   font-weight:400;
   -webkit-text-stroke:1.436rem var(--ink);paint-order:stroke fill;
-  margin-left:-4.0rem;
-  letter-spacing:2.858888888888889rem;
+  margin-left:-3.0rem;
+  letter-spacing:1.6rem;
 }
 .blurb{
   --x:32.0rem; --dy:162.5rem;
@@ -181,12 +187,27 @@ body{
 .tag:nth-child(1){width:68.5rem}
 .tag:nth-child(2){width:81.0rem}
 .tag:nth-child(3){width:60.5rem}
+.scroll-hint{
+  position:absolute;
+  left:50%;
+  bottom:18rem;
+  transform:translateX(-50%);
+  z-index:4;
+  font-size:14rem;
+  letter-spacing:0.35em;
+  text-transform:uppercase;
+  color:var(--muted);
+  text-decoration:none;
+  -webkit-text-stroke:0.2rem var(--bg);
+}
+.scroll-hint:hover{color:var(--ink)}
 .instruments{display:contents}
 html[data-anim] .instruments{display:block;position:absolute;inset:0;pointer-events:none}
 html[data-anim] .instruments > *{pointer-events:auto}
 @media (prefers-reduced-motion:no-preference){
-  .nav a,.tag,.brightness{transition:opacity .25s ease}
+  .nav a,.tag,.brightness,.card,.auto-card,.cta-btn{transition:opacity .25s ease, transform .25s ease, border-color .25s ease}
   .nav a:hover,.tag:hover,.brightness:hover{opacity:.62}
+  .card:hover,.auto-card:hover{transform:translateY(-4px);border-color:rgba(0,0,0,.4)}
 }
 html[data-anim] *{transition:none !important}
 html[data-anim="pending"] .bust{opacity:0;scale:1.028;transform-origin:50% 100%;will-change:opacity,scale}
@@ -196,12 +217,14 @@ html[data-anim="pending"] .burger,
 html[data-anim="pending"] .moon,
 html[data-anim="pending"] .mode{opacity:0;translate:0 -8rem;will-change:opacity,translate}
 html[data-anim="pending"] .headline .l1,
-html[data-anim="pending"] .headline .l2{overflow:hidden}
+html[data-anim="pending"] .headline .l2,
+html[data-anim="pending"] .headline .l3{overflow:hidden}
 html[data-anim="pending"] .headline .ln{translate:0 105%;will-change:translate}
 html[data-anim="pending"] .blurb{opacity:0;translate:0 12rem;will-change:opacity,translate}
 html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:opacity,translate}
 @media (prefers-reduced-motion:reduce){
   html[data-anim] *{opacity:1 !important;translate:none !important;scale:none !important}
+  html{scroll-behavior:auto}
 }
 @media (pointer:coarse) and (max-width:1600px), (max-width:999px){
   .burger{display:grid;--x:41rem;--y:24rem;width:56rem;height:56rem;border-width:1.4rem}
@@ -213,7 +236,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
     padding:30rem 38rem 32rem;
     border:1.4rem solid var(--ink);
     border-radius:30rem;
-    background:var(--glass);
+    background:rgba(246,234,242,.92);
     -webkit-backdrop-filter:blur(18rem);backdrop-filter:blur(18rem);
     font-size:30rem;line-height:40rem;letter-spacing:0;
     opacity:0;visibility:hidden;translate:0 -12rem;pointer-events:none;
@@ -231,7 +254,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   .tag:nth-child(3){width:96rem}
 }
 @media (min-aspect-ratio:13/10) and (max-aspect-ratio:31/20){
-  .headline{font-size:38.4rem;line-height:49.5rem}
+  .headline{font-size:40rem;line-height:49.5rem}
   .blurb{width:350rem}
 }
 @media (max-aspect-ratio:13/10), (max-width:899px){
@@ -251,7 +274,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
     padding:24rem 30rem 26rem;
     border:1.4rem solid var(--ink);
     border-radius:26rem;
-    background:var(--glass);
+    background:rgba(246,234,242,.94);
     -webkit-backdrop-filter:blur(18rem);backdrop-filter:blur(18rem);
     font-size:26rem;line-height:36rem;letter-spacing:0;
     opacity:0;visibility:hidden;translate:0 -10rem;pointer-events:none;
@@ -262,17 +285,15 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   html[data-menu="open"] .nav{opacity:1;visibility:visible;translate:0 0;pointer-events:auto}
   .headline{
     left:var(--col-x);right:auto;
-    top:212rem;
-    font-size:54rem;line-height:64rem;letter-spacing:0;
+    top:200rem;
+    font-size:52rem;line-height:60rem;letter-spacing:0;
   }
-  .headline .l2{word-spacing:0}
-  .headline .w1,.headline .w2,.headline .w3,
-  .headline .w4,.headline .w5{letter-spacing:0;margin-left:0}
-  .headline .l1,.headline .l2,.blurb{-webkit-text-stroke-width:0}
+  .headline .w1,.headline .w2,.headline .w3,.headline .w4{letter-spacing:0;margin-left:0}
+  .headline .l1,.headline .l2,.headline .l3,.blurb{-webkit-text-stroke-width:0}
   .headline b{margin-left:0;letter-spacing:0;-webkit-text-stroke:2.6rem var(--ink);paint-order:stroke fill}
   .blurb{
     left:var(--col-x);right:auto;width:var(--col-w);
-    top:366rem;
+    top:400rem;
     font-size:27rem;line-height:38rem;letter-spacing:0;
   }
   .bust{
@@ -287,6 +308,7 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   .tag:nth-child(1){width:88rem}
   .tag:nth-child(2){width:104rem}
   .tag:nth-child(3){width:76rem}
+  .scroll-hint{bottom:12rem;font-size:16rem}
 }
 @media (max-aspect-ratio:13/10) and (min-height:1px), (max-width:899px){
   @supports (height:100dvh){
@@ -311,15 +333,16 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
     border-radius:20px;border-width:1px;
     font-size:16px;line-height:24px;
   }
-  .headline{top:var(--text-top);left:24rem;right:24rem;font-size:28px;line-height:34px}
+  .headline{top:var(--text-top);left:24rem;right:24rem;font-size:30px;line-height:36px}
   .headline b{-webkit-text-stroke:1.5px var(--ink)}
-  .blurb{top:calc(var(--text-top) + 104rem);left:24rem;right:24rem;width:auto;font-size:16px;line-height:24px}
+  .blurb{top:calc(var(--text-top) + 120rem);left:24rem;right:24rem;width:auto;font-size:16px;line-height:24px}
   .bust{height:var(--fig-h)}
   .brightness{--x:24rem;--y:24rem;width:44px;height:44px;border-width:1px}
   .brightness svg{width:22px;height:22px}
   .tags{--x:24rem;--y:24rem;gap:6px}
   .tag{height:36px;padding:0 14px;border-radius:18px;font-size:14px;border-width:1px}
   .tag:nth-child(1),.tag:nth-child(2),.tag:nth-child(3){width:auto}
+  .scroll-hint{display:none}
 }
 @media (max-width:520px){
   @supports (height:100dvh){
@@ -328,6 +351,258 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
       --text-top:calc((90rem + 100dvh - var(--fig-h)) / 2 - 91rem);
     }
   }
+}
+
+/* ─── Below-fold OPERO content ─── */
+.panel{
+  position:relative;
+  z-index:5;
+  background:var(--bg);
+  padding:clamp(64px,10vw,120px) clamp(20px,6vw,80px);
+}
+.panel + .panel{border-top:1px solid var(--line)}
+.panel.alt{background:#F2E4EE}
+.panel.dark{background:#0B0B10;color:#F6EAF2}
+.panel.dark .eyebrow{color:rgba(246,234,242,.7)}
+.panel.dark .muted{color:rgba(246,234,242,.72)}
+.panel.dark .card,.panel.dark .auto-card{
+  background:rgba(255,255,255,.04);
+  border-color:rgba(246,234,242,.16);
+}
+.panel.dark .card h3,.panel.dark .auto-card h3{color:#F6EAF2}
+.panel.dark .chip{border-color:rgba(246,234,242,.35);color:#F6EAF2}
+.panel.dark .stat{border-color:rgba(246,234,242,.16)}
+.panel.dark .stat b{color:#fff}
+.panel.dark .flow-step{border-color:rgba(246,234,242,.2);background:rgba(255,255,255,.04)}
+.panel.dark .cta-btn{background:#F6EAF2;color:#0B0B10;border-color:#F6EAF2}
+.panel.dark .cta-btn.ghost{background:transparent;color:#F6EAF2}
+.inner{max-width:1200px;margin:0 auto}
+.eyebrow{
+  font-size:12px;
+  letter-spacing:0.28em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 18px;
+}
+.big-title{
+  margin:0 0 20px;
+  font-size:clamp(42px,8vw,96px);
+  line-height:0.98;
+  letter-spacing:-0.03em;
+  font-weight:400;
+  text-transform:uppercase;
+}
+.big-title em{
+  font-style:normal;
+  color:transparent;
+  -webkit-text-stroke:2px #000;
+}
+.panel.dark .big-title em{-webkit-text-stroke:2px #F6EAF2}
+.lead{
+  margin:0;
+  max-width:720px;
+  font-size:clamp(16px,2vw,20px);
+  line-height:1.55;
+  color:var(--muted);
+}
+.muted{color:var(--muted)}
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin-top:40px;
+}
+.stat{
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px 16px;
+  background:rgba(255,255,255,.35);
+}
+.stat b{
+  display:block;
+  font-size:clamp(28px,4vw,42px);
+  font-weight:400;
+  letter-spacing:-0.03em;
+  line-height:1;
+  margin-bottom:8px;
+}
+.stat span{
+  font-size:12px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;
+  margin-top:40px;
+}
+.card,.auto-card{
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:22px 20px 20px;
+  background:rgba(255,255,255,.45);
+  min-height:100%;
+}
+.card h3,.auto-card h3{
+  margin:0 0 10px;
+  font-size:20px;
+  font-weight:400;
+  letter-spacing:-0.02em;
+}
+.card p,.auto-card p{
+  margin:0;
+  font-size:15px;
+  line-height:1.5;
+  color:var(--muted);
+}
+.chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:14px;
+}
+.chip{
+  font-size:11px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:6px 10px;
+  color:var(--ink);
+  background:rgba(255,255,255,.4);
+}
+.auto-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  margin-top:40px;
+}
+.auto-card .steps{
+  list-style:none;
+  margin:14px 0 0;
+  padding:0;
+  display:grid;
+  gap:8px;
+}
+.auto-card .steps li{
+  position:relative;
+  padding:10px 12px 10px 38px;
+  border-radius:12px;
+  background:rgba(0,0,0,.04);
+  font-size:14px;
+  line-height:1.4;
+}
+.panel.dark .auto-card .steps li{background:rgba(255,255,255,.05)}
+.auto-card .steps li::before{
+  content:counter(step,decimal-leading-zero);
+  counter-increment:step;
+  position:absolute;
+  left:12px;
+  top:10px;
+  font-size:11px;
+  letter-spacing:0.06em;
+  color:var(--muted);
+}
+.auto-card .steps{counter-reset:step}
+.flow{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:10px;
+  margin-top:40px;
+}
+.flow-step{
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:16px 12px;
+  background:rgba(255,255,255,.4);
+  text-align:center;
+  min-height:110px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:8px;
+}
+.flow-step b{
+  font-size:11px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:400;
+}
+.flow-step span{
+  font-size:14px;
+  line-height:1.3;
+}
+.loop{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:28px;
+}
+.loop span{
+  border:1px dashed rgba(0,0,0,.35);
+  border-radius:999px;
+  padding:10px 14px;
+  font-size:13px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+}
+.panel.dark .loop span{border-color:rgba(246,234,242,.35)}
+.cta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:32px;
+}
+.cta-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:48px;
+  padding:0 22px;
+  border-radius:999px;
+  border:1.5px solid var(--ink);
+  text-decoration:none;
+  font-size:14px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  background:var(--ink);
+  color:var(--bg);
+}
+.cta-btn.ghost{
+  background:transparent;
+  color:var(--ink);
+}
+.cta-btn:hover{opacity:.85}
+.footer{
+  border-top:1px solid var(--line);
+  padding:28px clamp(20px,6vw,80px) 40px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+  justify-content:space-between;
+  align-items:center;
+  font-size:13px;
+  color:var(--muted);
+  background:var(--bg);
+}
+.footer nav{display:flex;flex-wrap:wrap;gap:16px}
+.footer a{text-decoration:none}
+.footer a:hover{text-decoration:underline}
+
+@media (max-width:960px){
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .flow{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .stats,.grid,.auto-grid{grid-template-columns:1fr}
+  .flow{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .panel{padding:56px 18px}
+  .big-title{font-size:clamp(36px,12vw,56px)}
 }
 </style>
 <script>
@@ -340,7 +615,8 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
 </script>
 </head>
 <body>
-<main class="stage">
+<main>
+<section class="stage" id="top" aria-label="OPERO hero">
   <div class="bust" role="img" aria-label="Translucent iridescent figure with light tracing through it, turning to its left">
     <video class="bust-v" muted playsinline loop preload="auto" disablepictureinpicture tabindex="-1" aria-hidden="true" src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/24f3c998-86fb-4f1d-9906-07c7fa740f8a.mp4"></video>
   </div>
@@ -352,12 +628,12 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   </button>
   <nav class="nav pin pin-tl" id="primary-nav" aria-label="Primary">
     <ul>
-      <li><a class="lead" href="https://github.com/channallikrishnasai/The-Opero#readme" target="_blank" rel="noopener noreferrer">Experience</a></li>
-      <li><a href="https://github.com/channallikrishnasai/The-Opero#-autonomous-modules--capabilities" target="_blank" rel="noopener noreferrer">Capabilities</a></li>
-      <li><a href="https://github.com/channallikrishnasai/The-Opero#-architecture--pipeline" target="_blank" rel="noopener noreferrer">Architecture</a></li>
+      <li><a class="lead" href="#workspace">Workspace</a></li>
+      <li><a href="#functions">Functions</a></li>
+      <li><a href="#automations">Automations</a></li>
     </ul>
     <ul class="col-b">
-      <li><a class="lead" href="https://github.com/channallikrishnasai/The-Opero/releases" target="_blank" rel="noopener noreferrer">Resources</a></li>
+      <li><a class="lead" href="#architecture">Architecture</a></li>
       <li><a href="https://github.com/channallikrishnasai/The-Opero/releases/download/v1.0.0/OPERO-Setup.exe" rel="noopener">Download</a></li>
       <li><a href="https://github.com/channallikrishnasai/The-Opero" target="_blank" rel="noopener noreferrer">GitHub</a></li>
     </ul>
@@ -375,8 +651,12 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
           d="M19 .25A18.75 18.75 0 1 1 19 37.75 18.75 18.75 0 1 1 19 .25Z
              M19 13A6 6 0 1 0 19 25 6 6 0 1 0 19 13Z"/>
   </svg>
-  <h1 class="headline pin pin-ml"><span class="l1"><span class="ln"><span class="w1">Where</span> <span class="w2">Your</span> <span class="w3">Mind</span></span></span><span class="l2"><span class="ln"><span class="w4">Meets</span> <span class="w5">the</span> <b>Impossible</b></span></span></h1>
-  <p class="blurb pin pin-mr">OPERO turns natural language into real computer actions — a <b>local-first</b> system that understands your intent.</p>
+  <h1 class="headline pin pin-ml">
+    <span class="l1"><span class="ln"><span class="w1">Your</span> <span class="w2">AI</span></span></span>
+    <span class="l2"><span class="ln"><span class="w3">Personal</span></span></span>
+    <span class="l3"><span class="ln"><b>Workspace</b></span></span>
+  </h1>
+  <p class="blurb pin pin-mr">OPERO is your <b>local-first</b> personal workspace — voice, screen, files, browser, and apps orchestrated by one desktop operator.</p>
   <div class="instruments">
     <button class="brightness pin pin-bl" type="button" aria-label="Brightness">
       <svg viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -390,7 +670,227 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
       <span class="tag">Open</span>
     </div>
   </div>
+  <a class="scroll-hint" href="#workspace">Scroll · Functions &amp; Automations</a>
+</section>
+
+<section class="panel" id="workspace" aria-labelledby="workspace-title">
+  <div class="inner">
+    <p class="eyebrow">// Personal workspace</p>
+    <h2 class="big-title" id="workspace-title">Your AI<br><em>Personal</em><br>Workspace</h2>
+    <p class="lead">OPERO (Open Personal Execution &amp; Response Operator) is a multi-modal, local-first living assistant and dynamic desktop workspace powered by Google Gemini. It sees your screen, hears your voice, understands intent, and executes real actions on your computer — an action engine, not just a chatbot.</p>
+    <div class="stats" role="list">
+      <div class="stat" role="listitem"><b>50+</b><span>Action modules</span></div>
+      <div class="stat" role="listitem"><b>8</b><span>Operator loop stages</span></div>
+      <div class="stat" role="listitem"><b>100%</b><span>Local-first controls</span></div>
+      <div class="stat" role="listitem"><b>1</b><span>Desktop operator</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel alt" id="functions" aria-labelledby="functions-title">
+  <div class="inner">
+    <p class="eyebrow">// Functions · 50+ modules</p>
+    <h2 class="big-title" id="functions-title">Everything the<br>operator can do</h2>
+    <p class="lead">From system control to creative generation — each capability is a supported action module routed through a confirmation-aware dispatcher.</p>
+    <div class="grid">
+      <article class="card">
+        <h3>Voice &amp; screen understanding</h3>
+        <p>Transcribe the mic, capture the screen, and ground every request in what you are looking at. Natural language becomes structured intent.</p>
+        <div class="chips"><span class="chip">Mic ASR</span><span class="chip">Screen context</span><span class="chip">TTS replies</span></div>
+      </article>
+      <article class="card">
+        <h3>Desktop &amp; file control</h3>
+        <p>Move and rename files, organize Downloads/Desktop with dry-run + rollback, open apps, click UI, and monitor the machine.</p>
+        <div class="chips"><span class="chip">PyAutoGUI</span><span class="chip">File ops</span><span class="chip">App launcher</span></div>
+      </article>
+      <article class="card">
+        <h3>Browser &amp; live research</h3>
+        <p>Search the web, scrape pages, drive the browser, and turn live sources into JSON summaries or Markdown reports.</p>
+        <div class="chips"><span class="chip">Web search</span><span class="chip">Browser control</span><span class="chip">Scrape</span></div>
+      </article>
+      <article class="card">
+        <h3>Email &amp; messaging</h3>
+        <p>Gmail OAuth stays on your machine; sends are confirmation-gated. Instagram and message bridges for social workflows.</p>
+        <div class="chips"><span class="chip">Gmail</span><span class="chip">Instagram</span><span class="chip">Confirm to send</span></div>
+      </article>
+      <article class="card">
+        <h3>Documents &amp; media generation</h3>
+        <p>Create Word, PowerPoint, Excel, PDF, and self-contained websites from a short brief — all generated locally.</p>
+        <div class="chips"><span class="chip">.docx</span><span class="chip">.pptx</span><span class="chip">.pdf</span><span class="chip">HTML</span></div>
+      </article>
+      <article class="card">
+        <h3>Calendar, reminders &amp; briefings</h3>
+        <p>Schedule meetings, set reminders, and compile a morning intelligence report with weather, agenda, and priorities.</p>
+        <div class="chips"><span class="chip">Calendar</span><span class="chip">Reminders</span><span class="chip">Daily briefing</span></div>
+      </article>
+      <article class="card">
+        <h3>Music &amp; media</h3>
+        <p>Hands-free Spotify and browser music control: play, pause, skip, search, and playlist management by voice.</p>
+        <div class="chips"><span class="chip">Spotify API</span><span class="chip">Voice play</span></div>
+      </article>
+      <article class="card">
+        <h3>System health &amp; self-heal</h3>
+        <p>CPU/RAM/battery telemetry, process control, and an auto-heal engine that patches non-core bugs in an AST sandbox with rollback.</p>
+        <div class="chips"><span class="chip">Diagnostics</span><span class="chip">Auto-heal</span><span class="chip">Rollback</span></div>
+      </article>
+      <article class="card">
+        <h3>Proactive operator</h3>
+        <p>ProactiveEngine 2.0 decides when to speak — context-aware, time-aware prompts without noisy repetition.</p>
+        <div class="chips"><span class="chip">Background</span><span class="chip">Context-aware</span></div>
+      </article>
+      <article class="card">
+        <h3>Developer tools</h3>
+        <p>Code helpers, dev-agent task execution, MOSS plagiarism checks, clipboard processing, and website builders.</p>
+        <div class="chips"><span class="chip">Dev agent</span><span class="chip">MOSS</span><span class="chip">Website builder</span></div>
+      </article>
+      <article class="card">
+        <h3>Connect &amp; devices</h3>
+        <p>OPERO Connect pairs devices for remote execution bridges, launch-app commands, and file send/receive with capability checks.</p>
+        <div class="chips"><span class="chip">Pairing</span><span class="chip">Remote exec</span></div>
+      </article>
+      <article class="card">
+        <h3>Content publishing</h3>
+        <p>Multi-platform video upload workflows and social posting helpers for Shorts, Reels, and similar channels.</p>
+        <div class="chips"><span class="chip">Video upload</span><span class="chip">Social</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="panel dark" id="automations" aria-labelledby="automations-title">
+  <div class="inner">
+    <p class="eyebrow">// Automations · real workflows</p>
+    <h2 class="big-title" id="automations-title">Speak once.<br>The loop runs.</h2>
+    <p class="lead muted">Every automation follows the same safe operator pipeline: understand context, choose a supported module, request approval when needed, act, verify, and report.</p>
+    <div class="auto-grid">
+      <article class="auto-card">
+        <h3>Morning intelligence briefing</h3>
+        <p>One command compiles your day before you open a tab.</p>
+        <ol class="steps">
+          <li>Pull weather, calendar, and top priorities</li>
+          <li>Summarize unread email themes</li>
+          <li>Speak and display the executive brief</li>
+        </ol>
+      </article>
+      <article class="auto-card">
+        <h3>Inbox triage → reply</h3>
+        <p>“Reply to John that the Q3 report ships by 5 PM.”</p>
+        <ol class="steps">
+          <li>Search Gmail for the thread and entities</li>
+          <li>Draft a confirmation-gated reply</li>
+          <li>Send only after you approve</li>
+        </ol>
+      </article>
+      <article class="auto-card">
+        <h3>Research → report → PDF</h3>
+        <p>Compare products, scrape sources, deliver a formatted file.</p>
+        <ol class="steps">
+          <li>Live web research with cited sources</li>
+          <li>Structure findings into sections</li>
+          <li>Generate a publication-grade PDF</li>
+        </ol>
+      </article>
+      <article class="auto-card">
+        <h3>Organize desktop &amp; downloads</h3>
+        <p>Safe file classification with preview before anything moves.</p>
+        <ol class="steps">
+          <li>Dry-run classify incoming files</li>
+          <li>Show the planned moves</li>
+          <li>Commit — or full transaction rollback</li>
+        </ol>
+      </article>
+      <article class="auto-card">
+        <h3>Deck from a topic</h3>
+        <p>“Build a 10-slide pitch on local-first AI operators.”</p>
+        <ol class="steps">
+          <li>Outline narrative and slide map</li>
+          <li>Generate .pptx with layout templates</li>
+          <li>Open the deck for review</li>
+        </ol>
+      </article>
+      <article class="auto-card">
+        <h3>Self-heal on runtime error</h3>
+        <p>The operator can repair its own non-core modules.</p>
+        <ol class="steps">
+          <li>Capture traceback (protect core files)</li>
+          <li>Synthesize patch · AST sandbox validate</li>
+          <li>Atomic backup · apply · auto-rollback if fail</li>
+        </ol>
+      </article>
+      <article class="auto-card">
+        <h3>Voice music session</h3>
+        <p>Hands-free playback without leaving your workflow.</p>
+        <ol class="steps">
+          <li>Parse play / pause / skip / playlist intent</li>
+          <li>Drive Spotify or browser player</li>
+          <li>Confirm state back by voice</li>
+        </ol>
+      </article>
+      <article class="auto-card">
+        <h3>System watchtower</h3>
+        <p>Background polling with voice alerts when thresholds break.</p>
+        <ol class="steps">
+          <li>Monitor CPU, RAM, battery, processes</li>
+          <li>Alert on anomaly or non-responsive apps</li>
+          <li>Offer kill / recover actions</li>
+        </ol>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="architecture" aria-labelledby="architecture-title">
+  <div class="inner">
+    <p class="eyebrow">// Architecture &amp; pipeline</p>
+    <h2 class="big-title" id="architecture-title">How a request<br>becomes an action</h2>
+    <p class="lead">Mic and screen enter the Gemini brain. Function calls route to a supported module. Results return as spoken audio and a HUD update.</p>
+    <div class="flow" aria-label="Operator pipeline">
+      <div class="flow-step"><b>01</b><span>User intent</span></div>
+      <div class="flow-step"><b>02</b><span>Mic + screen</span></div>
+      <div class="flow-step"><b>03</b><span>Gemini brain</span></div>
+      <div class="flow-step"><b>04</b><span>Dispatcher</span></div>
+      <div class="flow-step"><b>05</b><span>Action module</span></div>
+      <div class="flow-step"><b>06</b><span>Verify result</span></div>
+      <div class="flow-step"><b>07</b><span>Voice + HUD</span></div>
+    </div>
+    <div class="loop" aria-label="Operator stages">
+      <span>Understand</span>
+      <span>Investigate</span>
+      <span>Decide</span>
+      <span>Approve</span>
+      <span>Act</span>
+      <span>Verify</span>
+      <span>Report</span>
+      <span>Idle / ready</span>
+    </div>
+  </div>
+</section>
+
+<section class="panel alt" id="download" aria-labelledby="download-title">
+  <div class="inner">
+    <p class="eyebrow">// Get OPERO</p>
+    <h2 class="big-title" id="download-title">Run the workspace<br>on your machine</h2>
+    <p class="lead">Windows installer, source, and full module docs live on GitHub. Local-first by design — your keys and credentials stay on device.</p>
+    <div class="cta-row">
+      <a class="cta-btn" href="https://github.com/channallikrishnasai/The-Opero/releases/download/v1.0.0/OPERO-Setup.exe" rel="noopener">Download OPERO</a>
+      <a class="cta-btn ghost" href="https://github.com/channallikrishnasai/The-Opero" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+      <a class="cta-btn ghost" href="https://github.com/channallikrishnasai/The-Opero#-autonomous-modules--capabilities" target="_blank" rel="noopener noreferrer">All capabilities</a>
+    </div>
+  </div>
+</section>
 </main>
+
+<footer class="footer">
+  <div>OPERO — Open Personal Execution &amp; Response Operator · Local-first</div>
+  <nav aria-label="Footer">
+    <a href="#functions">Functions</a>
+    <a href="#automations">Automations</a>
+    <a href="#architecture">Architecture</a>
+    <a href="https://github.com/channallikrishnasai/The-Opero/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+    <a href="https://github.com/channallikrishnasai/The-Opero#readme" target="_blank" rel="noopener noreferrer">README</a>
+  </nav>
+</footer>
+
 <script>
 (function(){
   var HERO='cubic-bezier(.16,1,.3,1)';
@@ -540,6 +1040,18 @@ html[data-anim="pending"] .instruments{opacity:0;translate:0 12rem;will-change:o
   document.addEventListener('mouseleave',function(){prevX=null;});
   window.addEventListener('blur',function(){prevX=null;});
   document.addEventListener('visibilitychange',function(){prevX=null;});
+})();
+(function(){
+  var mode=document.querySelector('.mode');
+  if(!mode)return;
+  mode.addEventListener('click',function(){
+    var dark=document.documentElement.toggleAttribute('data-dark');
+    document.documentElement.style.colorScheme=dark?'dark':'light';
+    document.documentElement.style.setProperty('--bg',dark?'#0B0B10':'#F6EAF2');
+    document.documentElement.style.setProperty('--ink',dark?'#F6EAF2':'#000000');
+    document.documentElement.style.setProperty('--paper',dark?'#12121A':'#fff');
+    mode.setAttribute('aria-pressed',dark?'true':'false');
+  });
 })();
 </script>
 </body>
