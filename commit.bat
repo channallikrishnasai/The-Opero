@@ -1,1 +1,1 @@
-cd C:\Users\prakul\Desktop\projects\The-Opero && git add -A && git commit -m "Implement OPERO 3D Visual Intelligence System Prompts 1-3"
+cd C:\Users\prakul\Desktop\projects\The-Opero && git add -A && git commit -m "Add shadcn/ui components"
