@@ -1,22 +1,27 @@
 /* ===========================================================================
-   OPERO — 3D holographic presence (avatar3d.js)
-   ---------------------------------------------------------------------------
-   The genuine-3D component for the visual-intelligence layer.
+    OPERO — 3D holographic presence (avatar3d.js)
+    ---------------------------------------------------------------------------
+    The genuine-3D component for the visual-intelligence layer.
 
-   It plugs into the existing deep-space scene through window.__operoWorld
-   (exported by index.html) and shares the same renderer, composer, camera and
-   audio feed.  Everything is transform-based — particles are built ONCE from
-   the measured head geometry that core/avatar_mesh already produces, and all
-   motion (look-at, breath, blink, jaw/brow, face -> object morphs) is group
-   scaling/rotation/opacity/alpha and staged draw-ranges.  No per-frame vertex
-   buffer writes, no generated code: the same physics as the galaxy, applied
-   to a face.
+    It plugs into the existing deep-space scene through window.__operoWorld
+    (exported by index.html) and shares the same renderer, composer, camera and
+    audio feed.  Everything is transform-based — particles are built ONCE from
+    the measured head geometry that core/avatar_mesh already produces, and all
+    motion (look-at, breath, blink, jaw/brow, face -> object morphs) is group
+    scaling/rotation/opacity/alpha and staged draw-ranges.  No per-frame vertex
+    buffer writes, no generated code: the same physics as the galaxy, applied
+    to a face.
 
-   Public API (called from Python through widget.js bridge):
-     window.setFaceMesh(payload)   measured head geometry (+ anchors)
-     window.applyIntent(dir)       validated visual directive
-     window.getVisualDiagnostics() {ready, face, last, errors}
-   =========================================================================== */
+    Public API (called from Python through widget.js bridge):
+      window.setFaceMesh(payload)   measured head geometry (+ anchors)
+      window.applyIntent(dir)       validated visual directive
+      window.getVisualDiagnostics() {ready, face, last, errors}
+      window.setAvatarState(state)  IDLE|LISTENING|THINKING|SPEAKING|
+                                      VISUALIZING|ERROR|SUCCESS
+      window.setVisualState(state)  FACE_ONLY|TRANSITIONING|VISUALIZING
+      window.triggerTransitionIn(dir)  face → object morph
+      window.triggerTransitionOut()    object → face morph
+    =========================================================================== */
 
 (function () {
   "use strict";
@@ -29,10 +34,257 @@
   var ERRORS = [];
   var DIAG = { ready: false, face: false, last: null, errors: ERRORS };
 
+  /* ── Avatar states ─────────────────────────────────────────────── */
+  // ── Causal chain templates (shared with Python) ────
+var CAUSAL_CHAINS = {
+  engine_combustion: [
+    { step: 1, label: "Fuel + Air", entity: "fuel", camera: "wide" },
+    { step: 2, label: "Compression", entity: "piston", camera: "focus" },
+    { step: 3, label: "Combustion", entity: "engine", camera: "closeup" },
+    { step: 4, label: "Pressure", entity: "engine", camera: "focus" },
+    { step: 5, label: "Piston Motion", entity: "piston", camera: "side" },
+    { step: 6, label: "Crankshaft", entity: "crankshaft", camera: "focus" },
+    { step: 7, label: "Rotation", entity: "gear", camera: "wide" },
+  ],
+  circulation: [
+    { step: 1, label: "Heart Pumps", entity: "heart", camera: "focus" },
+    { step: 2, label: "Blood to Lungs", entity: "blood_vessels", camera: "follow" },
+    { step: 3, label: "Oxygenation", entity: "lungs", camera: "focus" },
+    { step: 4, label: "Blood to Body", entity: "blood_vessels", camera: "wide" },
+  ],
+};
+
+// ── Inspection modes ────────────────────────────────
+var INSPECTION_MODES = ["normal", "cutaway", "exploded", "transparent", "isolated", "cross_section", "wireframe", "xray"];
+
+// ── Temporal states ─────────────────────────────────
+var TEMPORAL_STATES = ["playing", "paused", "slow", "fast", "stepped", "rewinding", "reset"];
+
+// ── Camera directives ───────────────────────────────
+var CAMERA_DIRECTIVES = ["WIDE", "FOCUS", "CLOSEUP", "ORBIT", "FOLLOW", "TOP_DOWN", "CINEMATIC", "INSPECTION", "ZOOM_IN", "ZOOM_OUT"];
+
+// ── Entity relationships ────────────────────────────
+var RELATIONSHIPS = {
+  engine: [{ target: "piston", relation: "contains" }, { target: "crankshaft", relation: "contains" }, { target: "gear", relation: "contains" }, { target: "fuel", relation: "uses" }],
+  piston: [{ target: "crankshaft", relation: "drives" }, { target: "engine", relation: "part_of" }],
+  crankshaft: [{ target: "piston", relation: "driven_by" }, { target: "engine", relation: "part_of" }],
+  heart: [{ target: "blood_vessels", relation: "drives" }, { target: "lungs", relation: "connects" }],
+};
+
+var AVATAR_STATES = {
+    IDLE:       { glow: 0.15, particles: 0.3,  blinkRate: 3.0 },
+    LISTENING:  { glow: 0.35, particles: 0.5,  blinkRate: 2.5 },
+    THINKING:   { glow: 0.60, particles: 0.7,  blinkRate: 5.0 },
+    PROCESSING: { glow: 0.50, particles: 0.6,  blinkRate: 4.0 },
+    SPEAKING:   { glow: 0.90, particles: 1.0,  blinkRate: 1.5 },
+    VISUALIZING:{ glow: 0.85, particles: 0.9,  blinkRate: 2.0 },
+    ERROR:      { glow: 0.70, particles: 0.4,  blinkRate: 0.5 },
+    SUCCESS:    { glow: 0.95, particles: 1.0,  blinkRate: 0.3 },
+  };
+
+  var currentAvatarState = "IDLE";
+  var avatarStateParams = AVATAR_STATES.IDLE;
+
+  /* ── Face↔Object transition state ──────────────────────────────── */
+  var visualState = "FACE_ONLY";   // FACE_ONLY, TRANSITIONING, VISUALIZING
+  var activeSubject = null;
+  var transitionPhase = null;     // morph_in, hold, morph_out
+  var transitionTimer = 0;
+
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function ease(t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
   function lerp(a, b, t) { return a + (b - a) * t; }
   function rnd() { return Math.random() - 0.5; }
+
+  // ── Camera mode handler ───────────────────────
+  function applyCameraMode(mode, target) {
+    if (!camera) return;
+    var dist = 10;
+    switch (mode) {
+      case 'WIDE':
+        dist = 20; camera.position.set(0, 5, dist);
+        break;
+      case 'FOCUS':
+        dist = 8; camera.position.set(0, 2, dist);
+        break;
+      case 'CLOSEUP':
+        dist = 4; camera.position.set(0, 1.5, dist);
+        break;
+      case 'TOP_DOWN':
+        dist = 15; camera.position.set(0, dist, 0);
+        camera.lookAt(0, 0, 0);
+        break;
+      case 'ORBIT':
+        var t = elapsed * 0.5;
+        camera.position.set(Math.cos(t) * 8, 3, Math.sin(t) * 8);
+        camera.lookAt(0, 0, 0);
+        break;
+      case 'FOLLOW':
+        if (target && target.position) {
+          camera.position.set(target.position.x, target.position.y + 2,
+                                target.position.z + 6);
+          camera.lookAt(target.position);
+        }
+        break;
+      case 'CINEMATIC':
+        dist = 12; camera.position.set(0, 8, dist);
+        break;
+      case 'INSPECTION':
+        dist = 5; camera.position.set(2, 2, 5);
+        break;
+      case 'ZOOM_IN':
+        dist = 3; camera.position.set(0, 1, dist);
+        break;
+      case 'ZOOM_OUT':
+        dist = 25; camera.position.set(0, 10, dist);
+        break;
+      default:
+        dist = 10; camera.position.set(0, 5, dist);
+    }
+    camera.fov = mode === 'CLOSEUP' ? 30 : mode === 'WIDE' ? 60 : 45;
+    camera.updateProjectionMatrix();
+  }
+
+  // ── Causal chain renderer ─────────────────────
+  function renderCausalChain(chain, step) {
+    if (!chain || !chain.length) return;
+    var s = Math.min(step, chain.length - 1);
+    var chainGroup = new THREE.Group();
+    chainGroup.userData.isCausalChain = true;
+    for (var i = 0; i < chain.length; i++) {
+      var node = chain[i];
+      var sphereGeo = new THREE.SphereGeometry(0.15, 8, 6);
+      var isActive = i === s;
+      var mat = new THREE.MeshStandardMaterial({
+        color: isActive ? 0x00ff88 : 0x333344,
+        emissive: isActive ? 0x00ff88 : 0x000000,
+        emissiveIntensity: isActive ? 2.0 : 0.1,
+        transparent: true,
+        opacity: isActive ? 1.0 : 0.3,
+      });
+      var sphere = new THREE.Mesh(sphereGeo, mat);
+      var angle = (i / chain.length) * TAU;
+      sphere.position.set(Math.cos(angle) * 2, Math.sin(angle) * 0.5, 0);
+      chainGroup.add(sphere);
+      // Add directional link to next node
+      if (i < chain.length - 1) {
+        var next = chain[i + 1];
+        var lineGeo = new THREE.BufferGeometry().setFromPoints([
+          sphere.position,
+          new THREE.Vector3(
+            Math.cos((i + 1) / chain.length * TAU) * 2,
+            Math.sin((i + 1) / chain.length * TAU) * 0.5, 0
+          )
+        ]);
+        var lineMat = new THREE.LineBasicMaterial({
+          color: isActive ? 0x00ff88 : 0x222233,
+          transparent: true, opacity: isActive ? 0.8 : 0.2,
+        });
+        var line = new THREE.Line(lineGeo, lineMat);
+        chainGroup.add(line);
+      }
+      // Add label sprite
+      var label = createLabel(node.label || ('Step ' + (i + 1)));
+      label.position.copy(sphere.position);
+      label.position.y += 0.4;
+      chainGroup.add(label);
+    }
+    sceneAdd(chainGroup);
+    avatar.causalChainGroup = chainGroup;
+  }
+
+  function createLabel(text) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 64;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#00ff88';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(text, 128, 40);
+    var texture = new THREE.CanvasTexture(canvas);
+    var spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    var sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(1.5, 0.4, 1);
+    return sprite;
+  }
+
+  // ── Inspection mode handler ───────────────────
+  function applyInspectionMode(mode, isolateList, transparency, exploded) {
+    avatar.inspectionMode = mode;
+    avatar.isolateList = isolateList || [];
+    avatar.inspectionTransparency = transparency;
+    avatar.exploded = exploded;
+    // Apply to all scene objects
+    if (world.scene) {
+      world.scene.traverse(function (obj) {
+        if (obj.isMesh || obj.isPoints || obj.isLine) {
+          if (isolateList && isolateList.length > 0) {
+            var isIsolated = isolateList.some(function (id) {
+              return obj.userData && obj.userData.entityId === id;
+            });
+            obj.material.transparent = true;
+            obj.material.opacity = isIsolated ? 1.0 : transparency;
+            obj.visible = isIsolated || transparency < 1.0;
+          } else if (mode === 'transparent') {
+            obj.material.transparent = true;
+            obj.material.opacity = Math.max(0.1, 1.0 - transparency);
+          } else if (mode === 'cutaway') {
+            obj.material.transparent = true;
+            obj.material.opacity = 0.5;
+          } else if (mode === 'exploded') {
+            obj.material.transparent = true;
+            obj.material.opacity = 1.0;
+            if (exploded) {
+              var dir = obj.position.clone().normalize();
+              obj.position.add(dir.multiplyScalar(0.5));
+            }
+          } else if (mode === 'xray') {
+            obj.material.transparent = true;
+            obj.material.opacity = 0.2;
+          } else if (mode === 'wireframe') {
+            obj.material.wireframe = true;
+          } else {
+            obj.material.transparent = false;
+            obj.material.opacity = 1.0;
+            obj.material.wireframe = false;
+          }
+        }
+      });
+    }
+  }
+
+  // ── Temporal controls ─────────────────────────
+  function applyTemporalState(state, speed, step) {
+    avatar.temporalState = state;
+    avatar.temporalSpeed = speed;
+    avatar.temporalStep = step;
+    // Update scene animation speed
+    if (world.scene) {
+      world.scene.traverse(function (obj) {
+        if (obj.userData && obj.userData.animSpeed !== undefined) {
+          obj.userData.animSpeed = speed;
+        }
+      });
+    }
+  }
+
+  // ── Real 3D object builders ───────────────────
+  // Each builder returns a THREE.Group with the actual shape
+
+  /* --- Avatar states --- */
+  var AVATAR_STATES = {
+    IDLE:       { glow: 0.15, particles: 0.3,  blinkRate: 3.0 },
+    LISTENING:  { glow: 0.35, particles: 0.5,  blinkRate: 2.5 },
+    THINKING:   { glow: 0.60, particles: 0.7,  blinkRate: 5.0 },
+    PROCESSING: { glow: 0.50, particles: 0.6,  blinkRate: 4.0 },
+    SPEAKING:   { glow: 0.90, particles: 1.0,  blinkRate: 1.5 },
+    VISUALIZING:{ glow: 0.85, particles: 0.9,  blinkRate: 2.0 },
+    ERROR:      { glow: 0.70, particles: 0.4,  blinkRate: 0.5 },
+    SUCCESS:    { glow: 0.95, particles: 1.0,  blinkRate: 0.3 },
+  };
+  var currentAvatarState = 'IDLE';
+  var visualState = 'FACE_ONLY';
+  var activeSubject = null;
 
   var HOME = { x: 0, y: 1.35, z: 0 };       // where the head lives
   var OPERO = 0x00d4ff;                     // identity blue/cyan
@@ -130,8 +382,28 @@
   var avatar = {
     root: null, jaw: null, brow: null, eyeL: null, eyeR: null,
     cloud: null, wire: null, solid: null, aura: null, rim: null,
+    particles: null, eyes: null,
     presence: 1.0, blinkT: 2.0 + Math.random() * 2, blink: 0,
     look: { yaw: 0, pitch: 0 }, open: 0, browLn: 0, audSm: 0,
+    state: 'IDLE', stateGlow: 0.15, stateParticles: 0.3,
+    transitionPhase: null, transitionProgress: 0,
+    hologramOpacity: 0.55, particleIntensity: 0.3,
+    eyeGlow: 0.9, scanLine: -2.0, lod: 'full',
+    // ── Inspection ──────────────────────────────
+    inspectionMode: 'normal', isolateList: [],
+    inspectionTransparency: 0.0, exploded: false,
+    // ── Causal chain ────────────────────────────
+    causalChain: '', causalStep: 0,
+    // ── Temporal ────────────────────────────────
+    temporalState: 'paused', temporalSpeed: 1.0,
+    temporalStep: 0,
+    // ── Camera ──────────────────────────────────
+    cameraDirective: '', cameraTarget: '',
+    // ── Story ───────────────────────────────────
+    storyEnvironment: 'minimal', storyScenes: [],
+    storyCharacter: '', storySceneIdx: 0,
+    // ── Entity tracking ─────────────────────────
+    entityId: '', entityIds: {},
   };
   var HS = 2.6;
   var TMPV = new THREE.Vector3();
@@ -252,10 +524,59 @@
     avatar.audSm += ((world.audioAmp || 0) - avatar.audSm) * 0.25;
     if (avatar.audSm < 0.0004) avatar.audSm *= 0.88;
 
+    // ── State-based parameters ────────────────────────────
+    var stateParams = AVATAR_STATES[currentAvatarState] || AVATAR_STATES.IDLE;
+    avatar.stateGlow = stateParams.glow;
+    avatar.stateParticles = stateParams.particles;
+
     var speaking = world.stateName === "SPEAKING" || world.stateName === "EXECUTING";
     var target = avatar.audSm * (speaking ? 1.0 : 0.16) + (world.audioAmp || 0) * 0.10;
-    avatar.open += (clamp(target, 0, 1) - avatar.open) * (dt / 0.045);  // ~45 ms mouth
+    avatar.open += (clamp(target, 0, 1) - avatar.open) * (dt / 0.045);
     avatar.browLn += (((world.stateName === "THINKING" || world.stateName === "PROCESSING") ? 1.0 : 0.15) - avatar.browLn) * dt;
+
+    // Blink rate from state
+    var blinkRate = stateParams.blinkRate;
+    avatar.blinkT -= dt;
+    if (avatar.blinkT <= 0) { avatar.blink = 1.0; avatar.blinkT = blinkRate + Math.random() * 2; }
+    if (avatar.blink > 0) avatar.blink = Math.max(0, avatar.blink - dt * 9);
+    var blinkS = 1 - (avatar.blink > 0 ? avatar.blink * 0.9 : 0);
+    if (avatar.eyeL) avatar.eyeL.scale.set(1.15, Math.max(0.05, blinkS), 1.15);
+    if (avatar.eyeR) avatar.eyeR.scale.set(1.15, Math.max(0.05, blinkS), 1.15);
+
+    // ── Holographic glow ──────────────────────────────────
+    avatar.hologramOpacity = lerp(avatar.hologramOpacity, avatar.stateGlow, dt * 3);
+    if (aura) aura.material.opacity = 0.05 + avatar.stateGlow * 0.3;
+    if (rim) rim.material.opacity = 0.04 + avatar.stateGlow * 0.15;
+
+    // ── Eye glow ──────────────────────────────────────────
+    avatar.eyeGlow = lerp(avatar.eyeGlow, speaking ? 1.0 : stateParams.glow, dt * 2);
+    if (eyeL) eyeL.material.emissiveIntensity = avatar.eyeGlow;
+    if (eyeR) eyeR.material.emissiveIntensity = avatar.eyeGlow;
+
+    // ── Particle intensity ────────────────────────────────
+    avatar.particleIntensity = lerp(avatar.particleIntensity, stateParams.particles, dt * 2);
+
+    // ── Scan line animation ───────────────────────────────
+    avatar.scanLine += dt * 0.8;
+    if (avatar.scanLine > 2.0) avatar.scanLine = -2.0;
+
+    // ── Transition handling ───────────────────────────────
+    if (avatar.transitionPhase) {
+      avatar.transitionProgress += dt / avatar.transitionDuration;
+      if (avatar.transitionProgress >= 1.0) {
+        avatar.transitionProgress = 1.0;
+        avatar.transitionPhase = null;
+        visualState = 'VISUALIZING';
+      }
+    }
+
+    // ── LOD management ────────────────────────────────────
+    avatar.lodFrame += dt;
+    if (avatar.lodFrame > 0.5) {
+      avatar.lodFrame = 0;
+      var dist = camera ? camera.position.distanceTo(avatar.root.position) : 10;
+      avatar.lod = dist > 15 ? "low" : dist > 8 ? "medium" : "full";
+    }
 
     // Look-at: a slow wander toward the camera with a subtle idle sway.
     var wanderYaw = Math.sin(elapsed * 0.31) * 0.05 + Math.sin(elapsed * 0.23 + 1.7) * 0.03;
@@ -276,20 +597,12 @@
       avatar.brow.position.z = -avatar.browLn * 0.05;
     }
 
-    // Blink: schedule every ~2-6 s, close over ~120 ms.
-    avatar.blinkT -= dt;
-    if (avatar.blinkT <= 0) { avatar.blink = 1.0; avatar.blinkT = 2.2 + Math.random() * 4; }
-    if (avatar.blink > 0) avatar.blink = Math.max(0, avatar.blink - dt * 9);
-    var blinkS = 1 - (avatar.blink > 0 ? avatar.blink * 0.9 : 0);
-    if (avatar.eyeL) avatar.eyeL.scale.set(1.15, Math.max(0.05, blinkS), 1.15);
-    if (avatar.eyeR) avatar.eyeR.scale.set(1.15, Math.max(0.05, blinkS), 1.15);
-
     // Presence (dim while a scene object owns the stage).
-    if (avatar.cloud) avatar.cloud.material.opacity = 0.35 + 0.6 * avatar.presence;
-    if (avatar.solid) avatar.solid.material.opacity = 0.16 + 0.42 * avatar.presence;
-    if (avatar.rim) avatar.rim.material.opacity = 0.04 + 0.09 * avatar.presence;
-    if (avatar.aura) avatar.aura.material.opacity = 0.05 + 0.09 * avatar.presence;
-  }
+    var presence = visualState === 'FACE_ONLY' ? 1.0 : 0.4;
+    if (avatar.cloud) avatar.cloud.material.opacity = 0.35 + 0.6 * presence;
+    if (avatar.solid) avatar.solid.material.opacity = 0.16 + 0.42 * presence;
+    if (avatar.rim) avatar.rim.material.opacity = 0.04 + 0.09 * presence;
+    if (avatar.aura) avatar.aura.material.opacity = 0.05 + avatar.stateGlow * 0.09 * presence;
 
   function skull(g) { return g; }   // transform holder — keeps reads explicit
 
@@ -649,6 +962,28 @@
     clearScene();
     stage.dir = dir; stage.phase = "morph_in"; stage.t = 0; stage.hold = 0;
     stage.rotY = 0; stage.pulse = 0; stage.scanY = -2.2;
+    if (dir.transition_duration) avatar.transitionDuration = dir.transition_duration;
+    if (dir.lod) avatar.lod = dir.lod;
+    if (dir.max_particles) avatar.maxParticles = dir.max_particles;
+    // ── Apply inspection mode ──────────────────
+    if (dir.inspection_mode && dir.inspection_mode !== 'normal') {
+      applyInspectionMode(dir.inspection_mode, dir.isolate,
+                            dir.transparency || 0.0, dir.exploded);
+    }
+    // ── Apply camera directive ─────────────────
+    if (dir.camera_directive) {
+      applyCameraMode(dir.camera_directive, dir.camera_target);
+    } else if (dir.camera) {
+      applyCameraMode(dir.camera, dir.subject);
+    }
+    // ── Apply temporal state ───────────────────
+    if (dir.temporal_state) {
+      applyTemporalState(dir.temporal_state, dir.temporal_speed, dir.temporal_step);
+    }
+    // ── Apply causal chain ─────────────────────
+    if (dir.causal_chain) {
+      renderCausalChain(CAUSAL_CHAINS[dir.causal_chain] || [], dir.chain_step || 0);
+    }
     stage.scanning = dir.animation === "scan" || dir.animation === "process";
     stage.interiorShown = !!dir.interior;
     stage.dur = clamp(dir.duration || 8, 1, 120);
@@ -832,6 +1167,11 @@
   function doReturnLocal() {
     if (stage.phase === "idle" || stage.phase === "morph_out") return;
     stage.phase = "morph_out"; stage.t = 0;
+    visualState = 'FACE_ONLY';
+    avatar.state = 'LISTENING';
+    currentAvatarState = 'LISTENING';
+    avatar.transitionPhase = null;
+    activeSubject = null;
   }
 
   function sendIdle() {
@@ -850,9 +1190,63 @@
   function handleIntent(dir) {
     if (!dir || typeof dir !== "object") return;
     if (dir.op === "return") { doReturnLocal(); return; }
+    if (dir.op === "face_only") { doFaceOnly(); return; }
+    if (dir.op === "transition_in") { doTransitionIn(dir); return; }
+    if (dir.op === "transition_out") { doTransitionOut(); return; }
     if (dir.mode === "story") { startStory(dir); return; }
     if (dir.mode === "accessory") { showAccessory(dir); return; }
+    // Apply LOD, max_particles, resolution settings if present
+    if (dir.lod) avatar.lod = dir.lod;
+    if (dir.transition) { doTransitionIn(dir); return; }
+    if (dir.return_to_face) { doFaceOnly(); return; }
     showObject(dir);
+  }
+
+  function doFaceOnly() {
+    visualState = 'FACE_ONLY';
+    avatar.state = 'LISTENING';
+    currentAvatarState = 'LISTENING';
+    transitionPhase = null;
+    if (MESH && MESH.group) {
+      // Dissolve object back into face
+      if (MESH.group.userData.particles) {
+        MESH.group.userData.particles.material.opacity = 0;
+      }
+      MESH.group.visible = false;
+    }
+  }
+
+  function doTransitionIn(dir) {
+    visualState = 'TRANSITIONING';
+    activeSubject = dir.subject;
+    avatar.transitionPhase = 'morph_in';
+    avatar.transitionProgress = 0;
+    if (dir.transition_duration) {
+      avatar.transitionDuration = dir.transition_duration;
+    } else {
+      avatar.transitionDuration = 1.5;
+    }
+    // Set avatar state to VISUALIZING
+    avatar.state = 'VISUALIZING';
+    currentAvatarState = 'VISUALIZING';
+    // Build and show the object
+    showObject(dir);
+  }
+
+  function doTransitionOut() {
+    avatar.transitionPhase = 'morph_out';
+    avatar.transitionProgress = 0;
+    // Hide the object and return to face
+    if (MESH && MESH.group && MESH.group.userData.particles) {
+      MESH.group.userData.particles.material.opacity = 0;
+    }
+    setTimeout(function() {
+      if (MESH && MESH.group) MESH.group.visible = false;
+      visualState = 'FACE_ONLY';
+      avatar.state = 'LISTENING';
+      currentAvatarState = 'LISTENING';
+      avatar.transitionPhase = null;
+    }, 1000);
   }
 
   // ── public API + boot ─────────────────────────────────────────────────────
@@ -866,13 +1260,84 @@
   };
   window.getVisualDiagnostics = function () {
     return { ready: DIAG.ready, face: DIAG.face, last: DIAG.last,
-             stage: stage.phase, camera: rig.mode, errors: ERRORS.slice(-20) };
+             stage: stage.phase, camera: rig.mode, errors: ERRORS.slice(-20),
+             avatarState: currentAvatarState, visualState: visualState,
+             activeSubject: activeSubject };
+  };
+
+  window.setAvatarState = function (state) {
+    if (AVATAR_STATES[state]) {
+      currentAvatarState = state;
+    }
+  };
+
+  window.setVisualState = function (state) {
+    visualState = state;
+  };
+
+  window.triggerTransitionIn = function (dir) {
+    try { handleIntent(dir); } catch (e) { ERRORS.push('transition_in: ' + e.message); }
+  };
+
+  window.triggerTransitionOut = function () {
+    doReturnLocal();
+  };
+
+  window.applyInspection = function (mode, isolate, transparency, exploded) {
+    applyInspectionMode(mode || 'normal', isolate || [], transparency || 0.0, exploded || false);
+  };
+
+  window.applyCameraDirective = function (mode, target) {
+    applyCameraMode(mode, target);
+  };
+
+  window.applyTemporal = function (state, speed, step) {
+    applyTemporalState(state, speed, step);
+  };
+
+  window.showCausalChain = function (chainId, step) {
+    renderCausalChain(CAUSAL_CHAINS[chainId] || [], step || 0);
+  };
+
+  window.setEntityId = function (id, type, data) {
+    avatar.entityId = id;
+    avatar.entityIds[id] = { type: type, data: data || {} };
+  };
+
+  window.getEntityId = function (id) {
+    return avatar.entityIds[id] || null;
+  };
+
+  window.setStoryScene = function (env, scenes, character) {
+    avatar.storyEnvironment = env;
+    avatar.storyScenes = scenes;
+    avatar.storyCharacter = character;
+    avatar.storySceneIdx = 0;
   };
 
   function mainStep(dt, elapsed) {
     avatarStep(dt, elapsed);
     stageStep(dt);
     if (!DIAG.ready && avatar.root) DIAG.ready = true;
+  }
+
+  // Register avatar API on __operoWorld so Python can call avatar state methods
+  if (window.__operoWorld) {
+    window.__operoWorld.setAvatarState = function (state) {
+      window.setAvatarState(state);
+    };
+    window.__operoWorld.setVisualState = function (state) {
+      window.setVisualState(state);
+    };
+    window.__operoWorld.triggerTransitionIn = function (dir) {
+      window.triggerTransitionIn(dir);
+    };
+    window.__operoWorld.triggerTransitionOut = function () {
+      window.triggerTransitionOut();
+    };
+    window.__operoWorld.getAvatarDiagnostics = function () {
+      return window.getVisualDiagnostics();
+    };
   }
 
   world.onFrame(mainStep);
@@ -957,6 +1422,45 @@
         }
         case "tree":
           x = Math.cos(theta) * 0.5; y = Math.random() * 1.9; z = Math.sin(theta) * 0.5;
+          break;
+        case "engine":
+          x = Math.cos(theta) * 0.4; y = (Math.random() - 0.5) * 1.2; z = Math.sin(theta) * 0.4;
+          break;
+        case "piston":
+          x = rnd() * 0.15; y = (Math.random() - 0.5) * 1.0; z = rnd() * 0.15;
+          break;
+        case "crankshaft":
+          x = Math.cos(theta) * 0.35; y = (Math.random() - 0.5) * 0.1; z = Math.sin(theta) * 0.35;
+          break;
+        case "gear":
+          x = Math.cos(theta) * 0.3; y = rnd() * 0.05; z = Math.sin(theta) * 0.3;
+          break;
+        case "battery":
+          x = rnd() * 0.2; y = (Math.random() - 0.5) * 0.6; z = rnd() * 0.2;
+          break;
+        case "heart":
+          x = Math.sin(phi) * Math.cos(theta) * 0.4; y = Math.sin(phi) * Math.sin(theta) * 0.35; z = Math.cos(phi) * 0.3;
+          break;
+        case "cell":
+          x = Math.sin(phi) * Math.cos(theta) * 0.45; y = Math.sin(phi) * Math.sin(theta) * 0.45; z = Math.cos(phi) * 0.45;
+          break;
+        case "dna":
+          x = Math.sin(theta) * 0.3; y = (Math.random() - 0.5) * 1.2; z = Math.cos(theta) * 0.3;
+          break;
+        case "wave":
+          x = Math.cos(theta) * 0.5; y = Math.sin(phi) * 0.3; z = Math.sin(theta) * 0.5;
+          break;
+        case "circuit":
+          x = rnd() * 0.4; y = rnd() * 0.4; z = rnd() * 0.4;
+          break;
+        case "laser":
+          x = rnd() * 0.05; y = (Math.random() - 0.5) * 1.0; z = rnd() * 0.05;
+          break;
+        case "mirror":
+          x = (Math.random() < 0.5 ? -0.4 : 0.4); y = (Math.random() - 0.5) * 0.3; z = rnd() * 0.05;
+          break;
+        case "prism":
+          x = Math.cos(theta) * 0.3; y = Math.sin(theta) * 0.3; z = rnd() * 0.3;
           break;
         default:
           x = (Math.random() - 0.5); y = (Math.random() - 0.5); z = (Math.random() - 0.5);

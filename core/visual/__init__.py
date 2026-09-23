@@ -23,6 +23,7 @@ from core.visual.intent import (
     VisualIntent,
     build_intent,
     intent_to_directive,
+    validate_intent,
 )
 from core.visual.director import (
     VisualDirector,
@@ -31,6 +32,14 @@ from core.visual.director import (
     setup_visual_system,
 )
 from core.visual.assets import FACE_ANCHORS, face_mesh_payload
+from core.visual.registry import (
+    MODES, OBJECTS, MATERIALS, CAMERA_MODES, ANIMATIONS,
+    ENVIRONMENTS, SEMANTIC_COLORS, ANCHORS,
+    BODY_PARTS, RELATIONSHIPS, CAUSAL_CHAINS,
+    INSPECTION_MODES, TEMPORAL_STATES, CAMERA_DIRECTIVES,
+    CHARACTER_STATES, BODY_SYSTEMS, ACCESSORY_ANCHOR,
+    INTERIOR_TOKENS, LIMITS,
+)
 
 __all__ = [
     "VisualBus",
@@ -39,10 +48,30 @@ __all__ = [
     "VisualIntent",
     "build_intent",
     "intent_to_directive",
+    "validate_intent",
     "VisualDirector",
     "get_visual_director",
     "set_visual_director",
     "setup_visual_system",
     "FACE_ANCHORS",
     "face_mesh_payload",
+    "MODES",
+    "OBJECTS",
+    "MATERIALS",
+    "CAMERA_MODES",
+    "ANIMATIONS",
+    "ENVIRONMENTS",
+    "SEMANTIC_COLORS",
+    "ANCHORS",
+    "BODY_PARTS",
+    "RELATIONSHIPS",
+    "CAUSAL_CHAINS",
+    "INSPECTION_MODES",
+    "TEMPORAL_STATES",
+    "CAMERA_DIRECTIVES",
+    "CHARACTER_STATES",
+    "BODY_SYSTEMS",
+    "ACCESSORY_ANCHOR",
+    "INTERIOR_TOKENS",
+    "LIMITS",
 ]

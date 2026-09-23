@@ -29,6 +29,12 @@ from core.visual.registry import (
     MODES,
     OBJECTS,
     SEMANTIC_COLORS,
+    INSPECTION_MODES,
+    TEMPORAL_STATES,
+    CAMERA_DIRECTIVES,
+    BODY_SYSTEMS,
+    RELATIONSHIPS,
+    CAUSAL_CHAINS,
 )
 
 _HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -43,7 +49,7 @@ class VisualError(ValueError):
 class VisualIntent:
     """A validated, renderer-agnostic visual request."""
 
-    mode: str = "object_explanation"
+    mode: str = "face_only"
     subject: str = ""                       # object id (registry) or free label
     material: str = "holographic"
     color: str = ""                         # resolved hex, or "" -> semantic default
@@ -58,6 +64,51 @@ class VisualIntent:
     attach: str = ""                        # anchor id for accessories
     story: list[dict] | None = None         # constrained scene list
     auto_return: bool = True                # dissolve back to avatar afterwards
+    # ── Visualization decision fields ──────────────────────────────
+    visualize: bool = True                  # True = visualize, False = face_only
+    reason: str = ""                        # why visualization was chosen
+    semantic: str = ""                      # semantic category (spatial, structural, etc.)
+    # ── Face → Object transition fields ────────────────────────────
+    transition: bool = False                # animate the face→object morph
+    transition_duration: float = 2.2        # seconds for morph
+    return_to_face: bool = True             # dissolve back to face after
+    # ── Speech sync fields ─────────────────────────────────────────
+    speech_events: list[dict] | None = None # timed visual events synced to speech
+    # ── Performance ────────────────────────────────────────────────
+    lod: str = "full"                       # full, simplified, minimal
+    max_particles: int = 5000               # particle budget
+    resolution: str = "auto"                # auto, half, quarter
+    # ── Inspection ─────────────────────────────────────────────
+    inspection_mode: str = "normal"         # normal, cutaway, exploded, transparent, isolated, cross_section
+    isolate: list[str] = field(default_factory=list)    # entities to isolate
+    highlight_entities: list[str] = field(default_factory=list)  # entities to highlight
+    transparency: float = 0.0               # 0.0=opaque, 1.0=fully transparent
+    exploded: bool = False                  # exploded view
+    cutaway: bool = False                   # cutaway view
+    # ── Causal chain ───────────────────────────────────────────
+    causal_chain: str = ""                  # chain id from CAUSAL_CHAINS
+    chain_step: int = 0                     # current step in chain
+    chain_entities: list[str] = field(default_factory=list)  # entities in chain
+    # ── Temporal ───────────────────────────────────────────────
+    temporal_state: str = "paused"          # playing, paused, slow, fast, stepped, rewinding, reset
+    temporal_speed: float = 1.0             # playback speed multiplier
+    temporal_step: int = 0                  # current step
+    timeline_duration: float = 0.0          # total timeline duration
+    # ── Body system ────────────────────────────────────────────
+    body_system: str = ""                   # circulatory, respiratory, nervous, etc.
+    body_part: str = ""                     # specific body part to focus
+    body_transparency: float = 0.0          # transparency for system isolation
+    # ── Camera directive ───────────────────────────────────────
+    camera_directive: str = ""              # WIDE, FOCUS, CLOSEUP, ORBIT, FOLLOW, etc.
+    camera_target: str = ""                 # entity id to focus camera on
+    # ── Story ──────────────────────────────────────────────────
+    story: list[dict] | None = None         # constrained scene list
+    environment: str = "minimal"            # forest, city, space, etc.
+    character: str = ""                     # story character id
+    character_state: str = "idle"           # idle, walking, interacting, etc.
+    # ── Visual memory ──────────────────────────────────────────
+    entity_id: str = ""                     # persistent entity ID
+    entity_ids: list[str] = field(default_factory=list)  # all active entity IDs
 
     @property
     def object_id(self) -> str:
@@ -210,12 +261,115 @@ def validate_intent(raw: dict) -> VisualIntent:
         zoom = True
     auto_return = bool(raw.get("auto_return", True))
 
+    # ── Visualization decision fields ──────────────────────────
+    visualize = bool(raw.get("visualize", True))
+    reason = str(raw.get("reason") or "").strip()
+    semantic = str(raw.get("semantic") or "").strip().lower()
+
+    # ── Face → Object transition fields ────────────────────────
+    transition = bool(raw.get("transition", False))
+    transition_duration = float(raw.get("transition_duration", 2.2))
+    return_to_face = bool(raw.get("return_to_face", True))
+
+    # ── Speech sync fields ─────────────────────────────────────
+    speech_events = _validate_story(raw.get("speech_events")) if raw.get("speech_events") else None
+
+    # ── Performance ────────────────────────────────────────────
+    lod = str(raw.get("lod") or "full").strip().lower()
+    if lod not in ("full", "simplified", "minimal"):
+        raise VisualError(f"unknown lod '{lod}'")
+    max_particles = int(raw.get("max_particles", 5000))
+    if max_particles < 0 or max_particles > 50000:
+        raise VisualError("max_particles must be between 0 and 50000")
+    resolution = str(raw.get("resolution") or "auto").strip().lower()
+    if resolution not in ("auto", "half", "quarter"):
+        raise VisualError(f"unknown resolution '{resolution}'")
+
+    # ── Inspection ────────────────────────────────────────
+    inspection_mode = str(raw.get("inspection_mode") or "normal").strip().lower()
+    if inspection_mode not in INSPECTION_MODES:
+        raise VisualError(f"unknown inspection mode '{inspection_mode}'")
+    isolate = _check_list(raw.get("isolate", []), "isolate", frozenset())
+    highlight_entities = _check_list(raw.get("highlight_entities", []), "highlight_entities", frozenset())
+    transparency = float(raw.get("transparency", 0.0))
+    if not (0.0 <= transparency <= 1.0):
+        raise VisualError("transparency must be between 0.0 and 1.0")
+    exploded = bool(raw.get("exploded", False))
+    cutaway = bool(raw.get("cutaway", False))
+
+    # ── Causal chain ──────────────────────────────────────
+    causal_chain = str(raw.get("causal_chain") or "").strip().lower()
+    chain_step = int(raw.get("chain_step", 0))
+    chain_entities = _check_list(raw.get("chain_entities", []), "chain_entities", frozenset())
+
+    # ── Temporal ──────────────────────────────────────────
+    temporal_state = str(raw.get("temporal_state") or "paused").strip().lower()
+    if temporal_state not in TEMPORAL_STATES:
+        raise VisualError(f"unknown temporal state '{temporal_state}'")
+    temporal_speed = float(raw.get("temporal_speed", 1.0))
+    if not (0.1 <= temporal_speed <= 10.0):
+        raise VisualError("temporal_speed must be between 0.1 and 10.0")
+    temporal_step = int(raw.get("temporal_step", 0))
+    timeline_duration = float(raw.get("timeline_duration", 0.0))
+
+    # ── Body system ───────────────────────────────────────
+    body_system = str(raw.get("body_system") or "").strip().lower()
+    if body_system and body_system not in BODY_SYSTEMS:
+        raise VisualError(f"unknown body system '{body_system}'")
+    body_part = str(raw.get("body_part") or "").strip().lower()
+    body_transparency = float(raw.get("body_transparency", 0.0))
+    if not (0.0 <= body_transparency <= 1.0):
+        raise VisualError("body_transparency must be between 0.0 and 1.0")
+
+    # ── Camera directive ──────────────────────────────────
+    camera_directive = str(raw.get("camera_directive") or "").strip().upper()
+    if camera_directive and camera_directive not in CAMERA_DIRECTIVES:
+        raise VisualError(f"unknown camera directive '{camera_directive}'")
+    camera_target = str(raw.get("camera_target") or "").strip().lower()
+
+    # ── Story environment & character ─────────────────────
+    environment = str(raw.get("environment") or "minimal").strip().lower()
+    if environment not in ENVIRONMENTS:
+        raise VisualError(f"unknown environment '{environment}'")
+    character = str(raw.get("character") or "").strip().lower()
+    character_state = str(raw.get("character_state") or "idle").strip().lower()
+
+    # ── Visual memory ─────────────────────────────────────
+    entity_id = str(raw.get("entity_id") or "").strip().lower()
+    if entity_id and not entity_id.isalnum() and "_" not in entity_id:
+        raise VisualError(f"invalid entity_id '{entity_id}'")
+    entity_ids = _check_list(raw.get("entity_ids", []), "entity_ids", frozenset())
+
     return VisualIntent(
         mode=mode, subject=subject, material=material, color=color,
         animation=animation, camera=camera, environment=environment,
         duration=duration, orbit=orbit, zoom=zoom,
         particle_scale=particle_scale, highlight=highlights, attach=attach,
         story=story, auto_return=auto_return,
+        visualize=visualize, reason=reason, semantic=semantic,
+        transition=transition, transition_duration=transition_duration,
+        return_to_face=return_to_face,
+        speech_events=speech_events,
+        lod=lod, max_particles=max_particles, resolution=resolution,
+        # ── Inspection ───────────────────────────────
+        inspection_mode=inspection_mode, isolate=isolate,
+        highlight_entities=highlight_entities,
+        transparency=transparency, exploded=exploded, cutaway=cutaway,
+        # ── Causal chain ─────────────────────────────
+        causal_chain=causal_chain, chain_step=chain_step,
+        chain_entities=chain_entities,
+        # ── Temporal ─────────────────────────────────
+        temporal_state=temporal_state, temporal_speed=temporal_speed,
+        temporal_step=temporal_step, timeline_duration=timeline_duration,
+        # ── Body system ──────────────────────────────
+        body_system=body_system, body_part=body_part,
+        body_transparency=body_transparency,
+        # ── Camera directive ─────────────────────────
+        camera_directive=camera_directive, camera_target=camera_target,
+        # ── Story ────────────────────────────────────
+        character=character, character_state=character_state,
+        # ── Visual memory ────────────────────────────
+        entity_id=entity_id, entity_ids=entity_ids,
     )
 
 
@@ -257,4 +411,47 @@ def intent_to_directive(intent: VisualIntent) -> dict:
                                     if intent.mode == "accessory" else ""),
         "story": intent.story,
         "auto_return": bool(intent.auto_return),
+        # ── Visualization decision ──────────────────────
+        "visualize": bool(intent.visualize),
+        "reason": intent.reason,
+        "semantic": intent.semantic,
+        # ── Face → Object transition ────────────────────
+        "transition": bool(intent.transition),
+        "transition_duration": round(intent.transition_duration, 2),
+        "return_to_face": bool(intent.return_to_face),
+        # ── Speech sync ─────────────────────────────────
+        "speech_events": intent.speech_events,
+        # ── Performance ─────────────────────────────────
+        "lod": intent.lod,
+        "max_particles": int(intent.max_particles),
+        "resolution": intent.resolution,
+        # ── Inspection ───────────────────────────────
+        "inspection_mode": intent.inspection_mode,
+        "isolate": list(intent.isolate),
+        "highlight_entities": list(intent.highlight_entities),
+        "transparency": round(intent.transparency, 2),
+        "exploded": bool(intent.exploded),
+        "cutaway": bool(intent.cutaway),
+        # ── Causal chain ──────────────────────────────
+        "causal_chain": intent.causal_chain,
+        "chain_step": intent.chain_step,
+        "chain_entities": list(intent.chain_entities),
+        # ── Temporal ─────────────────────────────────
+        "temporal_state": intent.temporal_state,
+        "temporal_speed": round(intent.temporal_speed, 2),
+        "temporal_step": intent.temporal_step,
+        "timeline_duration": round(intent.timeline_duration, 2),
+        # ── Body system ──────────────────────────────
+        "body_system": intent.body_system,
+        "body_part": intent.body_part,
+        "body_transparency": round(intent.body_transparency, 2),
+        # ── Camera directive ─────────────────────────
+        "camera_directive": intent.camera_directive,
+        "camera_target": intent.camera_target,
+        # ── Story ────────────────────────────────────
+        "character": intent.character,
+        "character_state": intent.character_state,
+        # ── Visual memory ────────────────────────────
+        "entity_id": intent.entity_id,
+        "entity_ids": list(intent.entity_ids),
     }
