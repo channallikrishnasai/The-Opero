@@ -103,12 +103,15 @@ var AVATAR_STATES = {
     switch (mode) {
       case 'WIDE':
         dist = 20; camera.position.set(0, 5, dist);
+        camera.fov = 60;
         break;
       case 'FOCUS':
         dist = 8; camera.position.set(0, 2, dist);
+        camera.fov = 45;
         break;
       case 'CLOSEUP':
         dist = 4; camera.position.set(0, 1.5, dist);
+        camera.fov = 30;
         break;
       case 'TOP_DOWN':
         dist = 15; camera.position.set(0, dist, 0);
@@ -128,20 +131,24 @@ var AVATAR_STATES = {
         break;
       case 'CINEMATIC':
         dist = 12; camera.position.set(0, 8, dist);
+        camera.fov = 45;
         break;
       case 'INSPECTION':
         dist = 5; camera.position.set(2, 2, 5);
+        camera.fov = 50;
         break;
       case 'ZOOM_IN':
         dist = 3; camera.position.set(0, 1, dist);
+        camera.fov = 35;
         break;
       case 'ZOOM_OUT':
         dist = 25; camera.position.set(0, 10, dist);
+        camera.fov = 55;
         break;
       default:
         dist = 10; camera.position.set(0, 5, dist);
+        camera.fov = 45;
     }
-    camera.fov = mode === 'CLOSEUP' ? 30 : mode === 'WIDE' ? 60 : 45;
     camera.updateProjectionMatrix();
   }
 
@@ -153,20 +160,23 @@ var AVATAR_STATES = {
     chainGroup.userData.isCausalChain = true;
     for (var i = 0; i < chain.length; i++) {
       var node = chain[i];
-      var sphereGeo = new THREE.SphereGeometry(0.15, 8, 6);
+      var sphereGeo = new THREE.SphereGeometry(0.15, 12, 10);
       var isActive = i === s;
+      var nodeColor = isActive ? 0x00d4ff : 0x1a3a66;  // cyan / OPERO base
       var mat = new THREE.MeshStandardMaterial({
-        color: isActive ? 0x00ff88 : 0x333344,
-        emissive: isActive ? 0x00ff88 : 0x000000,
-        emissiveIntensity: isActive ? 2.0 : 0.1,
+        color: nodeColor,
+        emissive: isActive ? 0x00d4ff : 0x000033,
+        emissiveIntensity: isActive ? 2.5 : 0.3,
         transparent: true,
-        opacity: isActive ? 1.0 : 0.3,
+        opacity: isActive ? 1.0 : 0.4,
+        metalness: 0.3,
+        roughness: isActive ? 0.2 : 0.7,
       });
       var sphere = new THREE.Mesh(sphereGeo, mat);
       var angle = (i / chain.length) * TAU;
       sphere.position.set(Math.cos(angle) * 2, Math.sin(angle) * 0.5, 0);
       chainGroup.add(sphere);
-      // Add directional link to next node
+      // Add glowing connection line
       if (i < chain.length - 1) {
         var next = chain[i + 1];
         var lineGeo = new THREE.BufferGeometry().setFromPoints([
@@ -176,15 +186,23 @@ var AVATAR_STATES = {
             Math.sin((i + 1) / chain.length * TAU) * 0.5, 0
           )
         ]);
+        // Pulsing line color based on step importance
+        var pulseT = (step >= i ? 1 : 0.3);
+        var lineColor = new THREE.Color().setHex(isActive ? 0x00d4ff : 0x334466);
+        lineColor.multiplyScalar(pulseT);
         var lineMat = new THREE.LineBasicMaterial({
-          color: isActive ? 0x00ff88 : 0x222233,
-          transparent: true, opacity: isActive ? 0.8 : 0.2,
+          color: lineColor,
+          transparent: true, opacity: isActive ? 0.6 : 0.2,
+          linewidth: 2,
         });
         var line = new THREE.Line(lineGeo, lineMat);
         chainGroup.add(line);
       }
-      // Add label sprite
-      var label = createLabel(node.label || ('Step ' + (i + 1)));
+      // Add label sprite with cyan/tech coloring
+      var labelText = node.label || ('Step ' + (i + 1));
+      var label = createLabel(labelText);
+      // Cyan accent on label
+      label.material.color.setHex(0x00d4ff);
       label.position.copy(sphere.position);
       label.position.y += 0.4;
       chainGroup.add(label);
@@ -548,10 +566,18 @@ var AVATAR_STATES = {
     if (aura) aura.material.opacity = 0.05 + avatar.stateGlow * 0.3;
     if (rim) rim.material.opacity = 0.04 + avatar.stateGlow * 0.15;
 
-    // ── Eye glow ──────────────────────────────────────────
-    avatar.eyeGlow = lerp(avatar.eyeGlow, speaking ? 1.0 : stateParams.glow, dt * 2);
+    // Semantic eye glow: cyan during visualization, normal during conversation
+    var eyeTarget = speaking ? 1.0 : stateParams.glow;
+    avatar.eyeGlow = lerp(avatar.eyeGlow, eyeTarget, dt * 2);
     if (eyeL) eyeL.material.emissiveIntensity = avatar.eyeGlow;
     if (eyeR) eyeR.material.emissiveIntensity = avatar.eyeGlow;
+
+    // Semantic eye glow pulse during visualization - electric blue pulse
+    if (visualState === 'VISUALIZING') {
+      var pulse = 0.5 + 0.5 * Math.sin(elapsed * 1.5);
+      if (eyeL) eyeL.material.color.setHex(0x00d4ff * (0.5 + 0.5 * Math.sin(elapsed * 1.5)));
+      if (eyeR) eyeR.material.color.setHex(0x00d4ff * (0.5 + 0.5 * Math.sin(elapsed * 1.5)));
+    }
 
     // ── Particle intensity ────────────────────────────────
     avatar.particleIntensity = lerp(avatar.particleIntensity, stateParams.particles, dt * 2);
@@ -1224,29 +1250,70 @@ var AVATAR_STATES = {
     if (dir.transition_duration) {
       avatar.transitionDuration = dir.transition_duration;
     } else {
-      avatar.transitionDuration = 1.5;
+      avatar.transitionDuration = 1.8;  // Slightly longer for smoother morph
     }
     // Set avatar state to VISUALIZING
     avatar.state = 'VISUALIZING';
     currentAvatarState = 'VISUALIZING';
-    // Build and show the object
+    // Build and show the object with enhanced particle morph
     showObject(dir);
+    
+    // Add entrance glow effect
+    if (avatar.aura) {
+      avatar.aura.material.opacity = 0.2;
+      animateGlowIn();
+    }
+  }
+
+  function animateGlowIn() {
+    if (!avatar.aura) return;
+    var targetOpacity = 0.12;
+    var current = avatar.aura.material.opacity;
+    var step = (targetOpacity - current) * 0.15;
+    avatar.aura.material.opacity = Math.max(0, current + step);
+    if (avatar.aura.material.opacity > 0.01) {
+      requestAnimationFrame(animateGlowIn);
+    }
   }
 
   function doTransitionOut() {
     avatar.transitionPhase = 'morph_out';
     avatar.transitionProgress = 0;
-    // Hide the object and return to face
-    if (MESH && MESH.group && MESH.group.userData.particles) {
-      MESH.group.userData.particles.material.opacity = 0;
+    // Smooth dissolve: particles gradually retract toward face center
+    if (stage.objG && stage.objG.children) {
+      stage.objG.children.forEach(function (c) {
+        try { if (c.material) c.material.opacity = 0.9; } catch (e) {}
+      });
     }
-    setTimeout(function() {
-      if (MESH && MESH.group) MESH.group.visible = false;
-      visualState = 'FACE_ONLY';
-      avatar.state = 'LISTENING';
-      currentAvatarState = 'LISTENING';
-      avatar.transitionPhase = null;
-    }, 1000);
+    // Animate particle retraction over 1 second
+    var startTime = performance.now();
+    function dissolve() {
+      var now = performance.now();
+      var t = Math.min(1, (now - startTime) / 1000);
+      var easeT = 1 - Math.pow(1 - t, 3);  // ease-out cubic
+      if (stage.objG) {
+        stage.objG.visible = (1 - easeT) > 0.02;
+        if (stage.objG.children) {
+          stage.objG.children.forEach(function (c) {
+            try { if (c.material) c.material.opacity = 0.9 * (1 - easeT); } catch (e) {}
+          });
+        }
+      }
+      if (t < 1) {
+        requestAnimationFrame(dissolve);
+      } else {
+        // Ensure complete hide
+        if (MESH && MESH.group) MESH.group.visible = false;
+        visualState = 'FACE_ONLY';
+        avatar.state = 'LISTENING';
+        currentAvatarState = 'LISTENING';
+        avatar.transitionPhase = null;
+        activeSubject = null;
+        // Restore aura
+        if (avatar.aura) avatar.aura.material.opacity = 0.12;
+      }
+    }
+    requestAnimationFrame(dissolve);
   }
 
   // ── public API + boot ─────────────────────────────────────────────────────
