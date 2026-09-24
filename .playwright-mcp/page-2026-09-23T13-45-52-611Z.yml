@@ -1,0 +1,14 @@
+- generic [ref=e2]:
+  - separator [ref=e3]
+  - iframe [ref=e8]:
+    - generic [ref=f1e2]:
+      - generic [ref=f1e3]:
+        - checkbox "I'm not a robot" [ref=f1e7]
+        - generic [aria-hidden] [ref=f1e11]: I'm not a robot
+      - generic [ref=f1e12]: reCAPTCHA
+  - separator [ref=e9]
+  - generic [ref=e10]:
+    - text: About this page Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot.
+    - link "Why did this happen?" [ref=e11] [cursor=pointer]:
+      - /url: "#"
+    - generic [ref=e12]: "IP address: 2409:40f2:359:bbeb:7927:ae9f:8b2d:e400Time: 2026-09-23T13:45:49ZURL: https://www.google.com/search?q=site:github.com+Opera+repository"

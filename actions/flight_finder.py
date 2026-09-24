@@ -337,3 +337,26 @@ def flight_finder(parameters: dict, player=None, speak=None) -> str:
     except Exception as e:
         print(f"[FlightFinder] ❌ {e}")
         return f"Flight search failed, sir: {e}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "flight_finder",
+    "description": (
+        "Search live flight options between two cities for a date, with optional return leg, "
+        "passenger count and cabin class; results can be saved to a file."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "origin": {"type": "STRING", "description": "Departure city or airport."},
+            "destination": {"type": "STRING", "description": "Arrival city or airport."},
+            "date": {"type": "STRING", "description": "Departure date as YYYY-MM-DD."},
+            "return_date": {"type": "STRING", "description": "Return date for a round trip (YYYY-MM-DD)."},
+            "passengers": {"type": "INTEGER", "description": "Number of travellers (default: 1)."},
+            "cabin": {"type": "STRING", "description": "economy (default) | premium | business | first"},
+            "save": {"type": "BOOLEAN", "description": "Save the results to a file (default: false)."},
+        },
+        "required": ["origin", "destination", "date"],
+    },
+    "handler": flight_finder,
+}

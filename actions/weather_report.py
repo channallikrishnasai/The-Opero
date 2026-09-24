@@ -131,3 +131,22 @@ def _speak_and_log(message: str, player=None):
             player.write_log(f"Brahma AI: {message}")
         except Exception:
             pass
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "weather",
+    "description": (
+        "Weather for a city or the user's current location: temperature, feels-like, humidity, "
+        "condition and the forecast for the requested day."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "city": {"type": "STRING", "description": "City name. Omit to use the user's current location."},
+            "time": {"type": "STRING", "description": "Forecast day, default 'today' (e.g. tomorrow, Saturday)."},
+            "open_browser": {"type": "BOOLEAN", "description": "Also open the forecast in the browser (default: false)."},
+        },
+        "required": [],
+    },
+    "handler": weather_action,
+}

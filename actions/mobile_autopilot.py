@@ -39,10 +39,11 @@ def mobile_autopilot(parameters: dict, response=None, player=None, session_memor
         return json.dumps({"success": False, "error": "Missing instruction."})
 
     try:
-        import google.generativeai as genai
-        from agent.planner import _get_api_key
-        genai.configure(api_key=_get_api_key())
-        model = genai.GenerativeModel("gemini-3.1-flash-lite")
+        # `agent.planner` never existed in this repo and google-generativeai is
+        # not a dependency — together they made this block fail on every call.
+        from core.gemini import compat_client
+
+        model = compat_client("gemini-3.6-flash")
     except Exception as e:
         return json.dumps({"success": False, "error": f"Failed to initialize Gemini: {e}"})
 
@@ -127,3 +128,22 @@ def mobile_autopilot(parameters: dict, response=None, player=None, session_memor
             time.sleep(1)
             
     return json.dumps({"success": True, "message": "Max steps reached or stopped."})
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "mobile_autopilot",
+    "description": (
+        "Drive a connected Android device from a natural-language instruction: it reads the UI "
+        "tree, plans the taps, swipes and typing, and executes them over ADB. Requires a USB or "
+        "paired device with debugging enabled."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "instruction": {"type": "STRING", "description": "What to achieve on the phone, in plain language."},
+            "target": {"type": "STRING", "description": "Device serial or name when several devices are connected."},
+        },
+        "required": ["instruction"],
+    },
+    "handler": mobile_autopilot,
+}

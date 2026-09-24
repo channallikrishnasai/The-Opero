@@ -116,13 +116,18 @@ SEARCH = "search"  # grounded search — REST only, see below
 #     on REST — see SEARCH.
 LIVE = "live"
 
+# Google retires models without changing its API: the gemini-2.5 aliases now
+# return 404 "no longer available to new users" for the configured key, which
+# left every rung here dead and every one-shot call silently empty. Both models
+# below were probed against the configured key and answer; keep a second rung
+# so a single outage does not take the feature with it.
 _LADDERS = {
-    FAST: (LIVE, "gemini-2.5-flash-lite", "gemini-2.5-flash"),
-    SMART: (LIVE, "gemini-2.5-flash", "gemini-2.5-flash-lite"),
+    FAST: (LIVE, "gemini-flash-latest", "gemini-3.6-flash"),
+    SMART: (LIVE, "gemini-3.6-flash", "gemini-flash-latest"),
     # Grounded search needs response.candidates[...].grounding_metadata, which a
     # Live turn does not produce. REST only, and it says so rather than silently
     # returning an answer with no sources behind it.
-    SEARCH: ("gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"),
+    SEARCH: ("gemini-flash-latest", "gemini-3.6-flash"),
 }
 
 # The Live model to use for one-shot calls. main.py owns the real one; this is
@@ -222,6 +227,63 @@ def client(timeout_ms: int = DEFAULT_TIMEOUT_MS, key: str = ""):
         api_key=key,
         http_options=gtypes.HttpOptions(timeout=max(MIN_TIMEOUT_MS, int(timeout_ms))),
     )
+
+
+class _LegacyModel:
+    """The retired `google-generativeai` call shape — `.generate_content(contents)`,
+    including its legacy `{"mime_type": ..., "data": ...}` blobs — over the
+    google-genai SDK this project ships.
+
+    Several action files were written against the old SDK. Rather than rewrite
+    every call site (some pass images, some audio), this adapts the arguments on
+    the way in and hands back the SDK's own response, so `.text` keeps working
+    everywhere it already did.
+    """
+
+    __slots__ = ("_client", "_model")
+
+    def __init__(self, client, model: str):
+        self._client = client
+        self._model = model
+
+    @staticmethod
+    def _parts(contents):
+        from google.genai import types as gtypes
+
+        items = contents if isinstance(contents, (list, tuple)) else [contents]
+        parts = []
+        for item in items:
+            if isinstance(item, dict) and "mime_type" in item and "data" in item:
+                parts.append(gtypes.Part.from_bytes(
+                    data=item["data"], mime_type=item["mime_type"]))
+                continue
+            parts.append(item)
+        return parts
+
+    def generate_content(self, contents):
+        parts = self._parts(contents)
+        try:
+            return self._client.models.generate_content(
+                model=self._model, contents=parts)
+        except Exception as first:
+            # The alias itself may be the problem — Google retires models
+            # without changing the API, and the caller can do nothing about a
+            # 404. Walk the shared ladder rather than hand back that error.
+            for model in _LADDERS[SMART]:
+                if model == LIVE:
+                    continue
+                try:
+                    return self._client.models.generate_content(
+                        model=model, contents=parts)
+                except Exception:
+                    continue
+            raise first
+
+
+def compat_client(model: str, timeout_ms: int = 60_000, key: str = ""):
+    """A `.generate_content(...)`-shaped model for callers written against the
+    retired `google-generativeai` SDK. New code should use `call` or `text`."""
+    return _LegacyModel(client(timeout_ms=timeout_ms, key=key), model)
 
 
 class _Reply:

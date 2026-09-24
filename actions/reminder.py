@@ -154,3 +154,22 @@ except Exception:
 
     except Exception as e:
         return f"Something went wrong while scheduling the reminder: {str(e)[:80]}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "reminder",
+    "description": (
+        "Schedule a timed reminder through Windows Task Scheduler; OPERO speaks the message at "
+        "the scheduled time."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "date": {"type": "STRING", "description": "Date as YYYY-MM-DD."},
+            "time": {"type": "STRING", "description": "Time as HH:MM in 24-hour format."},
+            "message": {"type": "STRING", "description": "What to remind the user about."},
+        },
+        "required": ["date", "time"],
+    },
+    "handler": reminder,
+}

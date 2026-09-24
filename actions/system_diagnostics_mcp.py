@@ -506,3 +506,30 @@ def system_diagnostics(
         if speak:
             speak(f"System status: CPU is at {cpu['usage_percent']} percent, RAM at {ram['usage_percent']} percent. {bat.get('status_text', '')}")
         return report
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "system_diagnostics",
+    "description": (
+        "Hardware diagnostics: full CPU/RAM/battery/storage/uptime report, the top CPU or RAM "
+        "hogs, process termination, display brightness control, battery health and per-drive "
+        "storage. Use system_status for a quick live snapshot."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": "status (default, full report) | cpu_hogs | ram_hogs | kill | brightness | battery | disk",
+            },
+            "limit": {"type": "INTEGER", "description": "How many processes to list (default: 5)."},
+            "target": {"type": "STRING", "description": "Process name or PID for action=kill."},
+            "force": {"type": "BOOLEAN", "description": "Force-kill the process (default: false)."},
+            "level": {"type": "INTEGER", "description": "Brightness percentage or delta for action=brightness."},
+            "monitor": {"type": "STRING", "description": "Monitor identifier for brightness control."},
+            "relative": {"type": "BOOLEAN", "description": "Treat level as a delta instead of absolute."},
+        },
+        "required": [],
+    },
+    "handler": system_diagnostics,
+}

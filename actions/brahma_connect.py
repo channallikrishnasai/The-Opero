@@ -34,10 +34,32 @@ def set_service_provider(provider: Callable[[], Any] | None) -> None:
     _SERVICE_PROVIDER = provider
 
 
+from core.logger import get_logger
+log = get_logger(__name__)
+
+
+_GATEWAY_LAUNCHED = False
+
+
 def _service():
+    global _GATEWAY_LAUNCHED
     if _SERVICE_PROVIDER is not None:
         return _SERVICE_PROVIDER()
-    return get_service(BASE_DIR)
+    svc = get_service(BASE_DIR)
+    # Serve the local gateway lazily on the first device command so companion
+    # devices can pair/connect (it listens on 0.0.0.0:8765). start_background()
+    # is already a no-op while its thread is alive; the module flag just keeps
+    # us out of this block during the brief window before is_running() flips.
+    if svc is not None and not svc.is_running() and not _GATEWAY_LAUNCHED:
+        try:
+            svc.start_background()
+            _GATEWAY_LAUNCHED = True
+            cfg = getattr(getattr(svc, "gateway", None), "config", None)
+            log.info("[brahma_connect] gateway serving on port %s", cfg.port if cfg else 8765)
+        except Exception as e:
+            _GATEWAY_LAUNCHED = False
+            log.warning("[brahma_connect] gateway start failed: %s", e)
+    return svc
 
 
 def _dump(payload: dict[str, Any]) -> str:
@@ -320,3 +342,47 @@ def connect_execute(parameters: dict[str, Any] | None = None, player=None, speak
         return _dump(result)
     except Exception as exc:
         return _fail(str(exc), "GATEWAY_UNAVAILABLE", device=target, action=action)
+
+def device_gateway(parameters: dict | None = None, player=None, speak=None) -> str:
+    """Paired-device management entry point for the OPERO tool layer."""
+    params = dict(parameters or {})
+    action = str(params.get("action") or "list").strip().lower()
+    routes = {
+        "list": connect_list_devices,
+        "devices": connect_list_devices,
+        "get": connect_get_device,
+        "info": connect_get_device,
+        "capabilities": connect_get_capabilities,
+        "pair": connect_pair_device,
+        "disconnect": connect_disconnect_device,
+        "execute": connect_execute,
+        "command": connect_execute,
+    }
+    fn = routes.get(action, connect_execute)
+    return fn(params, player=player, speak=speak)
+
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "device_gateway",
+    "description": (
+        "Paired-device gateway: list, pair, inspect and disconnect remote devices, query their "
+        "capabilities, and run commands on them (launch_app, open_url, capture_screen, clipboard, "
+        "media, volume, battery, UI taps...)."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": "list (default) | pair | get | capabilities | disconnect | execute",
+            },
+            "target": {"type": "STRING", "description": "Target device name or ID."},
+            "device": {"type": "STRING", "description": "Alias for target."},
+            "command": {"type": "STRING", "description": "Command to run for action=execute (alias of action)."},
+            "parameters": {"type": "OBJECT", "description": "Parameters for the command being executed."},
+        },
+        "required": ["action"],
+    },
+    "handler": device_gateway,
+}

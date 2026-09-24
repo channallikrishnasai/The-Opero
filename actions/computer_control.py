@@ -476,3 +476,49 @@ def computer_control(
     except Exception as e:
         print(f"[ComputerControl] ❌ {action}: {e}")
         return f"computer_control '{action}' failed: {e}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "computer_control",
+    "description": (
+        "Mouse and keyboard automation by coordinates or by describing the on-screen element: "
+        "click/double/right click at x,y, move, drag, type at the cursor, hotkeys, key presses, "
+        "scroll, copy/paste, screenshot, find-and-click a described element, focus a window by "
+        "title, clear a field, wait, fill random/user form data. For OS settings such as volume, "
+        "brightness, dark mode, Wi-Fi, windows or lock screen use computer_settings instead."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": (
+                    "type | smart_type | click | double_click | right_click | move | drag | hotkey | "
+                    "press | scroll | copy | paste | screenshot | screen_find | screen_click | wait | "
+                    "clear_field | focus_window | random_data | user_data"
+                ),
+            },
+            "text": {"type": "STRING", "description": "Text to type or paste (type/smart_type)."},
+            "x": {"type": "NUMBER", "description": "Screen X coordinate."},
+            "y": {"type": "NUMBER", "description": "Screen Y coordinate."},
+            "x1": {"type": "NUMBER", "description": "Drag start X."},
+            "y1": {"type": "NUMBER", "description": "Drag start Y."},
+            "x2": {"type": "NUMBER", "description": "Drag end X."},
+            "y2": {"type": "NUMBER", "description": "Drag end Y."},
+            "button": {"type": "STRING", "description": "left (default) | right"},
+            "keys": {"type": "STRING", "description": "Hotkey combination, e.g. ctrl+c."},
+            "key": {"type": "STRING", "description": "Single key name, e.g. enter, esc, tab."},
+            "direction": {"type": "STRING", "description": "up | down | left | right for scroll."},
+            "amount": {"type": "NUMBER", "description": "Scroll amount (default: 3)."},
+            "seconds": {"type": "NUMBER", "description": "Wait duration in seconds (max 30)."},
+            "title": {"type": "STRING", "description": "Window title fragment for focus_window."},
+            "description": {"type": "STRING", "description": "Natural-language element description for screen_find/screen_click."},
+            "type": {"type": "STRING", "description": "Data type for random_data (name, email, phone...)."},
+            "field": {"type": "STRING", "description": "Memory field name for user_data."},
+            "clear_first": {"type": "BOOLEAN", "description": "Clear the field before typing (default: true)."},
+            "path": {"type": "STRING", "description": "Screenshot save path (must be inside the home directory)."},
+        },
+        "required": ["action"],
+    },
+    "handler": computer_control,
+}

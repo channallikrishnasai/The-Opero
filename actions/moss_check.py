@@ -213,19 +213,73 @@ def _detect_language(directory: str) -> str:
     return "python"
 
 
+def _save_config_value(key: str, value: str) -> bool:
+    """Persist one key into config/api_keys.json without touching the others."""
+    try:
+        cfg: dict = {}
+        if _CFG.exists():
+            cfg = json.loads(_CFG.read_text(encoding="utf-8"))
+        cfg[key] = value
+        _CFG.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _CFG.with_name(_CFG.name + ".tmp")
+        tmp.write_text(json.dumps(cfg, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
+        tmp.replace(_CFG)
+        return True
+    except Exception as e:
+        log.error("Failed to save %s to %s: %s", key, _CFG, e)
+        return False
+
+
+def _status_text(user_id: str) -> str:
+    if user_id and user_id.isdigit():
+        return (f"MOSS is configured (moss_user_id={user_id}). "
+                "Ready to check code — pass a folder or file path to moss_check.")
+    return ("MOSS is not configured yet. Register free at https://moss.stanford.edu "
+            "— Stanford emails you a numeric user ID — then store it with "
+            "moss_check action=set_id and moss_user_id=<your id>, or add "
+            "\"moss_user_id\": \"<id>\" to config/api_keys.json.")
+
+
 def _handler(parameters: dict, player=None, speak=None, **kwargs) -> str:
     """MOSS plagiarism check handler.
 
     Parameters (from Gemini tool call):
-        path:      Directory or file(s) to check.
-        language:  Source language (auto-detected if omitted).
-        base_files: Optional comma-separated base files to exclude.
-        comment:   Optional comment for the report.
+        action:      status (default when no path) | set_id | check (default with a path).
+        path:        Directory or file(s) to check.
+        language:    Source language (auto-detected if omitted).
+        base_files:  Optional comma-separated base files to exclude.
+        comment:     Optional comment for the report.
+        moss_user_id: Numeric MOSS ID to store (action=set_id).
     """
-    target = parameters.get("path", "")
-    lang_hint = parameters.get("language", "")
-    base_paths = parameters.get("base_files", "")
-    comment = parameters.get("comment", "")
+    params = parameters or {}
+    action = str(params.get("action") or "").strip().lower()
+    if not action:
+        action = "check" if params.get("path") else "status"
+
+    user_id = str(_load_config().get("moss_user_id", "")).strip()
+
+    if action == "status":
+        return _status_text(user_id)
+
+    if action in ("set_id", "connect", "set_user_id"):
+        new_id = str(params.get("moss_user_id") or params.get("user_id") or "").strip()
+        if not new_id:
+            return ("Provide your numeric MOSS user ID with moss_user_id=<id>. "
+                    "Register free at https://moss.stanford.edu to receive one by email.")
+        if not new_id.isdigit():
+            return (f"MOSS user ID must be digits only, got {new_id!r}. "
+                    "Use the numeric ID from your moss.stanford.edu registration email.")
+        if not _save_config_value("moss_user_id", new_id):
+            return f"Could not write moss_user_id to {_CFG}. Add the key manually."
+        return f"MOSS user ID {new_id} saved to config/api_keys.json. moss_check is ready to use."
+
+    if action != "check":
+        return f"Unknown moss_check action {action!r}. Use: status, set_id, or check."
+
+    target = params.get("path", "")
+    lang_hint = params.get("language", "")
+    base_paths = params.get("base_files", "")
+    comment = params.get("comment", "")
 
     if not target:
         return "Please provide a path to check. For example: check plagiarism in ~/Desktop/myproject"
@@ -234,14 +288,11 @@ def _handler(parameters: dict, player=None, speak=None, **kwargs) -> str:
     if not os.path.exists(target):
         return f"Path not found: {target}"
 
-    # Load config
-    cfg = _load_config()
-    user_id = cfg.get("moss_user_id", "")
     if not user_id:
         return ("MOSS user ID not configured. "
                 "Set 'moss_user_id' in config/api_keys.json. "
                 "Register at https://moss.stanford.edu to get your ID.")
-    if not str(user_id).strip().isdigit():
+    if not user_id.isdigit():
         return ("MOSS user ID must be the numeric identifier issued by Stanford MOSS. "
                 "Update 'moss_user_id' in config/api_keys.json before submitting code.")
 
@@ -306,14 +357,29 @@ TOOL = {
         "Uploads source files to Stanford's server and returns a URL with similarity results. "
         "Works with Python, Java, C/C++, JavaScript, Haskell, and 30+ other languages. "
         "Use when the user wants to check if code is plagiarized, compare code submissions, "
-        "or check code originality."
+        "or check code originality. Also handles setup: action=status reports whether a MOSS "
+        "user ID is configured, action=set_id stores one the user provides."
     ),
     "parameters": {
         "type": "OBJECT",
         "properties": {
+            "action": {
+                "type": "STRING",
+                "description": (
+                    "status (default when no path is given) | set_id | check "
+                    "(default when a path is given)."
+                ),
+            },
             "path": {
                 "type": "STRING",
                 "description": "Path to directory of code files or a single file to check.",
+            },
+            "moss_user_id": {
+                "type": "STRING",
+                "description": (
+                    "Numeric MOSS user ID to store (used with action=set_id). "
+                    "Users register free at https://moss.stanford.edu to receive one."
+                ),
             },
             "language": {
                 "type": "STRING",
@@ -331,7 +397,7 @@ TOOL = {
                 "description": "Comment string to attach to the MOSS report.",
             },
         },
-        "required": ["path"],
+        "required": [],
     },
     "handler": _handler,
 }

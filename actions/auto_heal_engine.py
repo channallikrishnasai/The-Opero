@@ -393,7 +393,7 @@ Do NOT include markdown fences outside the JSON. Return only the valid JSON obje
             try:
                 from google import genai
                 g_client = genai.Client(api_key=gemini_key, http_options={"api_version": "v1beta"})
-                for model_name in ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"):
+                for model_name in ("gemini-3.6-flash", "gemini-flash-latest"):
                     try:
                         resp = g_client.models.generate_content(
                             model=model_name,
@@ -558,3 +558,28 @@ def auto_heal(
         if speak:
             speak("Auto-heal sentry and continuous self-improvement are fully active, sir.")
         return report
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "auto_heal",
+    "description": (
+        "Autonomous self-healing engine: report heal status, show patch history, re-apply or "
+        "roll back a patch generated from a traceback, and learn or list durable heuristic rules. "
+        "Use recovery to restore files from a backup snapshot."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": "status (default) | history | heal | rollback | learn_rule | list_rules",
+            },
+            "traceback": {"type": "STRING", "description": "Raw traceback/error text for action=heal."},
+            "notes": {"type": "STRING", "description": "Extra context for action=heal."},
+            "patch_id": {"type": "STRING", "description": "Patch to apply or roll back (default: latest)."},
+            "rule": {"type": "STRING", "description": "Heuristic rule text for action=learn_rule."},
+        },
+        "required": [],
+    },
+    "handler": auto_heal,
+}

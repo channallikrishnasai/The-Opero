@@ -33,12 +33,12 @@ def _call_gemini_json(prompt: str, system_instruction: str) -> Optional[dict]:
             client = genai.Client(api_key=gemini_key)
 
             models_to_try = [
-                "gemini-3.1-flash-lite",
-                "gemini-3.5-flash-lite",
-                "gemini-2.5-flash-lite",
-                "gemini-flash-latest",
-                "gemini-2.5-flash",
+                # Both probed against the configured key — the gemini-2.5
+                # aliases are retired (404) for it, so answer first.
                 "gemini-3.6-flash",
+                "gemini-flash-latest",
+                "gemini-3.5-flash-lite",
+                "gemini-3.1-flash-lite",
             ]
 
             def _query_model(m_name: str):
@@ -219,3 +219,37 @@ def generate_spreadsheet_from_prompt(user_prompt: str, player=None, speak: Optio
     }, player=player)
 
     return result
+
+def office_generator(parameters: dict, player=None, speak=None) -> str:
+    """Prompt-driven deck/workbook generation entry point for the OPERO tool layer."""
+    params = parameters or {}
+    kind = (params.get("type") or "presentation").lower().strip()
+    prompt = str(params.get("prompt") or params.get("description") or "").strip()
+    if not prompt:
+        return "Please describe the presentation or spreadsheet you want generated."
+    if kind in ("spreadsheet", "excel", "xlsx", "sheet", "sheets"):
+        return generate_spreadsheet_from_prompt(prompt, player=player, speak=speak)
+    return generate_presentation_from_prompt(prompt, player=player, speak=speak)
+
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "office_generator",
+    "description": (
+        "Generate a complete PowerPoint or Excel file from a single natural-language prompt: it "
+        "drafts the outline with Gemini, then builds the file. Use ppt_builder when you already "
+        "have the slide content."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "prompt": {
+                "type": "STRING",
+                "description": "What to generate, e.g. '12-slide pitch deck for a drone delivery startup'.",
+            },
+            "type": {"type": "STRING", "description": "presentation (default) | spreadsheet"},
+        },
+        "required": ["prompt"],
+    },
+    "handler": office_generator,
+}

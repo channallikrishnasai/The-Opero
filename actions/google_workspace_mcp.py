@@ -303,13 +303,13 @@ class GoogleCalendarEngine:
     def list_events(cls, days: int = 7) -> str:
         """Lists events from Google Calendar if OAuth exists, or Brahma's local calendar."""
         # Try local calendar store first
-        from actions.calendar_scheduler import calendar_scheduler
+        from plugins.calendar_scheduler import calendar_scheduler
         res = calendar_scheduler({"action": "get_upcoming"})
         return res or "No upcoming calendar events."
 
     @classmethod
     def create_event(cls, title: str, date: str, time: str, duration_minutes: int = 30, description: str = "") -> str:
-        from actions.calendar_scheduler import calendar_scheduler
+        from plugins.calendar_scheduler import calendar_scheduler
         return calendar_scheduler({
             "action": "add_event",
             "title": title,
@@ -321,7 +321,7 @@ class GoogleCalendarEngine:
 
     @classmethod
     def delete_event(cls, event_id: str) -> str:
-        from actions.calendar_scheduler import calendar_scheduler
+        from plugins.calendar_scheduler import calendar_scheduler
         return calendar_scheduler({"action": "delete_event", "event_id": event_id})
 
 
@@ -608,3 +608,44 @@ def stop_email_daemon():
     global _email_daemon_running
     _email_daemon_running = False
     logger.info("[EmailDaemon] Background email daemon stopped.")
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "google_workspace",
+    "description": (
+        "Google Workspace controller: Google Calendar (list upcoming events, create and delete "
+        "events) and Google Drive (search, read, upload files), plus Gmail list/unread/search/"
+        "read/send when those credentials are connected. Prefer this for calendar and Drive work."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "service": {"type": "STRING", "description": "gmail | calendar | drive (inferred from action when omitted)."},
+            "action": {
+                "type": "STRING",
+                "description": (
+                    "Gmail: list | unread | search | read | send. "
+                    "Calendar: list | create | delete. "
+                    "Drive: search | read | upload."
+                ),
+            },
+            "query": {"type": "STRING", "description": "Search query (Gmail search, Drive file name)."},
+            "max_results": {"type": "INTEGER", "description": "How many Gmail messages to return (default: 5)."},
+            "days": {"type": "INTEGER", "description": "Days of calendar events to list (default: 7)."},
+            "message_id": {"type": "STRING", "description": "Gmail message ID for action=read."},
+            "to": {"type": "STRING", "description": "Recipient for Gmail action=send."},
+            "subject": {"type": "STRING", "description": "E-mail subject for Gmail action=send."},
+            "body": {"type": "STRING", "description": "E-mail body for Gmail action=send."},
+            "title": {"type": "STRING", "description": "Event title for calendar action=create."},
+            "date": {"type": "STRING", "description": "Event date for calendar action=create (default: today)."},
+            "time": {"type": "STRING", "description": "Event start time for calendar action=create (default: 12:00)."},
+            "duration_minutes": {"type": "INTEGER", "description": "Event duration in minutes (default: 30)."},
+            "description": {"type": "STRING", "description": "Event description for calendar action=create."},
+            "event_id": {"type": "STRING", "description": "Calendar event ID for action=delete."},
+            "filename": {"type": "STRING", "description": "Drive file name for action=read."},
+            "path": {"type": "STRING", "description": "Local file path for drive action=upload."},
+        },
+        "required": ["action"],
+    },
+    "handler": google_workspace,
+}

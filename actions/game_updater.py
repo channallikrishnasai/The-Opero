@@ -815,3 +815,29 @@ if __name__ == "__main__":
     if "--scheduled" in sys.argv:
         print(f"[GameUpdater] 🕐 Scheduled run at {datetime.now().strftime('%H:%M')}")
         print(f"[GameUpdater] ✅ {game_updater({'action': 'update', 'platform': 'both'})}")
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "game_updater",
+    "description": (
+        "Game library management: check for, download and install or update games (Steam/Epic), "
+        "list installed games, schedule a daily auto-update, and check schedule or download status."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": "update (default) | install | list | schedule | cancel_schedule | schedule_status | download_status",
+            },
+            "platform": {"type": "STRING", "description": "steam | epic | both (default: both)."},
+            "game_name": {"type": "STRING", "description": "Game title to install or update."},
+            "app_id": {"type": "STRING", "description": "Store app/subject ID, alternative to game_name."},
+            "hour": {"type": "INTEGER", "description": "Hour (0-23) for the daily schedule (default: 3)."},
+            "minute": {"type": "INTEGER", "description": "Minute (0-59) for the daily schedule (default: 0)."},
+            "shutdown_when_done": {"type": "BOOLEAN", "description": "Shut the PC down when the update finishes."},
+        },
+        "required": ["action"],
+    },
+    "handler": game_updater,
+}

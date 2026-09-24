@@ -763,3 +763,48 @@ def browser_control(
         player.write_log(f"[browser] {safe_res[:80]}")
 
     return result
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "browser_control",
+    "description": (
+        "Full browser automation (Playwright): navigate, search, click, type, fill forms, "
+        "read page text/snapshots, manage tabs, evaluate JS, run a code snippet, screenshot, "
+        "and capture console/network logs. Use for anything that needs a real browser."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": (
+                    "go_to | navigate | search | click | type | scroll | fill_form | smart_click | "
+                    "smart_type | get_text | press | back | forward | refresh | open_tab | new_tab | "
+                    "switch_tab | list_tabs | close | snapshot | find | hover | evaluate | run_code | "
+                    "screenshot | wait_for | select_option | dialog | upload | console | network"
+                ),
+            },
+            "url": {"type": "STRING", "description": "URL for go_to / navigate."},
+            "query": {"type": "STRING", "description": "Search query for action=search."},
+            "engine": {"type": "STRING", "description": "google | bing | duckduckgo (default: google)."},
+            "selector": {"type": "STRING", "description": "CSS selector for click/type/hover/select."},
+            "element": {"type": "STRING", "description": "Snapshot element reference (e.g. 'e2')."},
+            "text": {"type": "STRING", "description": "Text to click, type, or wait for."},
+            "description": {"type": "STRING", "description": "Element description for smart_click/smart_type."},
+            "fields": {
+                "type": "OBJECT",
+                "description": "{selector: value} map for action=fill_form.",
+            },
+            "direction": {"type": "STRING", "description": "up | down for scroll."},
+            "amount": {"type": "NUMBER", "description": "Scroll amount in pixels (default: 500)."},
+            "key": {"type": "STRING", "description": "Key name for press (Enter, Escape, Tab...)."},
+            "expression": {"type": "STRING", "description": "JavaScript expression for evaluate."},
+            "code": {"type": "STRING", "description": "Playwright code snippet for run_code."},
+            "path": {"type": "STRING", "description": "Output path for screenshot."},
+            "tab": {"type": "INTEGER", "description": "1-based tab index for switch_tab."},
+            "time_ms": {"type": "INTEGER", "description": "Milliseconds to wait (wait_for)."},
+        },
+        "required": ["action"],
+    },
+    "handler": browser_control,
+}

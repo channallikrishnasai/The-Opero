@@ -1,62 +1,217 @@
 [
- {
-  "src": "computer_settings.py",
-  "name": "computer_settings",
-  "desc": "Controls the computer: volume, brightness, window management, keyboard shortcuts, typing text on screen, closing apps, fullscreen, dark mode, WiFi, restart, shutdown, scrolling, tab management, zoom, screenshots, lock screen, refresh/reload page. Use for ANY single computer control command. restart, shutdown and toggle_wifi put a confirmation on the user's screen and do NOT happen until they press it \u2014 never claim they are done. Volume, brightness and dark mode can be reversed with the `undo` tool."
- },
- {
-  "src": "file_controller.py",
-  "name": "file_controller",
-  "desc": "Manages files and folders: list, create, delete, move, copy, rename, read, write, find, disk usage."
- },
- {
-  "src": "gmail.py",
-  "name": "gmail",
-  "desc": "Connect Gmail with OAuth or App Passcode, search/read email, save drafts, and send after confirmation."
- },
- {
-  "src": "instagram_messaging.py",
-  "name": "instagram_messaging",
-  "desc": "Use a connected Meta Instagram professional account to list supported conversations and send messages after on-screen confirmation."
- },
- {
-  "src": "moss_check.py",
-  "name": "moss_check",
-  "desc": "Check code for plagiarism using Stanford MOSS (Measure of Software Similarity). Uploads source files to Stanford's server and returns a URL with similarity results. Works with Python, Java, C/C++, JavaScript, Haskell, and 30+ other languages. Use when the user wants to check if code is plagiarized, compare code submissions, or check code originality."
- },
- {
-  "src": "opero_connect.py",
-  "name": "opero_connect",
-  "desc": "Remote device pairing, status checking, and execution gateway."
- },
- {
-  "src": "opero_dev_agent.py",
-  "name": "opero_dev_agent",
-  "desc": "Autonomous developer task execution engine. Runs code modifications, builds, and tests."
- },
- {
-  "src": "opero_health.py",
-  "name": "opero_health",
-  "desc": "Check OPERO configuration and recovery status without changing anything."
- },
- {
-  "src": "ppt_builder.py",
-  "name": "ppt_builder",
-  "desc": "Creates a polished PowerPoint (.pptx) presentation from a title, optional subtitle, and a list of slides. Each slide supports: title, kicker (eyebrow label), bullets (list of strings), and notes. Supports themes: auto, neon, corporate, luxury, academic, sunset. Use when the user asks to create a presentation, slideshow, deck, or PowerPoint."
- },
- {
-  "src": "recovery.py",
-  "name": "recovery",
-  "desc": "Inspect OPERO recovery history or restore a recorded local backup after on-screen confirmation."
- },
- {
-  "src": "task_status.py",
-  "name": "task_status",
-  "desc": "Show recent OPERO action states, results, and failures without changing anything."
- },
- {
-  "src": "website_builder.py",
-  "name": "website_builder",
-  "desc": "Create an original, deploy-ready static website from a brief in a new OPERO Websites folder."
- }
+  {
+    "src": "auto_heal_engine.py",
+    "name": "auto_heal",
+    "desc": "Autonomous self-healing engine: report heal status, show patch history, re-apply or roll back a patch generated from a traceback, and learn or list durable heuristic rules. Use recovery to restore files from a backup snapshot."
+  },
+  {
+    "src": "brahma_connect.py",
+    "name": "device_gateway",
+    "desc": "Paired-device gateway: list, pair, inspect and disconnect remote devices, query their capabilities, and run commands on them (launch_app, open_url, capture_screen, clipboard, media, volume, battery, UI taps...)."
+  },
+  {
+    "src": "browser_control.py",
+    "name": "browser_control",
+    "desc": "Full browser automation (Playwright): navigate, search, click, type, fill forms, read page text/snapshots, manage tabs, evaluate JS, run a code snippet, screenshot, and capture console/network logs. Use for anything that needs a real browser."
+  },
+  {
+    "src": "clipboard_processor.py",
+    "name": "clipboard_processor",
+    "desc": "Read the current text contents of the system clipboard (truncated to 30k characters). Use when the user says 'what I copied' or 'paste what's in my clipboard'."
+  },
+  {
+    "src": "code_helper.py",
+    "name": "code_helper",
+    "desc": "Single-file coding helper: write, edit, explain, run, build, screen-debug or optimize code in any language. Use opero_dev_agent for whole-project autonomous tasks."
+  },
+  {
+    "src": "computer_control.py",
+    "name": "computer_control",
+    "desc": "Mouse and keyboard automation by coordinates or by describing the on-screen element: click/double/right click at x,y, move, drag, type at the cursor, hotkeys, key presses, scroll, copy/paste, screenshot, find-and-click a described element, focus a window by title, clear a field, wait, fill random/user form data. For OS settings such as volume, brightness, dark mode, Wi-Fi, windows or lock screen use computer_settings instead."
+  },
+  {
+    "src": "computer_settings.py",
+    "name": "computer_settings",
+    "desc": "Controls the computer: volume, brightness, window management, keyboard shortcuts, typing text on screen, closing apps, fullscreen, dark mode, WiFi, restart, shutdown, scrolling, tab management, zoom, screenshots, lock screen, refresh/reload page. Use for ANY single computer control command. restart, shutdown and toggle_wifi put a confirmation on the user's screen and do NOT happen until they press it — never claim they are done. Volume, brightness and dark mode can be reversed with the `undo` tool."
+  },
+  {
+    "src": "desktop.py",
+    "name": "desktop_control",
+    "desc": "Desktop wallpaper and tidiness: set the wallpaper from a file or URL, show the current wallpaper, organize/preview/undo desktop files, clean empty folders, find duplicates, archive old files, list or show stats, or run a natural-language desktop task."
+  },
+  {
+    "src": "docx_tools.py",
+    "name": "docx_tools",
+    "desc": "Microsoft Word (.docx): create documents, letters and reports, read and extract text, summarize, append or edit content, replace text, add headings and bullets, reformat, and open the file. Use ppt_builder for slide decks and pdf_tools for PDFs."
+  },
+  {
+    "src": "file_controller.py",
+    "name": "file_controller",
+    "desc": "Manages files and folders: list, create, delete, move, copy, rename, read, write, find, disk usage."
+  },
+  {
+    "src": "file_processor.py",
+    "name": "file_processor",
+    "desc": "Deep processing of a specific file: images (describe, OCR, resize, convert, compress), PDF/Office (extract text, summarize, convert to Word), text and code (summarize, analyze, fix, optimize, document, run), JSON/CSV (convert, filter, sort, validate), audio (transcribe, trim, convert), video (extract audio/frame, trim, compress). When file_path is omitted it uses the currently uploaded file. For moving, renaming or deleting files use file_controller instead."
+  },
+  {
+    "src": "flight_finder.py",
+    "name": "flight_finder",
+    "desc": "Search live flight options between two cities for a date, with optional return leg, passenger count and cabin class; results can be saved to a file."
+  },
+  {
+    "src": "game_updater.py",
+    "name": "game_updater",
+    "desc": "Game library management: check for, download and install or update games (Steam/Epic), list installed games, schedule a daily auto-update, and check schedule or download status."
+  },
+  {
+    "src": "gmail.py",
+    "name": "gmail",
+    "desc": "Connect Gmail with OAuth or App Passcode, search/read email, save drafts, and send after confirmation."
+  },
+  {
+    "src": "google_workspace_mcp.py",
+    "name": "google_workspace",
+    "desc": "Google Workspace controller: Google Calendar (list upcoming events, create and delete events) and Google Drive (search, read, upload files), plus Gmail list/unread/search/read/send when those credentials are connected. Prefer this for calendar and Drive work."
+  },
+  {
+    "src": "instagram_messaging.py",
+    "name": "instagram_messaging",
+    "desc": "Use a connected Meta Instagram professional account to list supported conversations and send messages after on-screen confirmation."
+  },
+  {
+    "src": "mobile_autopilot.py",
+    "name": "mobile_autopilot",
+    "desc": "Drive a connected Android device from a natural-language instruction: it reads the UI tree, plans the taps, swipes and typing, and executes them over ADB. Requires a USB or paired device with debugging enabled."
+  },
+  {
+    "src": "moss_check.py",
+    "name": "moss_check",
+    "desc": "Check code for plagiarism using Stanford MOSS (Measure of Software Similarity). Uploads source files to Stanford's server and returns a URL with similarity results. Works with Python, Java, C/C++, JavaScript, Haskell, and 30+ other languages. Use when the user wants to check if code is plagiarized, compare code submissions, or check code originality. Also handles setup: action=status reports whether a MOSS user ID is configured, action=set_id stores one the user provides."
+  },
+  {
+    "src": "office_builder.py",
+    "name": "spreadsheet_builder",
+    "desc": "Create a polished Excel (.xlsx) workbook from a title and optional worksheet specs. Use ppt_builder for slide decks and docx_tools for Word documents."
+  },
+  {
+    "src": "office_generator.py",
+    "name": "office_generator",
+    "desc": "Generate a complete PowerPoint or Excel file from a single natural-language prompt: it drafts the outline with Gemini, then builds the file. Use ppt_builder when you already have the slide content."
+  },
+  {
+    "src": "open_app.py",
+    "name": "open_app",
+    "desc": "Launch a desktop application by name (chrome, vscode, spotify, whatsapp, calculator, excel, telegram, steam...) on Windows, macOS or Linux. To interact inside an already open app, follow up with computer_control."
+  },
+  {
+    "src": "opero_connect.py",
+    "name": "opero_connect",
+    "desc": "Remote device execution gateway: run a command on a paired device (launch_app, open_url, capture_screen, clipboard, media, volume, battery, UI taps...). Use device_gateway to list, pair or inspect paired devices."
+  },
+  {
+    "src": "opero_dev_agent.py",
+    "name": "opero_dev_agent",
+    "desc": "Autonomous developer task execution engine. Runs code modifications, builds, and tests."
+  },
+  {
+    "src": "opero_health.py",
+    "name": "opero_health",
+    "desc": "Check OPERO configuration and recovery status without changing anything."
+  },
+  {
+    "src": "pdf_tools.py",
+    "name": "pdf_tools",
+    "desc": "PDF creation and conversion: build a styled PDF (report, letter, deep report) with title page, headings, bullets, numbered lists, tables and dividers, or convert a source file to PDF. Use docx_tools for Word and ppt_builder for slides."
+  },
+  {
+    "src": "ppt_builder.py",
+    "name": "ppt_builder",
+    "desc": "Creates a polished PowerPoint (.pptx) presentation from a title, optional subtitle, and a list of slides. Each slide supports: title, kicker (eyebrow label), bullets (list of strings), and notes. Supports themes: auto, neon, corporate, luxury, academic, sunset. Use when the user asks to create a presentation, slideshow, deck, or PowerPoint."
+  },
+  {
+    "src": "recovery.py",
+    "name": "recovery",
+    "desc": "Inspect OPERO recovery history or restore a recorded local backup after on-screen confirmation."
+  },
+  {
+    "src": "reminder.py",
+    "name": "reminder",
+    "desc": "Schedule a timed reminder through Windows Task Scheduler; OPERO speaks the message at the scheduled time."
+  },
+  {
+    "src": "send_message.py",
+    "name": "send_message",
+    "desc": "Send a message through WhatsApp, Telegram, Instagram DM, e-mail or any other desktop app by driving its UI. Can also post media to Instagram (mode=upload). For Gmail drafts/sends use gmail instead."
+  },
+  {
+    "src": "system_diagnostics_mcp.py",
+    "name": "system_diagnostics",
+    "desc": "Hardware diagnostics: full CPU/RAM/battery/storage/uptime report, the top CPU or RAM hogs, process termination, display brightness control, battery health and per-drive storage. Use system_status for a quick live snapshot."
+  },
+  {
+    "src": "system_manager.py",
+    "name": "system_manager",
+    "desc": "Process and resource management: report CPU/RAM/disk usage with the top processes by CPU or RAM, and terminate a process by name or PID."
+  },
+  {
+    "src": "task_status.py",
+    "name": "task_status",
+    "desc": "Show recent OPERO action states, results, and failures without changing anything."
+  },
+  {
+    "src": "unlock_device.py",
+    "name": "unlock_device",
+    "desc": "Unlock a paired phone by sending its saved unlock PIN through the device gateway. Requires the device's PIN to be stored in the OPERO UI first."
+  },
+  {
+    "src": "weather_report.py",
+    "name": "weather",
+    "desc": "Weather for a city or the user's current location: temperature, feels-like, humidity, condition and the forecast for the requested day."
+  },
+  {
+    "src": "web_search.py",
+    "name": "web_search",
+    "desc": "Live web research: DuckDuckGo search with snippets, Gemini answer synthesis, and side-by-side comparison of several items. Use for any factual, current, product, price, news or 'search the web' request. Results are mirrored to the on-screen content panel."
+  },
+  {
+    "src": "website_builder.py",
+    "name": "website_builder",
+    "desc": "Create an original, deploy-ready static website from a brief in a new OPERO Websites folder."
+  },
+  {
+    "src": "youtube_video.py",
+    "name": "youtube_video",
+    "desc": "YouTube control: play a video or song, fetch a video's info, list trending videos, or summarize a video's transcript. Use for any 'play on YouTube' request."
+  },
+  {
+    "src": "plugins/calendar_scheduler.py",
+    "name": "calendar_scheduler",
+    "desc": "Manages calendar events, meetings, and schedules. Supports actions: 'add_event', 'list_events', 'check_day', 'delete_event', 'get_upcoming', 'export_ics'."
+  },
+  {
+    "src": "plugins/calorie_counter.py",
+    "name": "calorie_counter",
+    "desc": "Analyzes FOOD and MEALS to report calories, macros (protein, carbs, fat, fiber), and health advice. Can capture a live photo from the webcam, analyze an image file/screenshot, or estimate nutrition from a spoken or typed meal description. Use whenever the user asks about calories, nutrition, macros, or food analysis."
+  },
+  {
+    "src": "plugins/daily_briefing.py",
+    "name": "daily_briefing",
+    "desc": "Delivers a comprehensive morning intelligence briefing to the user including live weather, today's calendar meetings, unread Gmail communications, Instagram DMs, and top news headlines. Call this whenever the user asks for their morning briefing, daily update, schedule review, or what's happening today."
+  },
+  {
+    "src": "plugins/pushup_counter.py",
+    "name": "pushup_counter",
+    "desc": "Counts repetitions and tracks workout form live through the WEBCAM or timer. Supports pushups, squats, and bodyweight exercises. Tracks reps, sets, tempo, and estimated calories burned. Use whenever the user says they want to do pushups, squats, or work out (e.g. 'count my pushups', 'track my workout', 'I will do 20 pushups')."
+  },
+  {
+    "src": "plugins/spotify_controller.py",
+    "name": "spotify_controller",
+    "desc": "Plays and controls music via Google Chrome and Spotify. Supports actions: 'search_play' (play any song/artist), 'play', 'pause', 'toggle', 'next', 'previous', 'volume_up', 'volume_down', 'mute', 'open_spotify'."
+  },
+  {
+    "src": "plugins/upload_video.py",
+    "name": "upload_video",
+    "desc": "Prepares, optimizes, and publishes video files to TikTok, YouTube Shorts, or Instagram. Locates recent video files automatically (or from a path), generates viral captions and SEO hashtags, copies them to the clipboard, and launches the creator upload studio. Use whenever the user asks to upload, post, or publish a video."
+  }
 ]

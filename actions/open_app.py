@@ -119,7 +119,7 @@ def _launch_windows(app_name: str) -> bool:
                     pass
 
         # If Spotify desktop is not installed, open Spotify in Google Chrome
-        from actions.spotify_controller import _open_url_in_chrome
+        from plugins.spotify_controller import _open_url_in_chrome
         _open_url_in_chrome("https://open.spotify.com")
         time.sleep(1.0)
         return True
@@ -260,3 +260,21 @@ def open_app(
     except Exception as e:
         print(f"[open_app] ❌ {e}")
         return f"Failed to open {app_name}, sir: {e}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "open_app",
+    "description": (
+        "Launch a desktop application by name (chrome, vscode, spotify, whatsapp, calculator, "
+        "excel, telegram, steam...) on Windows, macOS or Linux. To interact inside an already "
+        "open app, follow up with computer_control."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "app_name": {"type": "STRING", "description": "Application name or friendly alias to launch."},
+        },
+        "required": ["app_name"],
+    },
+    "handler": open_app,
+}

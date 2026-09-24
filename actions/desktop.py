@@ -395,3 +395,32 @@ def desktop_control(
     except Exception as e:
         print(f"[Desktop] Error: {e}")
         return f"Desktop control error: {e}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "desktop_control",
+    "description": (
+        "Desktop wallpaper and tidiness: set the wallpaper from a file or URL, show the current "
+        "wallpaper, organize/preview/undo desktop files, clean empty folders, find duplicates, "
+        "archive old files, list or show stats, or run a natural-language desktop task."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": (
+                    "wallpaper | wallpaper_url | current_wallpaper | organize | preview | clean | "
+                    "undo | find_duplicates | archive_old | list | stats | task"
+                ),
+            },
+            "path": {"type": "STRING", "description": "Local image path for action=wallpaper."},
+            "url": {"type": "STRING", "description": "Image URL for action=wallpaper_url."},
+            "mode": {"type": "STRING", "description": "by_type (default) | by_date — organize mode."},
+            "days": {"type": "INTEGER", "description": "Age in days for action=archive_old (default: 30)."},
+            "task": {"type": "STRING", "description": "Natural-language description for the AI-powered task action."},
+        },
+        "required": ["action"],
+    },
+    "handler": desktop_control,
+}

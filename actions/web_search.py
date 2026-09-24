@@ -24,7 +24,7 @@ def _gemini_search(query: str) -> str:
 
     client   = genai.Client(api_key=_get_api_key())
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.6-flash",
         contents=query,
         config={"tools": [{"google_search": {}}]},
     )
@@ -182,3 +182,32 @@ def web_search(
         return _format_ddg(query, results)
 def _news(query: str = "") -> str:
     return "News not available."
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "web_search",
+    "description": (
+        "Live web research: DuckDuckGo search with snippets, Gemini answer synthesis, "
+        "and side-by-side comparison of several items. Use for any factual, current, "
+        "product, price, news or 'search the web' request. Results are mirrored to the "
+        "on-screen content panel."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "query": {"type": "STRING", "description": "Search query."},
+            "mode": {"type": "STRING", "description": "search (default) | compare"},
+            "items": {
+                "type": "ARRAY",
+                "items": {"type": "STRING"},
+                "description": "Two or more items to compare; supplying this forces mode=compare.",
+            },
+            "aspect": {
+                "type": "STRING",
+                "description": "Comparison aspect for mode=compare, e.g. price, performance, camera.",
+            },
+        },
+        "required": [],
+    },
+    "handler": web_search,
+}

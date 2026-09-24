@@ -582,3 +582,30 @@ def code_helper(
 
     else:
         return f"Unknown action: '{action}'. Use write, edit, explain, run, build, optimize, or screen_debug."
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "code_helper",
+    "description": (
+        "Single-file coding helper: write, edit, explain, run, build, screen-debug or optimize "
+        "code in any language. Use opero_dev_agent for whole-project autonomous tasks."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": "auto (default) | write | edit | explain | run | build | screen_debug | optimize",
+            },
+            "description": {"type": "STRING", "description": "What the code should do, or the change/problem to make."},
+            "language": {"type": "STRING", "description": "Programming language (default: python)."},
+            "output_path": {"type": "STRING", "description": "Where to save new code (full path or filename)."},
+            "file_path": {"type": "STRING", "description": "Existing file for edit/explain/run/build/optimize."},
+            "code": {"type": "STRING", "description": "Raw code string when no file is involved."},
+            "args": {"type": "ARRAY", "items": {"type": "STRING"}, "description": "CLI arguments for run/build."},
+            "timeout": {"type": "INTEGER", "description": "Execution timeout in seconds (default: 30)."},
+        },
+        "required": ["action"],
+    },
+    "handler": code_helper,
+}

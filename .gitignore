@@ -69,3 +69,5 @@ config/recovery/
 # ── Local QA screenshots and vendored installer tooling ───────────────────────
 future-ui-qa*.png
 tools/nsis-*/
+
+tools/ffmpeg/

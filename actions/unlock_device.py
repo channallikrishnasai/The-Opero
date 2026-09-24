@@ -70,3 +70,21 @@ def unlock_device(parameters: dict, response=None, player=None, session_memory=N
             return f"Failed to unlock {target}: {err}"
     except Exception as e:
         return f"Error executing unlock command: {result_str}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "unlock_device",
+    "description": (
+        "Unlock a paired phone by sending its saved unlock PIN through the device gateway. "
+        "Requires the device's PIN to be stored in the OPERO UI first."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "target": {"type": "STRING", "description": "Paired device name or ID to unlock."},
+            "device_id": {"type": "STRING", "description": "Alternative device identifier."},
+        },
+        "required": ["target"],
+    },
+    "handler": unlock_device,
+}

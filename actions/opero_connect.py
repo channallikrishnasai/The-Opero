@@ -9,9 +9,17 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# The real remote-execution path lives in brahma_connect, which routes through the
+# device gateway service when that package is installed (and reports honestly when not).
+from actions.brahma_connect import connect_execute as gateway_connect_execute
+
 TOOL = {
     "name": "opero_connect",
-    "description": "Remote device pairing, status checking, and execution gateway.",
+    "description": (
+        "Remote device execution gateway: run a command on a paired device (launch_app, open_url, "
+        "capture_screen, clipboard, media, volume, battery, UI taps...). Use device_gateway to "
+        "list, pair or inspect paired devices."
+    ),
     "parameters": {
         "type": "OBJECT",
         "properties": {
@@ -21,7 +29,7 @@ TOOL = {
         },
         "required": ["target", "action"],
     },
-    "handler": lambda parameters: connect_execute(parameters),
+    "handler": lambda parameters: gateway_connect_execute(parameters),
 }
 
 

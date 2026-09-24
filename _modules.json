@@ -1,297 +1,267 @@
 [
- {
-  "file": "__init__.py",
-  "doc": "Action modules for Brahma AI.",
-  "has_tool": false
- },
- {
-  "file": "attention_monitor.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "auto_heal_engine.py",
-  "doc": "Auto-Heal & Self-Patching Engine for Brahma AI Enables Brahma to detect its own bugs, tracebacks, and tool exceptions, synthesize minimal surgical hot",
-  "has_tool": false
- },
- {
-  "file": "background_monitor.py",
-  "doc": "Background Monitor Action for Brahma AI. Allows the AI to schedule background polling for system health, crypto prices, or website uptime.",
-  "has_tool": false
- },
- {
-  "file": "brahma_connect.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "brahma_dev_agent.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "browser_control.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "calendar_scheduler.py",
-  "doc": "Calendar and Schedule Management for Brahma AI. Allows creating, listing, checking, and managing calendar appointments, meetings, and events with loca",
-  "has_tool": false
- },
- {
-  "file": "calorie_counter.py",
-  "doc": "Brahma AI \u2014 Calorie & Nutrition Vision Engine. Analyzes meals and food through camera capture, uploaded/local images, or conversational descriptions. ",
-  "has_tool": false
- },
- {
-  "file": "claude_code_bridge.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "clipboard_processor.py",
-  "doc": "Clipboard Processor Action for Brahma AI. Allows the AI to instantly read whatever text the user has copied to their Windows clipboard.",
-  "has_tool": false
- },
- {
-  "file": "code_helper.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "computer_control.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "computer_settings.py",
-  "doc": "",
-  "has_tool": true
- },
- {
-  "file": "daily_briefing.py",
-  "doc": "Unified Morning Intelligence Briefing for Brahma AI. Compiles a comprehensive, executive daily intelligence report: 1. Live Weather (Temperature, cond",
-  "has_tool": false
- },
- {
-  "file": "desktop.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "desktop_organizer_mcp.py",
-  "doc": "Smart Desktop & Downloads Organizer MCP for Brahma AI. Provides safe, intelligent file classification, dry-run previews, full transaction rollback (un",
-  "has_tool": false
- },
- {
-  "file": "dev_agent.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "docx_tools.py",
-  "doc": "docx_tools.py - Brahma AI Word / DOCX support Provides dedicated creation, editing, extraction, summarization, and opening workflows for editable Word",
-  "has_tool": false
- },
- {
-  "file": "file_controller.py",
-  "doc": "",
-  "has_tool": true
- },
- {
-  "file": "file_processor.py",
-  "doc": "file_processor.py \u2014 Brahma AI Universal File Processor Supported types: image \u2192 describe, ocr, resize, convert, compress, crop pdf \u2192 summarize, extrac",
-  "has_tool": false
- },
- {
-  "file": "flight_finder.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "game_updater.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "gmail.py",
-  "doc": "Gmail OAuth action. Credentials stay local and sending stays confirmation-gated.",
-  "has_tool": true
- },
- {
-  "file": "google_workspace_mcp.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "instagram_chat.py",
-  "doc": "Instagram Chat Integration for Brahma AI. Listens for incoming DMs on Instagram and replies using Brahma's core generation.",
-  "has_tool": false
- },
- {
-  "file": "instagram_mcp.py",
-  "doc": "actions/instagram_mcp.py Instagram Model Context Protocol (MCP) & Background Social Engine for Brahma AI. Features: - Direct API posting (Photos & Ree",
-  "has_tool": false
- },
- {
-  "file": "instagram_messaging.py",
-  "doc": "Meta Graph API connector for Instagram professional-account messaging.",
-  "has_tool": true
- },
- {
-  "file": "meeting_assistant.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "mobile_autopilot.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "moss_check.py",
-  "doc": "MOSS (Measure of Software Similarity) plagiarism checker action. Uploads source code files to Stanford's MOSS server and returns a URL with similarity",
-  "has_tool": true
- },
- {
-  "file": "office_builder.py",
-  "doc": "office_builder.py - Brahma AI office document generation Creates PowerPoint presentations and Excel workbooks from structured inputs.",
-  "has_tool": false
- },
- {
-  "file": "office_generator.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "open_app.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "opero_connect.py",
-  "doc": "OPERO Connect device pairing & remote execution bridge for OPERO AI.",
-  "has_tool": true
- },
- {
-  "file": "opero_dev_agent.py",
-  "doc": "OPERO Dev Agent Action \u2014 Autonomous developer task execution engine.",
-  "has_tool": true
- },
- {
-  "file": "opero_health.py",
-  "doc": "Read-only operational health report.",
-  "has_tool": true
- },
- {
-  "file": "pdf_tools.py",
-  "doc": "pdf_tools.py - Brahma AI PDF support Creates publication-grade PDF documents from structured content or markdown, with multi-page running headers/foot",
-  "has_tool": false
- },
- {
-  "file": "playwright_mcp_client.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "ppt_builder.py",
-  "doc": "ppt_builder.py \u2014 OPERO PowerPoint Presentation Builder Generates multi-slide PowerPoint .pptx decks from structured inputs. Supports multiple visual t",
-  "has_tool": true
- },
- {
-  "file": "ppt_template_workflow.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "proactive.py",
-  "doc": "ProactiveEngine 2.0 \u2014 context-aware, time-aware, non-repetitive background prompting. Gemini decides what to say; this module decides WHEN and builds ",
-  "has_tool": false
- },
- {
-  "file": "pushup_counter.py",
-  "doc": "Brahma AI \u2014 Workout & Exercise Tracker. Tracks repetitions, posture, pace, and caloric burn for pushups, squats, and other bodyweight exercises. Uses ",
-  "has_tool": false
- },
- {
-  "file": "recovery.py",
-  "doc": "Review-first recovery controls for OPERO-managed backups.",
-  "has_tool": true
- },
- {
-  "file": "reminder.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "screen_processor.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "send_message.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "spotify_controller.py",
-  "doc": "Universal Music & Spotify Controller for Brahma AI. Guarantees 100% reliable music playback in Google Chrome, handles Spotify searches, direct track a",
-  "has_tool": false
- },
- {
-  "file": "system_diagnostics_mcp.py",
-  "doc": "OS Hardware and System Diagnostics MCP for Brahma AI Provides 100% local, on-demand hardware telemetry, process management, battery diagnostics, and m",
-  "has_tool": false
- },
- {
-  "file": "system_manager.py",
-  "doc": "System Health & Resource Manager for Brahma AI. Allows the AI to check CPU, RAM, battery, and top processes, as well as forcibly close non-responsive ",
-  "has_tool": false
- },
- {
-  "file": "system_monitor.py",
-  "doc": "System Monitor \u2014 background metric checks with voice alert support. Zero subprocess calls on all platforms \u2014 uses ctypes/pynvml/psutil/wmi only.",
-  "has_tool": false
- },
- {
-  "file": "task_status.py",
-  "doc": "Task-journal action for reporting recent OPERO work.",
-  "has_tool": true
- },
- {
-  "file": "test_action.py",
-  "doc": "Demonstration Action for Testing Brahma's Autonomous Self-Patching Engine. Contains an intentional edge-case bug (ZeroDivisionError) for live self-rep",
-  "has_tool": false
- },
- {
-  "file": "unlock_device.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "upload_video.py",
-  "doc": "Brahma AI \u2014 Multi-Platform Video Publisher & Content Optimizer. Automates video uploading and publishing across TikTok Studio, YouTube Shorts, and Ins",
-  "has_tool": false
- },
- {
-  "file": "weather_report.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "web_search.py",
-  "doc": "",
-  "has_tool": false
- },
- {
-  "file": "website_builder.py",
-  "doc": "Generate an original, self-contained static website from a short brief.",
-  "has_tool": true
- },
- {
-  "file": "youtube_video.py",
-  "doc": "",
-  "has_tool": false
- }
+  {
+    "file": "__init__.py",
+    "doc": "Action modules for Brahma AI.",
+    "has_tool": false
+  },
+  {
+    "file": "attention_monitor.py",
+    "doc": "",
+    "has_tool": false
+  },
+  {
+    "file": "auto_heal_engine.py",
+    "doc": "Auto-Heal & Self-Patching Engine for Brahma AI Enables Brahma to detect its own bugs, tracebacks, and tool exceptions, synthesize minimal surgical hot",
+    "has_tool": true
+  },
+  {
+    "file": "background_monitor.py",
+    "doc": "Background Monitor Action for Brahma AI. Allows the AI to schedule background polling for system health, crypto prices, or website uptime.",
+    "has_tool": false
+  },
+  {
+    "file": "brahma_connect.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "brahma_dev_agent.py",
+    "doc": "",
+    "has_tool": false
+  },
+  {
+    "file": "browser_control.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "claude_code_bridge.py",
+    "doc": "",
+    "has_tool": false
+  },
+  {
+    "file": "clipboard_processor.py",
+    "doc": "Clipboard Processor Action for Brahma AI. Allows the AI to instantly read whatever text the user has copied to their Windows clipboard.",
+    "has_tool": true
+  },
+  {
+    "file": "code_helper.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "computer_control.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "computer_settings.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "desktop.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "desktop_organizer_mcp.py",
+    "doc": "Smart Desktop & Downloads Organizer MCP for Brahma AI. Provides safe, intelligent file classification, dry-run previews, full transaction rollback (un",
+    "has_tool": false
+  },
+  {
+    "file": "dev_agent.py",
+    "doc": "",
+    "has_tool": false
+  },
+  {
+    "file": "docx_tools.py",
+    "doc": "docx_tools.py - Brahma AI Word / DOCX support Provides dedicated creation, editing, extraction, summarization, and opening workflows for editable Word",
+    "has_tool": true
+  },
+  {
+    "file": "file_controller.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "file_processor.py",
+    "doc": "file_processor.py — Brahma AI Universal File Processor Supported types: image → describe, ocr, resize, convert, compress, crop pdf → summarize, extrac",
+    "has_tool": true
+  },
+  {
+    "file": "flight_finder.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "game_updater.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "gmail.py",
+    "doc": "Gmail OAuth action. Credentials stay local and sending stays confirmation-gated.",
+    "has_tool": true
+  },
+  {
+    "file": "google_workspace_mcp.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "instagram_chat.py",
+    "doc": "Instagram Chat Integration for Brahma AI. Listens for incoming DMs on Instagram and replies using Brahma's core generation.",
+    "has_tool": false
+  },
+  {
+    "file": "instagram_mcp.py",
+    "doc": "actions/instagram_mcp.py Instagram Model Context Protocol (MCP) & Background Social Engine for Brahma AI. Features: - Direct API posting (Photos & Ree",
+    "has_tool": false
+  },
+  {
+    "file": "instagram_messaging.py",
+    "doc": "Meta Graph API connector for Instagram professional-account messaging.",
+    "has_tool": true
+  },
+  {
+    "file": "meeting_assistant.py",
+    "doc": "",
+    "has_tool": false
+  },
+  {
+    "file": "mobile_autopilot.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "moss_check.py",
+    "doc": "MOSS (Measure of Software Similarity) plagiarism checker action. Uploads source code files to Stanford's MOSS server and returns a URL with similarity",
+    "has_tool": true
+  },
+  {
+    "file": "office_builder.py",
+    "doc": "office_builder.py - Brahma AI office document generation Creates PowerPoint presentations and Excel workbooks from structured inputs.",
+    "has_tool": true
+  },
+  {
+    "file": "office_generator.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "open_app.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "opero_connect.py",
+    "doc": "OPERO Connect device pairing & remote execution bridge for OPERO AI.",
+    "has_tool": true
+  },
+  {
+    "file": "opero_dev_agent.py",
+    "doc": "OPERO Dev Agent Action — Autonomous developer task execution engine.",
+    "has_tool": true
+  },
+  {
+    "file": "opero_health.py",
+    "doc": "Read-only operational health report.",
+    "has_tool": true
+  },
+  {
+    "file": "pdf_tools.py",
+    "doc": "pdf_tools.py - Brahma AI PDF support Creates publication-grade PDF documents from structured content or markdown, with multi-page running headers/foot",
+    "has_tool": true
+  },
+  {
+    "file": "playwright_mcp_client.py",
+    "doc": "",
+    "has_tool": false
+  },
+  {
+    "file": "ppt_builder.py",
+    "doc": "ppt_builder.py — OPERO PowerPoint Presentation Builder Generates multi-slide PowerPoint .pptx decks from structured inputs. Supports multiple visual t",
+    "has_tool": true
+  },
+  {
+    "file": "ppt_template_workflow.py",
+    "doc": "",
+    "has_tool": false
+  },
+  {
+    "file": "proactive.py",
+    "doc": "ProactiveEngine 2.0 — context-aware, time-aware, non-repetitive background prompting. Gemini decides what to say; this module decides WHEN and builds ",
+    "has_tool": false
+  },
+  {
+    "file": "recovery.py",
+    "doc": "Review-first recovery controls for OPERO-managed backups.",
+    "has_tool": true
+  },
+  {
+    "file": "reminder.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "screen_processor.py",
+    "doc": "",
+    "has_tool": false
+  },
+  {
+    "file": "send_message.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "system_diagnostics_mcp.py",
+    "doc": "OS Hardware and System Diagnostics MCP for Brahma AI Provides 100% local, on-demand hardware telemetry, process management, battery diagnostics, and m",
+    "has_tool": true
+  },
+  {
+    "file": "system_manager.py",
+    "doc": "System Health & Resource Manager for Brahma AI. Allows the AI to check CPU, RAM, battery, and top processes, as well as forcibly close non-responsive ",
+    "has_tool": true
+  },
+  {
+    "file": "system_monitor.py",
+    "doc": "System Monitor — background metric checks with voice alert support. Zero subprocess calls on all platforms — uses ctypes/pynvml/psutil/wmi only.",
+    "has_tool": false
+  },
+  {
+    "file": "task_status.py",
+    "doc": "Task-journal action for reporting recent OPERO work.",
+    "has_tool": true
+  },
+  {
+    "file": "test_action.py",
+    "doc": "Demonstration Action for Testing Brahma's Autonomous Self-Patching Engine. Contains an intentional edge-case bug (ZeroDivisionError) for live self-rep",
+    "has_tool": false
+  },
+  {
+    "file": "unlock_device.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "weather_report.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "web_search.py",
+    "doc": "",
+    "has_tool": true
+  },
+  {
+    "file": "website_builder.py",
+    "doc": "Generate an original, self-contained static website from a short brief.",
+    "has_tool": true
+  },
+  {
+    "file": "youtube_video.py",
+    "doc": "",
+    "has_tool": true
+  }
 ]

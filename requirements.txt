@@ -46,6 +46,7 @@ uvicorn[standard]>=0.27,<1
 cryptography>=42,<50
 python-multipart>=0.0.9,<1
 qrcode[pil]>=7,<9
+zeroconf                   # brahma_connect gateway — mDNS discovery of paired devices
 
 # ── Plugin extras: Gmail / Google Calendar (OAuth) ────────────────────────────
 google-api-python-client
@@ -73,6 +74,7 @@ ddgs>=9,<10                  # web_search — the maintained successor to
 pdfplumber                   # file_processor — PDF text and tables
 PyPDF2                       # file_processor — PDF fallback reader
 python-docx                  # file_processor — .docx reading
+reportlab                    # pdf_tools — .pdf creation & conversion
 paho-mqtt                    # printer_control plugin — MQTT printers
 nvidia-ml-py                 # system_monitor + the HUD's GPU meter (NVIDIA)
 

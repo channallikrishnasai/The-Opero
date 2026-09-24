@@ -12,6 +12,10 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+# Route through the real dev-agent stack (Brahma Dev Agent, falling back to dev_agent)
+# instead of the placeholder run_dev_agent defined below.
+from actions.claude_code_bridge import run_developer_mode_request
+
 logger = logging.getLogger("opero_dev_agent")
 
 TOOL = {
@@ -25,7 +29,7 @@ TOOL = {
         },
         "required": ["description"],
     },
-    "handler": lambda parameters: run_dev_agent(parameters),
+    "handler": lambda parameters: run_developer_mode_request(parameters),
 }
 
 

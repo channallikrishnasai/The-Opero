@@ -406,19 +406,15 @@ def synthesize_deep_report(goal_or_topic: str, title: str, research_notes: str =
     if not api_key:
         return ""
 
-    import google.generativeai as genai
-    genai.configure(api_key=api_key)
+    # The google-generativeai SDK this was written against is no longer a
+    # dependency; core.gemini adapts the same call shape to google-genai.
+    # Two long-form chapters — give the call room before it times out.
+    try:
+        from core.gemini import compat_client
 
-    model_names = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-flash-latest"]
-    model = None
-    for name in model_names:
-        try:
-            model = genai.GenerativeModel(name)
-            break
-        except Exception:
-            continue
-
-    if not model:
+        model = compat_client("gemini-3.6-flash", timeout_ms=180_000, key=api_key)
+    except Exception as e:
+        print(f"[PDF Tools] [!] Gemini unavailable: {e}")
         return ""
 
     print(f"[PDF Tools] [*] Synthesizing exhaustive research monograph on: {title}...")
@@ -846,3 +842,38 @@ def create_pdf(parameters: dict, player=None) -> str:
     if auto_open:
         _open_file(output_path)
     return f"PDF created: {output_path}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "pdf_tools",
+    "description": (
+        "PDF creation and conversion: build a styled PDF (report, letter, deep report) with title "
+        "page, headings, bullets, numbered lists, tables and dividers, or convert a source file to "
+        "PDF. Use docx_tools for Word and ppt_builder for slides."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": "create (default) | create_letter | deep_report | convert",
+            },
+            "title": {"type": "STRING", "description": "Document title."},
+            "subtitle": {"type": "STRING", "description": "Optional subtitle."},
+            "content": {"type": "STRING", "description": "Markdown-ish body content."},
+            "paragraphs": {"type": "ARRAY", "items": {"type": "STRING"}, "description": "Body paragraphs."},
+            "sections": {"type": "STRING", "description": "JSON array of {heading, body} sections."},
+            "file_path": {"type": "STRING", "description": "Source file for action=convert."},
+            "output_path": {"type": "STRING", "description": "Where to save the PDF."},
+            "author": {"type": "STRING", "description": "Document author."},
+            "subject": {"type": "STRING", "description": "Document subject."},
+            "recipient": {"type": "STRING", "description": "Letter recipient."},
+            "date": {"type": "STRING", "description": "Letter date (default: today)."},
+            "salutation": {"type": "STRING", "description": "Letter salutation."},
+            "goal": {"type": "STRING", "description": "What the document should achieve (guides AI synthesis)."},
+            "auto_open": {"type": "BOOLEAN", "description": "Open the PDF when done (default: true)."},
+        },
+        "required": ["action"],
+    },
+    "handler": create_pdf,
+}

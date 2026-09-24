@@ -2,5 +2,6 @@
     "gemini_api_key": "",
     "os_system": "windows",
     "assemblyai_api_key": "",
-    "voice_engine": "opero"
+    "voice_engine": "opero",
+    "moss_user_id": ""
 }

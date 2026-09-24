@@ -65,10 +65,11 @@ def _get_api_key() -> str:
 
 
 def _gemini_client():
-    import google.generativeai as genai
+    # Written against google-generativeai; core.gemini adapts that call shape
+    # to the google-genai SDK we ship.
+    from core.gemini import compat_client
 
-    genai.configure(api_key=_get_api_key())
-    return genai.GenerativeModel("gemini-2.5-flash")
+    return compat_client("gemini-3.6-flash", key=_get_api_key())
 
 
 def _import_docx():
@@ -529,3 +530,45 @@ def word_document(parameters: dict, player=None, speak=None) -> str:
         "Unknown Word action. Try: create, create_letter, create_report, read, summarize, "
         "extract_text, append, replace_text, add_heading, add_bullets, reformat, open"
     )
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "docx_tools",
+    "description": (
+        "Microsoft Word (.docx): create documents, letters and reports, read and extract text, "
+        "summarize, append or edit content, replace text, add headings and bullets, reformat, and "
+        "open the file. Use ppt_builder for slide decks and pdf_tools for PDFs."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {
+                "type": "STRING",
+                "description": (
+                    "create | create_letter | create_report | reformat | read | extract_text | "
+                    "summarize | append | add | edit | replace_text | add_heading | add_bullets | open"
+                ),
+            },
+            "title": {"type": "STRING", "description": "Document title."},
+            "subtitle": {"type": "STRING", "description": "Optional subtitle."},
+            "content": {"type": "STRING", "description": "Body text (or use paragraphs/bullets)."},
+            "paragraphs": {"type": "ARRAY", "items": {"type": "STRING"}, "description": "Body paragraphs."},
+            "bullets": {"type": "ARRAY", "items": {"type": "STRING"}, "description": "Bullet items."},
+            "sections": {"type": "STRING", "description": "JSON array of {heading, body} sections."},
+            "heading": {"type": "STRING", "description": "Heading text for add_heading."},
+            "text": {"type": "STRING", "description": "Text to append for append/add/edit."},
+            "find": {"type": "STRING", "description": "Text to find for replace_text."},
+            "replace": {"type": "STRING", "description": "Replacement text for replace_text."},
+            "file_path": {"type": "STRING", "description": "Existing .docx to read or edit."},
+            "output_path": {"type": "STRING", "description": "Where to save the result."},
+            "recipient": {"type": "STRING", "description": "Letter recipient."},
+            "date": {"type": "STRING", "description": "Letter date (default: today)."},
+            "salutation": {"type": "STRING", "description": "Letter salutation."},
+            "closing": {"type": "STRING", "description": "Letter closing."},
+            "signature": {"type": "STRING", "description": "Letter signature."},
+            "open_after": {"type": "BOOLEAN", "description": "Open the document when done (default: true)."},
+        },
+        "required": ["action"],
+    },
+    "handler": word_document,
+}

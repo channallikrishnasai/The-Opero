@@ -25,17 +25,6 @@ import tempfile
 from pathlib import Path
 from datetime import datetime
 
-try:
-    from google import genai as _genai_new
-    _USE_NEW_SDK = True
-except ImportError:
-    _USE_NEW_SDK = False
-    try:
-        import google.generativeai as genai  # type: ignore
-    except ImportError:
-        genai = None  # type: ignore
-
-
 def _get_api_key() -> str:
     config_path = Path(__file__).resolve().parent.parent / "config" / "api_keys.json"
     with open(config_path, "r", encoding="utf-8") as f:
@@ -43,13 +32,11 @@ def _get_api_key() -> str:
 
 
 def _gemini_client():
-    key = _get_api_key()
-    if _USE_NEW_SDK:
-        return _genai_new.Client(api_key=key)
-    if genai is not None:
-        genai.configure(api_key=key)
-        return genai.GenerativeModel("gemini-2.5-flash")
-    raise RuntimeError("No Gemini SDK available. Run: pip install google-genai")
+    # Written against google-generativeai; core.gemini adapts that
+    # .generate_content(...) call shape to the google-genai SDK we ship.
+    from core.gemini import compat_client
+
+    return compat_client("gemini-3.6-flash", key=_get_api_key())
 
 
 def _detect_type(path: Path) -> str:
@@ -844,3 +831,49 @@ def file_processor(parameters: dict, player=None, speak=None) -> str:
         import traceback
         traceback.print_exc()
         return f"Processing failed: {e}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "file_processor",
+    "description": (
+        "Deep processing of a specific file: images (describe, OCR, resize, convert, compress), "
+        "PDF/Office (extract text, summarize, convert to Word), text and code (summarize, analyze, "
+        "fix, optimize, document, run), JSON/CSV (convert, filter, sort, validate), audio "
+        "(transcribe, trim, convert), video (extract audio/frame, trim, compress). When file_path "
+        "is omitted it uses the currently uploaded file. For moving, renaming or deleting files "
+        "use file_controller instead."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "file_path": {
+                "type": "STRING",
+                "description": "Full path of the file to process. Defaults to the currently uploaded file.",
+            },
+            "action": {
+                "type": "STRING",
+                "description": (
+                    "describe | ocr | read | extract_text | summarize | analyze | translate_hint | "
+                    "reformat | convert | to_csv | to_excel | to_json | filter | sort | validate | "
+                    "format | fix | optimize | document | run | info | stats | word_count | to_word | "
+                    "resize | compress | transcribe | trim | extract_audio | extract_frame | list | extract"
+                ),
+            },
+            "instruction": {"type": "STRING", "description": "Free-form instruction guiding the AI step."},
+            "format": {"type": "STRING", "description": "Target format for convert (csv, xlsx, json, png, mp3...)."},
+            "column": {"type": "STRING", "description": "Column for filter/sort."},
+            "value": {"type": "STRING", "description": "Value to filter on."},
+            "condition": {"type": "STRING", "description": "Filter condition (default: equals)."},
+            "ascending": {"type": "BOOLEAN", "description": "Sort direction (default: true)."},
+            "width": {"type": "INTEGER", "description": "Target width for resize."},
+            "height": {"type": "INTEGER", "description": "Target height for resize."},
+            "quality": {"type": "INTEGER", "description": "Quality (0-100) for compress."},
+            "start": {"type": "NUMBER", "description": "Trim start in seconds."},
+            "end": {"type": "NUMBER", "description": "Trim end in seconds."},
+            "destination": {"type": "STRING", "description": "Destination path for extract_audio."},
+            "save": {"type": "BOOLEAN", "description": "Write long AI results to a file (default: true)."},
+        },
+        "required": [],
+    },
+    "handler": file_processor,
+}

@@ -75,3 +75,22 @@ def run(parameters: dict, player=None, session_memory=None) -> str:
         health = get_system_health()
         if player: player.write_log(f"SYS: CPU {health['cpu_usage_percent']}% | RAM {health['ram_usage_percent']}%")
         return json.dumps(health, indent=2)
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "system_manager",
+    "description": (
+        "Process and resource management: report CPU/RAM/disk usage with the top processes by "
+        "CPU or RAM, and terminate a process by name or PID."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {"type": "STRING", "description": "status (default) | kill"},
+            "pid": {"type": "INTEGER", "description": "Process ID to kill."},
+            "process_name": {"type": "STRING", "description": "Process name to kill or inspect."},
+        },
+        "required": [],
+    },
+    "handler": run,
+}

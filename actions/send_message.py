@@ -283,3 +283,25 @@ def send_message(
     target = media_path if mode == "upload" else receiver
     detail = f"Send via {platform} to {target}: {message_text[:160]}"
     return confirm.request(f"send-message:{platform}:{target}", "Send message", detail, execute)
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "send_message",
+    "description": (
+        "Send a message through WhatsApp, Telegram, Instagram DM, e-mail or any other desktop app "
+        "by driving its UI. Can also post media to Instagram (mode=upload). For Gmail drafts/sends "
+        "use gmail instead."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "receiver": {"type": "STRING", "description": "Contact name, handle or address to send to."},
+            "message_text": {"type": "STRING", "description": "The message body or caption."},
+            "platform": {"type": "STRING", "description": "whatsapp (default) | instagram | telegram | email | any app name"},
+            "mode": {"type": "STRING", "description": "dm (default) | upload — upload posts media_path to Instagram."},
+            "media_path": {"type": "STRING", "description": "Media file path for mode=upload."},
+        },
+        "required": [],
+    },
+    "handler": send_message,
+}

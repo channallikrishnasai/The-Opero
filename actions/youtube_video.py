@@ -416,3 +416,24 @@ def youtube_video(
     except Exception as e:
         print(f"[YouTube] ❌ Error in {action}: {e}")
         return f"YouTube {action} failed, sir: {e}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "youtube_video",
+    "description": (
+        "YouTube control: play a video or song, fetch a video's info, list trending videos, or "
+        "summarize a video's transcript. Use for any 'play on YouTube' request."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "action": {"type": "STRING", "description": "play (default) | summarize | get_info | trending"},
+            "query": {"type": "STRING", "description": "What to play or search for."},
+            "url": {"type": "STRING", "description": "Explicit YouTube URL (preferred for summarize/get_info)."},
+            "region": {"type": "STRING", "description": "ISO country code for trending (default: IN)."},
+            "save": {"type": "BOOLEAN", "description": "Also save the result to a file."},
+        },
+        "required": [],
+    },
+    "handler": youtube_video,
+}

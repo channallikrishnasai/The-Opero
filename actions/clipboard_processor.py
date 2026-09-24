@@ -29,3 +29,14 @@ def process_clipboard(parameters: dict | None = None, player=None) -> str:
 
 def run(parameters: dict, player=None, session_memory=None) -> str:
     return process_clipboard(parameters, player=player)
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "clipboard_processor",
+    "description": (
+        "Read the current text contents of the system clipboard (truncated to 30k characters). "
+        "Use when the user says 'what I copied' or 'paste what's in my clipboard'."
+    ),
+    "parameters": {"type": "OBJECT", "properties": {}, "required": []},
+    "handler": process_clipboard,
+}

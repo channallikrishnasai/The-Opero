@@ -44,7 +44,7 @@ sequenceDiagram
     participant Input as Input Layer (Mic/Screen)
     participant Brain as Gemini AI Brain
     participant Dispatch as Action Dispatcher
-    participant Module as Action Module (50+)
+    participant Module as Action Modules (51 tools)
     participant UI as UI & TTS Output
     
     User->>Input: "Hey Opero, email John the Q3 report"
@@ -67,7 +67,7 @@ sequenceDiagram
 
 ## 🤖 Autonomous Modules & Capabilities
 
-OPERO ships with **50+ Action Modules**. Click any category to explore the automations.
+OPERO ships with **51 tools**: 37 action modules in `actions/`, 6 plugins in `plugins/`, and 8 built‑in tools. Click any category to explore the automations.
 
 <details>
 <summary><b>🛡️ 1️⃣ Self‑Heal Engine</b></summary>
@@ -122,8 +122,8 @@ Create rich files locally.
 <details>
 <summary><b>🎵 5️⃣ Spotify Voice Control</b></summary>
 
-Hands‑free music management via the Spotify Web API.
-- Play, pause, skip, add to playlist.
+Hands‑free music management through the Spotify desktop app, the web player and the system media keys.
+- Play, pause, skip, previous, volume up/down, mute, open Spotify.
 </details>
 
 <details>
@@ -136,7 +136,17 @@ Orchestrate your PC with PyAutoGUI and OS utilities.
 <details>
 <summary><b>🔍 7️⃣ Stanford MOSS Plagiarism Detection</b></summary>
 
-Upload source code to MOSS, receive similarity matrix & web report URL.
+Upload source code to Stanford's MOSS server and get back a report URL with the full similarity matrix.
+
+- **Languages:** 40+ — Python, Java, C/C++, JavaScript, TypeScript, Haskell, Go, Rust, SQL, MATLAB, Verilog and more (auto-detected from file extensions).
+- **Modes:** a single file or a whole directory (recursive, directory mode), with optional base/instructor files excluded from matches.
+- **Setup:** register free at [moss.stanford.edu](https://moss.stanford.edu) — Stanford emails you a numeric user ID — then store it either in `config/api_keys.json`:
+  ```json
+  "moss_user_id": "123456789"
+  ```
+  or just tell OPERO *"set my moss id to 123456789"* (the `moss_check` tool's `action=set_id` stores it for you).
+- **Check:** *"Check this folder for plagiarism"* — `moss_check` uploads the files and returns the Stanford report link with pairwise matches.
+- **Status:** ask *"Is MOSS configured?"* (`moss_check` with `action=status`) at any time.
 </details>
 
 ---
@@ -146,12 +156,13 @@ Upload source code to MOSS, receive similarity matrix & web report URL.
 | **Module Category** | **Example Files** | **Inputs** | **Outputs** |
 |---------------------|-------------------|------------|-------------|
 | System Control      | `computer_control.py`, `system_manager.py` | Voice, Text | Mouse/Keyboard events, Settings changes |
-| Media & Audio       | `spotify_controller.py`, `youtube_video.py` | Voice | Audio playback, Spotify API triggers |
+| Media & Audio       | `plugins/spotify_controller.py`, `youtube_video.py` | Voice | Audio playback, media key events |
 | File Processing     | `file_controller.py`, `file_processor.py` | File paths, NL description | Moved/renamed files, OCR text, extracted data |
 | Document Generation | `docx_tools.py`, `ppt_builder.py`, `pdf_tools.py` | Topic, content guidelines | `.docx`, `.pptx`, `.pdf` |
 | Web & Research      | `web_search.py`, `browser_control.py` | Search queries, URLs | JSON summaries, Markdown reports |
-| Communication       | `gmail.py`, `instagram_mcp.py` | Credentials, draft content | Sent emails, Direct messages |
+| Communication       | `gmail.py`, `instagram_messaging.py` | Credentials, draft content | Sent emails, Direct messages |
 | Self‑Healing        | `auto_heal_engine.py`, `recovery.py` | Tracebacks, exceptions | AST‑validated `.py` patches |
+| Academic Integrity   | `moss_check.py` | Folder/file path, optional base files | Stanford MOSS report URL (similarity matrix) |
 
 ---
 
@@ -176,21 +187,22 @@ pip install -r requirements.txt
 ```
 
 ### 3️⃣ Configuration
-Place your secret keys in `config/api_keys.json`:
+Place your key in `config/api_keys.json` — this is the only required secret:
+
 ```json
 {
-  "gemini": "YOUR_GEMINI_API_KEY",
-  "gmail": {
-    "client_id": "...",
-    "client_secret": "...",
-    "refresh_token": "..."
-  },
-  "spotify": {
-    "client_id": "...",
-    "client_secret": "..."
-  }
+  "gemini_api_key": "YOUR_GEMINI_API_KEY",
+  "os_system": "windows",
+  "ui_layout": "classic"
 }
 ```
+
+Third‑party connections are stored separately, so no extra blocks are needed here:
+
+- **Gmail** — drop an OAuth client at `config/google_oauth_client.json` and run the `gmail` tool with `action=connect`, **or** use `action=connect_app_passcode` with your address and a 16‑character [App Password](https://myaccount.google.com/apppasswords).
+- **Spotify** — no credentials required; the controller drives the desktop app / web player and the system media keys.
+- **MOSS** — add your numeric `moss_user_id` (free registration at [moss.stanford.edu](https://moss.stanford.edu)) to enable the `moss_check` plagiarism tool — or tell OPERO *"set my moss id to …"* and it stores the ID for you.
+
 > **Tip:** The UI includes a Settings overlay where you can paste the Gemini key directly.
 
 ### 4️⃣ Run OPERO
@@ -205,8 +217,11 @@ The desktop HUD will appear, embedding the interactive **`site/index.html`** das
 | **Subsystem** | **Command** | **Expected Result** |
 |---------------|-------------|---------------------|
 | Core Boot | `python -c "import main; print('OK')"` | No import errors |
-| Action Loader | `python -c "from core.action_loader import discover_actions; discover_actions(None)"` | 50+ actions discovered |
-| Gmail OAuth | `python -c "from actions.gmail import execute; print(execute({'action':'status'}))"` | Shows active token status |
+| Action Loader | `python -c "from pathlib import Path; from core.action_loader import discover_actions as d; print(len(d(Path('actions')).names()), 'actions discovered')"` | Final line: `37 actions discovered` |
+| Plugin Loader | `python -c "from pathlib import Path; from core.plugin_loader import discover_plugins as d; print(len(d(Path('plugins'), set()).list_for_ui()), 'plugins discovered')"` | Final line: `6 plugins discovered` |
+| Gmail OAuth | `python -c "from actions.gmail import execute; print(execute({'action':'status'}))"` | Connection status, or the `connect_app_passcode` / OAuth setup hint |
+| Stanford MOSS | `python -c "from actions.moss_check import _handler; print(_handler({'action':'status'}))"` | Configured ID, or the moss.stanford.edu registration + `set_id` instructions |
+| Device Gateway | `python -c "from actions.brahma_connect import device_gateway; print(device_gateway({'action':'list'}))"` | Paired-device list (gateway auto-serves on `0.0.0.0:8765`; empty until a device pairs) |
 | Self‑Heal Demo | `python demo/demo_selfheal.py` | Runs 3 auto‑repair cycles |
 | UI Load | Open `http://localhost:8000/site/` (or run `main.py`) | 3D galaxy background, interactive cards |
 

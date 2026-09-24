@@ -636,3 +636,24 @@ def create_spreadsheet(parameters: dict, player=None) -> str:
     if auto_open:
         _open_file(output_path)
     return f"Spreadsheet created: {output_path}"
+
+# ── OPERO tool registration ───────────────────────────────────────────────────
+TOOL = {
+    "name": "spreadsheet_builder",
+    "description": (
+        "Create a polished Excel (.xlsx) workbook from a title and optional worksheet specs. "
+        "Use ppt_builder for slide decks and docx_tools for Word documents."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "title": {"type": "STRING", "description": "Workbook title and default filename."},
+            "worksheets": {"type": "STRING", "description": "JSON array of worksheet specs: [{name, headers, rows}]"},
+            "sheets": {"type": "STRING", "description": "Alias for worksheets."},
+            "output_path": {"type": "STRING", "description": "Where to save the .xlsx."},
+            "auto_open": {"type": "BOOLEAN", "description": "Open the workbook when done (default: true)."},
+        },
+        "required": ["title"],
+    },
+    "handler": create_spreadsheet,
+}
