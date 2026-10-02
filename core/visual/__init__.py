@@ -1,4 +1,4 @@
-"""Visual intelligence subsystem (Phases 1-3: world model, intent schema, asset registry)."""
+"""Visual intelligence subsystem (world model, intent schema, asset registry, request routing)."""
 
 from .assets import (
     AssetError,
@@ -28,6 +28,14 @@ from .intent import (
     VisualIntent,
     resolve_entity_id,
 )
+from .routing import (
+    SEARCH_GUARD_TOOLS,
+    VisualRouter,
+    VisualRouteResult,
+    last_user_utterance,
+    route_search_request,
+    route_visual_request,
+)
 from .world_model import (
     Entity,
     UnknownEntityError,
@@ -52,14 +60,20 @@ __all__ = [
     "IntentAction",
     "IntentMode",
     "IntentValidationError",
+    "SEARCH_GUARD_TOOLS",
     "UnknownAssetError",
     "UnknownConceptError",
     "UnknownEntityError",
     "UnknownPartError",
     "VerificationStatus",
     "VisualIntent",
+    "VisualRouteResult",
+    "VisualRouter",
     "VisualWorldError",
     "VisualWorldModel",
+    "last_user_utterance",
     "load_concepts",
     "resolve_entity_id",
+    "route_search_request",
+    "route_visual_request",
 ]

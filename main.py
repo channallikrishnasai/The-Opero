@@ -22,6 +22,12 @@ from pathlib import Path
 
 from core.logger import get_logger
 from core.live_reconnect import is_clean_live_close
+from core.visual import (
+    SEARCH_GUARD_TOOLS,
+    UnknownConceptError,
+    last_user_utterance,
+    route_search_request,
+)
 log = get_logger(__name__)
 
 import sounddevice as sd
@@ -1037,6 +1043,9 @@ class OperaLive:
         if self._wake_enabled and not self._awake:
             self.ui.write_log("SYS: I'm asleep — say 'Hey opero' or tap WAKE NOW first.")
             return
+        # Typed turns join the session log so visual routing can see the raw
+        # utterance (voice paths already append here).
+        self._session_log.append(f"User: {text}")
         asyncio.run_coroutine_threadsafe(
             self.session.send_client_content(
                 turns={"role": "user", "parts": [{"text": text}]},
@@ -1319,6 +1328,28 @@ class OperaLive:
         # Light the tool's node in the 3D background as it starts work.
         self.ui.set_background_active_feature(name)
 
+        # Explicit visual requests ("show me an apple") terminate at the
+        # VisualIntent/WorldModel/AssetRegistry layer — never in a browser or
+        # image search. core.visual.routing is lexical and needs no model call.
+        if name in SEARCH_GUARD_TOOLS:
+            try:
+                routed = route_search_request(name, args, last_user_utterance(self._session_log))
+            except UnknownConceptError as exc:
+                return types.FunctionResponse(
+                    id=fc.id, name=name,
+                    response={"result": str(exc), "routed_to": "visual", "status": "unknown_concept"},
+                )
+            if routed is not None:
+                log.info("🧭 visual route: %s -> %s", args, routed.entity_id)
+                return types.FunctionResponse(
+                    id=fc.id, name=name,
+                    response={
+                        "result": "Visual intent created; no web search was performed. "
+                                  "3D rendering is not wired yet.",
+                        "routed_to": "visual",
+                        **routed.to_dict(),
+                    },
+                )
 
         if name == "save_memory":
             category = args.get("category", "notes")
