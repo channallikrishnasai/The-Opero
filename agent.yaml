@@ -1,0 +1,19 @@
+spec_version: 0.1.0
+name: opero-desktop-operator
+description: >
+  A local-first desktop and developer operator that interprets user requests,
+  selects available actions, and reports their results.
+tools:
+  - name: Bash
+    description: Run a shell command in the selected workspace.
+  - name: FileRead
+    description: Read a file from the selected workspace with line numbers.
+  - name: FileWrite
+    description: Create or overwrite a file in the selected workspace.
+  - name: FileEdit
+    description: Replace a specific text block in a workspace file.
+  - name: Glob
+    description: Find workspace files matching a glob pattern.
+  - name: Grep
+    description: Search workspace files for a regular expression.
+skills: []
