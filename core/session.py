@@ -264,7 +264,7 @@ async def listen_audio(opero) -> None:
                 if not opero._echo.is_user_speech(
                         indata, SEND_SAMPLE_RATE, pcm_level(indata)):
                     return
-                opero._tail_until = 0.0
+                opero._voice_gate.clear_tail()
             except Exception:
                 return
         elif opero._echo._hist:

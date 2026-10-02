@@ -28,6 +28,7 @@ from core.visual import (
     last_user_utterance,
     route_search_request,
 )
+from core.voice_state import VoiceGate
 log = get_logger(__name__)
 
 import sounddevice as sd
@@ -560,6 +561,9 @@ class OperaLive:
         self._loop                     = None
         self._is_speaking         = False
         self._speaking_lock       = threading.Lock()
+        # One gate for every mic/transcript/TTS boundary — both the Gemini-native
+        # and the AssemblyAI paths refuse audio and transcripts through it.
+        self._voice_gate          = VoiceGate()
         self._phone_active        = False   # True while phone mic is streaming; pauses PC mic
         self._pending_vision       = None    # (img_bytes, mime_type, question, angle) to inject after tool response
         self._vision_cam_active    = False   # True if camera was opened for vision → auto-close after response
@@ -581,9 +585,8 @@ class OperaLive:
         # speaker has finished with it, so sound is still in the room after the
         # speaking flag drops. Streaming the microphone during that gap is how an
         # assistant ends up answering itself. Measured from the device rather than
-        # guessed; see _play_audio.
+        # guessed; see _play_audio. The acoustic tail itself lives in VoiceGate.
         self._out_latency          = 0.20    # seconds, replaced with the real value
-        self._tail_until           = 0.0     # monotonic time the echo tail expires
         # Wall-clock time at which the audio written next will begin to sound.
         # The mouth is scheduled against this, never against "now": batches are
         # handed to the device far faster than they play, so "now" ran the lips
@@ -938,6 +941,10 @@ class OperaLive:
         text = text.strip()
         if not text:
             return
+        # Stale final: audio captured before our own TTS (or during its tail)
+        # must never re-enter the conversation as user speech.
+        if not self._voice_gate.accept_transcript():
+            return
         self._last_user_speech = time.monotonic()
         self.ui.write_log(f"You: {text}")
         self._session_log.append(f"User: {text}")
@@ -986,14 +993,13 @@ class OperaLive:
             if self._wake_detector is not None:
                 self._wake_detector.feed(indata)
             return
-        with self._speaking_lock:
-            if self._is_speaking:
-                return
+        if not self._voice_gate.accept_mic():
+            return
         if self._tail_active():
             try:
                 if not self._echo.is_user_speech(indata, SEND_SAMPLE_RATE, _pcm_level(indata)):
                     return
-                self._tail_until = 0.0
+                self._voice_gate.clear_tail()
             except Exception:
                 return
         elif self._echo._hist:
@@ -1001,6 +1007,7 @@ class OperaLive:
         if self._ptt_enabled and not self._ptt_held:
             return
         if not self.ui.muted and not self._phone_active:
+            self._voice_gate.note_mic()
             send_audio(indata.tobytes())
             try:
                 self.ui.set_audio_level(_pcm_level(indata))
@@ -1056,23 +1063,20 @@ class OperaLive:
 
     def _tail_active(self) -> bool:
         """True while the speakers may still be finishing our last sentence."""
-        return time.monotonic() < self._tail_until
+        return self._voice_gate.in_tail()
 
     def set_speaking(self, value: bool):
+        if value:
+            self._voice_gate.begin_speaking()
+        else:
+            self._voice_gate.end_speaking()
         with self._speaking_lock:
             self._is_speaking = value
-        if value:
-            self._tail_until = 0.0
-        else:
-            # Hold the guard open across the device's own output latency plus a
-            # margin for the room. The microphone is NOT muted during it — the
-            # guard still lets a genuine reply through, so answering instantly
-            # still works. Only our own echo is dropped.
-            self._tail_until = time.monotonic() + self._out_latency + _TAIL_MARGIN
         if not value:
-            # The echo history is deliberately NOT cleared here: the tail above
-            # still needs it to recognise our own voice. It is dropped when the
-            # tail expires. What the guard learned about the room always stays.
+            # The echo history is deliberately NOT cleared here: the tail
+            # (held open by end_speaking) still needs it to recognise our own
+            # voice. It is dropped when the tail expires. What the guard learned
+            # about the room always stays.
             self._out_level = 0.0
         if value:
             self.ui.set_state("SPEAKING")
@@ -1134,6 +1138,7 @@ class OperaLive:
                     break
             if drained:
                 log.info(f"[OPERO] ✋ Interrupted — {drained} audio chunks discarded")
+        self._voice_gate.interrupt()
         self.set_speaking(False)
         # The words we were about to mouth are never going to be spoken now.
         self._visemes.reset()
@@ -1543,8 +1548,7 @@ class OperaLive:
                 if det is not None:
                     det.feed(indata)
                 return
-            with self._speaking_lock:
-                opero_speaking = self._is_speaking
+            opero_speaking = not self._voice_gate.accept_mic()
 
             # ── Barge-in ─────────────────────────────────────────────────────
             # While OPERO talks the mic is not streamed, but it is still worth
@@ -1577,7 +1581,7 @@ class OperaLive:
                     if not self._echo.is_user_speech(
                             indata, SEND_SAMPLE_RATE, _pcm_level(indata)):
                         return
-                    self._tail_until = 0.0      # a real voice ends the tail early
+                    self._voice_gate.clear_tail()   # a real voice ends the tail early
                 except Exception:
                     return
             elif self._echo._hist:
@@ -1591,6 +1595,7 @@ class OperaLive:
                 return
 
             if not self.ui.muted and not self._phone_active:
+                self._voice_gate.note_mic()
                 data = indata.tobytes()
                 def _safe_put():
                     try:
@@ -1748,7 +1753,8 @@ class OperaLive:
                                 # nothing measurable to the response path.
                                 self._visemes.feed_text(txt)
 
-                        if sc.input_transcription and sc.input_transcription.text:
+                        if (sc.input_transcription and sc.input_transcription.text
+                                and self._voice_gate.accept_transcript()):
                             txt = _clean_transcript(sc.input_transcription.text)
                             if txt:
                                 in_buf.append(txt)
@@ -1867,6 +1873,7 @@ class OperaLive:
             lat = float(getattr(stream, "latency", 0.0) or 0.0)
             if 0.0 < lat < 1.0:
                 self._out_latency = lat
+                self._voice_gate.latency = lat   # size the acoustic tail from the device
             log.info(f"[OPERO] 🔊 Output latency {self._out_latency*1000:.0f} ms "
                   f"→ echo tail {(self._out_latency + _TAIL_MARGIN)*1000:.0f} ms")
         except Exception as e:
