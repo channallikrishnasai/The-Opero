@@ -1,0 +1,15 @@
+{
+  "name": "apple",
+  "description": "Seed concept for a generic apple. No real 3D asset is bundled yet.",
+  "parts": ["body", "stem", "leaf"],
+  "default_transform": {
+    "position": [0.0, 0.0, 0.0],
+    "rotation": [0.0, 0.0, 0.0],
+    "scale": [1.0, 1.0, 1.0]
+  },
+  "asset": {
+    "status": "pending",
+    "path": null,
+    "note": "Reference only; no model file exists yet."
+  }
+}
