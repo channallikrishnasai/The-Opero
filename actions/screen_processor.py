@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import threading
+from dataclasses import dataclass
 import cv2
 import mss
 import mss.tools
@@ -39,6 +40,27 @@ CHUNK_SIZE          = 1024
 IMG_MAX_W = 640
 IMG_MAX_H = 360
 JPEG_Q    = 55
+
+
+@dataclass(frozen=True)
+class ScreenCaptureResult:
+    """The one capture contract: structured, never a tuple, never an exception.
+
+    Every caller (main.py, core/tool_dispatch.py, screen_process) consumes
+    these fields. A failure carries a machine-readable code plus a human
+    message that never contains a traceback.
+    """
+    ok: bool
+    image: bytes = b""
+    mime_type: str = ""
+    width: int = 0
+    height: int = 0
+    error: str = ""
+    message: str = ""
+
+    def error_response(self) -> dict:
+        """Tool-shaped failure payload the model can read."""
+        return {"success": False, "error": self.error, "message": self.message}
 
 SYSTEM_PROMPT = (
     "You are Brahma AI - Lite, an open-source assistant. "
@@ -106,18 +128,23 @@ def _get_camera_index() -> int:
     return best_index
 
 
-def _to_jpeg(img_bytes: bytes) -> bytes:
+def _to_jpeg(img_bytes: bytes) -> tuple[bytes, int, int]:
     if not _PIL_OK:
-        return img_bytes
+        return img_bytes, 0, 0
     img = PIL.Image.open(io.BytesIO(img_bytes)).convert("RGB")
     resample = getattr(PIL.Image, "Resampling", PIL.Image).BILINEAR
     img.thumbnail([IMG_MAX_W, IMG_MAX_H], resample)
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=JPEG_Q, optimize=False)
-    return buf.getvalue()
+    return buf.getvalue(), img.width, img.height
 
 
-def _capture_screenshot() -> bytes:
+def _capture_screenshot() -> ScreenCaptureResult:
+    """Explicit one-shot desktop capture — the stable contract for every caller.
+
+    Never raises: failure comes back structured so no caller ever unpacks a
+    tuple or hands a traceback to the model or the user.
+    """
     try:
         if _PIL_OK:
             from PIL import ImageGrab
@@ -126,11 +153,11 @@ def _capture_screenshot() -> bytes:
             img.thumbnail([IMG_MAX_W, IMG_MAX_H], resample)
             buf = io.BytesIO()
             img.save(buf, format="JPEG", quality=JPEG_Q, optimize=False)
-            return buf.getvalue()
-        else:
-            raise RuntimeError("PIL not available")
+            return ScreenCaptureResult(ok=True, image=buf.getvalue(), mime_type="image/jpeg",
+                                       width=img.width, height=img.height)
     except Exception as e:
         print(f"[ScreenProcess] PIL ImageGrab failed ({e}). Falling back to mss.")
+    try:
         with mss.mss() as sct:
             monitors = getattr(sct, "monitors", []) or []
             if len(monitors) > 1:
@@ -140,30 +167,55 @@ def _capture_screenshot() -> bytes:
             else:
                 raise RuntimeError("No monitors were detected for screen capture.")
             shot = sct.grab(monitor)
+            width, height = shot.size
             png_bytes = mss.tools.to_png(shot.rgb, shot.size)
-        return _to_jpeg(png_bytes)
+        if _PIL_OK:
+            image, width, height = _to_jpeg(png_bytes)
+            return ScreenCaptureResult(ok=True, image=image, mime_type="image/jpeg",
+                                       width=width, height=height)
+        return ScreenCaptureResult(ok=True, image=png_bytes, mime_type="image/png",
+                                   width=width, height=height)
+    except Exception as e:
+        print(f"[ScreenProcess] [ERR] Screen capture failed: {e}")
+        return ScreenCaptureResult(
+            ok=False, error="screen_capture_failed",
+            message="Screen capture failed. Please make sure OPERO has permission to view the screen, then try again.",
+        )
 
 
-def _capture_camera() -> bytes:
-    camera_index = _get_camera_index()
-    cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
-    if not cap.isOpened():
-        raise RuntimeError(f"Camera could not be opened: index {camera_index}")
-    for _ in range(10):
-        cap.read()
-    ret, frame = cap.read()
-    cap.release()
-    if not ret or frame is None:
-        raise RuntimeError("Could not capture camera frame.")
-    if _PIL_OK:
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img = PIL.Image.fromarray(rgb)
-        img.thumbnail([IMG_MAX_W, IMG_MAX_H], PIL.Image.BILINEAR)
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=JPEG_Q, optimize=False)
-        return buf.getvalue()
-    _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, JPEG_Q])
-    return buf.tobytes()
+def _capture_camera() -> ScreenCaptureResult:
+    """Webcam frame through the same contract as the screen — never raises."""
+    try:
+        camera_index = _get_camera_index()
+        cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+        if not cap.isOpened():
+            raise RuntimeError(f"Camera could not be opened: index {camera_index}")
+        for _ in range(10):
+            cap.read()
+        ret, frame = cap.read()
+        cap.release()
+        if not ret or frame is None:
+            raise RuntimeError("Could not capture camera frame.")
+        if _PIL_OK:
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = PIL.Image.fromarray(rgb)
+            img.thumbnail([IMG_MAX_W, IMG_MAX_H], PIL.Image.BILINEAR)
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=JPEG_Q, optimize=False)
+            width, height = img.size
+            image = buf.getvalue()
+        else:
+            _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, JPEG_Q])
+            height, width = frame.shape[:2]
+            image = buf.tobytes()
+        return ScreenCaptureResult(ok=True, image=image, mime_type="image/jpeg",
+                                   width=width, height=height)
+    except Exception as e:
+        print(f"[ScreenProcess] [ERR] Camera capture failed: {e}")
+        return ScreenCaptureResult(
+            ok=False, error="camera_capture_failed",
+            message="Camera capture failed. Please make sure the camera is connected and not in use by another app.",
+        )
 
 
 class _LiveSession:
@@ -401,27 +453,26 @@ def screen_process(
         player.set_scanning(True, "SCANNING SCREEN")
 
     try:
+        _window_angle = (
+            angle in ("active_window", "window") or (parameters or {}).get("target") == "active_window"
+        )
         if angle == "camera":
-            image_bytes = _capture_camera()
-            mime_type   = "image/jpeg"
-            print("[ScreenProcess] [CAMERA] Camera captured")
-        elif angle in ("active_window", "window") or (parameters or {}).get("target") == "active_window":
-            from core.window_context import capture_active_window_screenshot
-            image_bytes = capture_active_window_screenshot()
-            if not image_bytes:
-                image_bytes = _capture_screenshot()
-            mime_type = "image/jpeg"
-            print("[ScreenProcess] [WINDOW] Active window captured")
+            cap = _capture_camera()
+        elif _window_angle or not image_bytes:
+            # Window-level cropping has no implementation on this branch — the
+            # full screen is the honest fallback, through the same contract.
+            cap = _capture_screenshot()
         else:
-            if image_bytes:
-                mime_type = "image/jpeg"
-                print("[ScreenProcess] [SCREEN] Using pre-captured UI screenshot")
-            else:
-                image_bytes = _capture_screenshot()
-                mime_type   = "image/jpeg" if _PIL_OK else "image/png"
-                print("[ScreenProcess] [SCREEN] Screen captured")
+            cap = None
+            mime_type = "image/jpeg"
+            print("[ScreenProcess] [SCREEN] Using pre-captured UI screenshot")
+        if cap is not None:
+            if not cap.ok:
+                return _screen_failure(cap.message)
+            image_bytes, mime_type = cap.image, cap.mime_type
+            label = "WINDOW" if _window_angle else ("CAMERA" if angle == "camera" else "SCREEN")
+            print(f"[ScreenProcess] [{label}] Captured {cap.width}x{cap.height} ({len(image_bytes):,} bytes)")
     except Exception as e:
-        import traceback; traceback.print_exc()
         print(f"[ScreenProcess] [ERR] Capture error: {e}")
         return _screen_failure("Failed to capture the screen. Please ensure the application has permission to capture your display.")
 
@@ -436,16 +487,14 @@ def screen_process(
     # Enrich prompt with foreground window context if available
     if angle != "camera":
         try:
-            from core.window_context import get_foreground_window_info
-            w_info = get_foreground_window_info()
-            if w_info and w_info.get("title"):
-                w_title = w_info.get("title", "").strip()
-                w_class = w_info.get("class_name", "").strip()
-                if w_title and "brahma" not in w_title.lower():
-                    context_tag = f"\n[User's Active Focused Application: \"{w_title}\" (Class: {w_class})]"
-                    if context_tag not in user_text:
-                        user_text += context_tag
-                        print(f"[ScreenProcess] Injected window context: {w_title}")
+            from core.perception import get_active_window
+            w = get_active_window()
+            w_title = (w.title if w else "").strip()
+            if w_title and "brahma" not in w_title.lower():
+                context_tag = f"\n[User's Active Focused Application: \"{w_title}\"]"
+                if context_tag not in user_text:
+                    user_text += context_tag
+                    print(f"[ScreenProcess] Injected window context: {w_title}")
         except Exception as we:
             print(f"[ScreenProcess] [WARN] Could not get foreground window context: {we}")
 

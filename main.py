@@ -1404,27 +1404,38 @@ class OperaLive:
                     angle     = args.get("angle", "screen").lower()
                     user_text = args.get("text", "What do you see?")
                     if angle == "camera":
-                        img_b, mime_t = await loop.run_in_executor(None, _capture_camera)
-                        self.ui.start_camera_stream()
-                        self._vision_cam_active = True
-                        log.info(f"[Vision] 📷 Camera: {len(img_b):,} bytes")
-                        _stall = "camera"
+                        cap = await loop.run_in_executor(None, _capture_camera)
                     else:
-                        img_b, mime_t = await loop.run_in_executor(None, _capture_screenshot)
-                        log.info(f"[Vision] 🖥️  Screen: {len(img_b):,} bytes")
-                        _stall = "screen"
-                    self._pending_vision = (img_b, mime_t, user_text, angle)
-                    # The image is attached to this same exchange, so there is
-                    # nothing to stall for and nothing to announce. Asking for an
-                    # acknowledgement here is what produced two spoken answers —
-                    # the model filled that turn by answering the question from
-                    # imagination, then answered it again once it could see.
-                    result = (
-                        f"[VISION_ACTIVE] {_stall.capitalize()} captured and attached to this "
-                        f"same exchange. Do not acknowledge and do not answer yet — the image "
-                        f"is arriving with this result. Reply once, from what you actually see "
-                        f"in it."
-                    )
+                        cap = await loop.run_in_executor(None, _capture_screenshot)
+                    if not cap.ok:
+                        # Structured capture failure: release the busy flag so the
+                        # next attempt is not blocked, hand the model a readable
+                        # error, and keep any traceback away from the user.
+                        self._vision_busy = False
+                        result = cap.error_response()
+                        log.warning(f"[Vision] {cap.error}: {cap.message}")
+                    else:
+                        img_b, mime_t = cap.image, cap.mime_type
+                        if angle == "camera":
+                            self.ui.start_camera_stream()
+                            self._vision_cam_active = True
+                            log.info(f"[Vision] 📷 Camera: {len(img_b):,} bytes")
+                            _stall = "camera"
+                        else:
+                            log.info(f"[Vision] 🖥️  Screen: {cap.width}x{cap.height}, {len(img_b):,} bytes")
+                            _stall = "screen"
+                        self._pending_vision = (img_b, mime_t, user_text, angle)
+                        # The image is attached to this same exchange, so there is
+                        # nothing to stall for and nothing to announce. Asking for an
+                        # acknowledgement here is what produced two spoken answers —
+                        # the model filled that turn by answering the question from
+                        # imagination, then answered it again once it could see.
+                        result = (
+                            f"[VISION_ACTIVE] {_stall.capitalize()} captured and attached to this "
+                            f"same exchange. Do not acknowledge and do not answer yet — the image "
+                            f"is arriving with this result. Reply once, from what you actually see "
+                            f"in it."
+                        )
 
             elif name == "close_camera":
                 self.ui.stop_camera_stream()
