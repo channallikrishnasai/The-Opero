@@ -1,5 +1,16 @@
-"""Visual intelligence subsystem (Phases 1-2: world model and intent schema)."""
+"""Visual intelligence subsystem (Phases 1-3: world model, intent schema, asset registry)."""
 
+from .assets import (
+    AssetError,
+    AssetFormat,
+    AssetRecord,
+    AssetRegistry,
+    AssetStatus,
+    AssetValidationError,
+    DuplicateAssetError,
+    UnknownAssetError,
+    VerificationStatus,
+)
 from .concepts import (
     Concept,
     ConceptError,
@@ -26,17 +37,26 @@ from .world_model import (
 
 __all__ = [
     "AnimationStyle",
+    "AssetError",
+    "AssetFormat",
+    "AssetRecord",
+    "AssetRegistry",
+    "AssetStatus",
+    "AssetValidationError",
     "CameraPreset",
     "Concept",
     "ConceptError",
+    "DuplicateAssetError",
     "Entity",
     "EntityResolutionError",
     "IntentAction",
     "IntentMode",
     "IntentValidationError",
+    "UnknownAssetError",
     "UnknownConceptError",
     "UnknownEntityError",
     "UnknownPartError",
+    "VerificationStatus",
     "VisualIntent",
     "VisualWorldError",
     "VisualWorldModel",
