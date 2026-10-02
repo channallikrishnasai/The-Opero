@@ -10,7 +10,9 @@ from .assets import (
     DuplicateAssetError,
     UnknownAssetError,
     VerificationStatus,
+    register_bundled_assets,
 )
+from .bridge import VisualBridge
 from .concepts import (
     Concept,
     ConceptError,
@@ -32,6 +34,7 @@ from .routing import (
     SEARCH_GUARD_TOOLS,
     VisualRouter,
     VisualRouteResult,
+    get_visual_router,
     last_user_utterance,
     route_search_request,
     route_visual_request,
@@ -69,10 +72,13 @@ __all__ = [
     "VisualIntent",
     "VisualRouteResult",
     "VisualRouter",
+    "VisualBridge",
     "VisualWorldError",
     "VisualWorldModel",
+    "get_visual_router",
     "last_user_utterance",
     "load_concepts",
+    "register_bundled_assets",
     "resolve_entity_id",
     "route_search_request",
     "route_visual_request",

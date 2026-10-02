@@ -63,8 +63,11 @@
        setAutomations([{name, steps:[...]}]) rebuild the automation chains
        setActiveAutomation(name, step)       animate a running automation
        setSystemStats({cpu, ram})            0..1 load, brightens the dust lanes
-       setQuality(0|1|2)                     pin the quality ladder
-       triggerPulse()                        shockwave through the galactic core
+        setQuality(0|1|2)                     pin the quality ladder
+        triggerPulse()                        shockwave through the galactic core
+        operoVisual(cmd)                      structured visual bridge: show /
+                                              hide / rotate / zoom / focus /
+                                              return_to_face (JSON, never code)
        accelerateReactor()/losePower()/setReactorSpeed()/dissolveReactor()
                                              setup-wizard cine controls
        __operoBackground                     diagnostics: {ready, stats(), errors}
@@ -990,6 +993,171 @@
     };
     window.__operoBackground = diagnostics;
 
+    // ── Visual bridge: structured Python commands ─────────────────────────────
+    // window.operoVisual receives JSON only — never executable code. SHOW
+    // carries the model bytes base64-encoded (one object, ~72 KB); the GLB
+    // reader accepts exactly the subset this project authors: POSITION /
+    // NORMAL / indices, scalar PBR, no byteStride. ponytail: vendor
+    // GLTFLoader when textured or animated assets arrive.
+    const VISUAL_ANCHOR = { position: [0, 6.5, 2], scale: 5 };
+    const VISUAL_FOCUS_DISTANCE = 9;
+    const VISUAL_ZOOM_DISTANCE = 4.5;
+    const visual = {
+      entities: {},       // entityId -> { object, anchor, spin }
+      focusId: null,
+      camBlend: 0,
+      camBlendGoal: 0,
+      camDistance: VISUAL_FOCUS_DISTANCE,
+      last: null,
+    };
+
+    // Every stock material here is Shader/Basic (unlit); these two lights
+    // only feed the bridge's PBR models and change nothing else on screen.
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const visualKey = new THREE.DirectionalLight(0xffffff, 1.7);
+    visualKey.position.set(4, 8, 6);
+    scene.add(visualKey);
+
+    function visualFail(action, error, message) {
+      visual.last = { action: action, ok: false, error: error, message: message };
+      diagnostics.errors.push("visual " + action + ": " + error);
+      return visual.last;
+    }
+
+    function visualGlbGroup(bytes) {
+      const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      if (dv.byteLength < 28
+          || dv.getUint32(0, true) !== 0x46546c67
+          || dv.getUint32(4, true) !== 2
+          || dv.getUint32(8, true) !== dv.byteLength) {
+        throw new Error("not a valid glTF 2.0 binary");
+      }
+      const jsonLen = dv.getUint32(12, true);
+      const json = JSON.parse(new TextDecoder().decode(bytes.subarray(20, 20 + jsonLen)));
+      const binHeader = 20 + jsonLen;
+      const bin = bytes.subarray(binHeader + 8, binHeader + 8 + dv.getUint32(binHeader, true));
+      const compBytes = { 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 };
+      const typeCount = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
+      function readAccessor(index, Ctor) {
+        const acc = json.accessors[index];
+        const view = json.bufferViews[acc.bufferView];
+        if (view.byteStride) throw new Error("interleaved buffers are not supported");
+        const start = (view.byteOffset || 0) + (acc.byteOffset || 0);
+        const comps = typeCount[acc.type] || 1;
+        const size = compBytes[acc.componentType] * comps * acc.count;
+        if (start + size > bin.length) throw new Error("accessor outside the buffer");
+        return new Ctor(bin.slice(start, start + size).buffer);
+      }
+      const group = new THREE.Group();
+      (json.meshes || []).forEach(function (mesh) {
+        (mesh.primitives || []).forEach(function (prim) {
+          if ((prim.mode === undefined ? 4 : prim.mode) !== 4) {
+            throw new Error("only triangle meshes are supported");
+          }
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute("position", new THREE.BufferAttribute(
+            readAccessor(prim.attributes.POSITION, Float32Array), 3));
+          if (prim.attributes.NORMAL !== undefined) {
+            geo.setAttribute("normal", new THREE.BufferAttribute(
+              readAccessor(prim.attributes.NORMAL, Float32Array), 3));
+          } else {
+            geo.computeVertexNormals();
+          }
+          if (prim.indices !== undefined) {
+            const idxAcc = json.accessors[prim.indices];
+            let arr;
+            if (idxAcc.componentType === 5125) arr = readAccessor(prim.indices, Uint32Array);
+            else if (idxAcc.componentType === 5121) arr = new Uint16Array(readAccessor(prim.indices, Uint8Array));
+            else arr = readAccessor(prim.indices, Uint16Array);
+            geo.setIndex(new THREE.BufferAttribute(arr, 1));
+          }
+          const matDef = (json.materials && json.materials[prim.material]) || {};
+          const pbr = matDef.pbrMetallicRoughness || {};
+          const rgba = pbr.baseColorFactor || [1, 1, 1, 1];
+          group.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+            color: new THREE.Color(rgba[0], rgba[1], rgba[2]),
+            metalness: pbr.metallicFactor === undefined ? 0 : pbr.metallicFactor,
+            roughness: pbr.roughnessFactor === undefined ? 0.6 : pbr.roughnessFactor,
+            side: matDef.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
+            transparent: rgba[3] < 1,
+            opacity: rgba[3],
+          })));
+        });
+      });
+      if (!group.children.length) throw new Error("glb contains no geometry");
+      return group;
+    }
+
+    function visualShow(cmd) {
+      const id = cmd.entity && cmd.entity.id;
+      if (!id) return visualFail("show", "invalid_command", "show requires an entity id");
+      let rec = visual.entities[id];
+      if (!rec) {
+        if (!cmd.data_base64) return visualFail("show", "invalid_command", "show carries the model bytes");
+        const raw = atob(String(cmd.data_base64));
+        const bytes = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+        const object = visualGlbGroup(bytes);
+        const anchor = new THREE.Group();
+        anchor.position.fromArray(VISUAL_ANCHOR.position);
+        anchor.scale.setScalar(VISUAL_ANCHOR.scale);
+        anchor.add(object);
+        anchor.userData.entityId = id;
+        scene.add(anchor);
+        rec = { object: object, anchor: anchor, spin: 0 };
+        visual.entities[id] = rec;
+      }
+      const t = cmd.transform || {};
+      if (t.position) rec.object.position.fromArray(t.position);
+      if (t.rotation) rec.object.rotation.set(t.rotation[0], t.rotation[1], t.rotation[2]);
+      if (t.scale) rec.object.scale.fromArray(t.scale);
+      rec.anchor.visible = true;
+      visual.last = { action: "show", ok: true, entity: id };
+      return visual.last;
+    }
+
+    window.operoVisual = function (cmd) {
+      if (!cmd || typeof cmd !== "object") {
+        return visualFail("?", "invalid_command", "visual command must be an object");
+      }
+      const action = String(cmd.action || "");
+      try {
+        if (action === "show") return visualShow(cmd);
+        if (action === "return_to_face") {
+          visual.focusId = null;
+          visual.camBlendGoal = 0;
+          visual.last = { action: action, ok: true };
+          return visual.last;
+        }
+        const id = cmd.entity && cmd.entity.id;
+        const rec = id ? visual.entities[id] : null;
+        if (!rec) return visualFail(action, "unknown_entity", "the object is not in the scene (yet)");
+        if (action === "hide") {
+          rec.anchor.visible = false;
+          if (visual.focusId === id) {
+            visual.focusId = null;
+            visual.camBlendGoal = 0;
+          }
+        } else if (action === "rotate") {
+          rec.spin = Number((cmd.parameters && cmd.parameters.speed) || 0.9);
+        } else if (action === "focus") {
+          visual.focusId = id;
+          visual.camDistance = VISUAL_FOCUS_DISTANCE;
+          visual.camBlendGoal = 1;
+        } else if (action === "zoom") {
+          visual.focusId = id;
+          visual.camDistance = VISUAL_ZOOM_DISTANCE;
+          visual.camBlendGoal = 1;
+        } else {
+          return visualFail(action, "unsupported_action", "unknown visual action");
+        }
+        visual.last = { action: action, ok: true, entity: id };
+        return visual.last;
+      } catch (err) {
+        return visualFail(action, "asset_load_failed", String((err && err.message) || err));
+      }
+    };
+
     // ── Frame loop ───────────────────────────────────────────────────────────
     const clock = new THREE.Clock();
     let elapsed = 0;
@@ -1078,6 +1246,12 @@
         node.tag.position.copy(node.mesh.position).multiplyScalar(1.06 + active * 0.05);
       });
 
+      // Bridge-owned objects: continuous rotation requested by ROTATE.
+      for (const id in visual.entities) {
+        const rec = visual.entities[id];
+        if (rec.spin && rec.anchor.visible) rec.object.rotation.y += dt * rec.spin;
+      }
+
       // Automation chains: run the spark, light the steps behind it.
       automations.forEach((chain) => {
         const lineOpacity = chain.active ? 0.9 : 0.20;
@@ -1116,12 +1290,29 @@
         if (wave.life <= 0) wave.mesh.visible = false;
       });
 
-      // Error state jitters the camera; everything else drifts.
+      // Error state jitters the camera; everything else drifts. The visual
+      // bridge blends the same targets toward a focused entity's framing
+      // point, so FOCUS/ZOOM ride the existing lerp instead of fighting it.
       shake *= 0.92;
       const drift = Math.sin(elapsed * 0.08) * 0.35;
-      camera.position.y += ((13 + Math.sin(elapsed * 0.11) * 1.6 + shake * gauss() * 0.6) - camera.position.y) * 0.03;
-      camera.position.x += ((drift + shake * gauss() * 0.4) - camera.position.x) * 0.03;
-      camera.position.z += ((target.camera + audioAmp * 0.8) - camera.position.z) * 0.02;
+      visual.camBlend += (visual.camBlendGoal - visual.camBlend) * 0.05;
+      let camTX = drift + shake * gauss() * 0.4;
+      let camTY = 13 + Math.sin(elapsed * 0.11) * 1.6 + shake * gauss() * 0.6;
+      let camTZ = target.camera + audioAmp * 0.8;
+      const focusRec = visual.focusId ? visual.entities[visual.focusId] : null;
+      if (focusRec && visual.camBlend > 0.001) {
+        tmpVec.set(0, 0.4, 0.92).normalize().multiplyScalar(visual.camDistance).add(focusRec.anchor.position);
+        camTX += (tmpVec.x - camTX) * visual.camBlend;
+        camTY += (tmpVec.y - camTY) * visual.camBlend;
+        camTZ += (tmpVec.z - camTZ) * visual.camBlend;
+        controls.target.lerp(focusRec.anchor.position, 0.06 * visual.camBlend);
+      } else {
+        tmpVecB.set(0, 0, 0);
+        controls.target.lerp(tmpVecB, 0.05);
+      }
+      camera.position.x += (camTX - camera.position.x) * 0.03;
+      camera.position.y += (camTY - camera.position.y) * 0.03;
+      camera.position.z += (camTZ - camera.position.z) * 0.02;
       controls.update();
 
       gradePass.uniforms.uTime.value = elapsed;

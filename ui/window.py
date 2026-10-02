@@ -2994,6 +2994,8 @@ class MainWindow(QMainWindow):
             bg.set_active_automation(str(data.get("name", "")), int(data.get("step", -1)))
         elif kind == "stats":
             bg.set_system_stats(payload if isinstance(payload, dict) else {})
+        elif kind == "visual":
+            bg.execute_visual(payload if isinstance(payload, dict) else {})
 
     def set_background_features(self, features) -> None:
         """Show the assistant's feature list as galaxy nodes (any thread)."""
@@ -3010,6 +3012,10 @@ class MainWindow(QMainWindow):
     def set_background_active_automation(self, name: str, step: int = -1) -> None:
         """Animate a running automation (any thread)."""
         self._bg_sig.emit("active_automation", {"name": str(name or ""), "step": int(step)})
+
+    def set_visual_command(self, command) -> None:
+        """Send one structured visual command to the 3D background (any thread)."""
+        self._bg_sig.emit("visual", dict(command) if isinstance(command, dict) else {})
 
     def _check_config(self) -> bool:
         if not API_FILE.exists(): return False

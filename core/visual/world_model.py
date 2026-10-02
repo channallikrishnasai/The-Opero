@@ -28,6 +28,7 @@ class Entity:
     concept: str
     transform: dict[str, list[float]] = field(default_factory=dict)
     parts: dict[str, bool] = field(default_factory=dict)
+    visible: bool = True
 
 
 class VisualWorldModel:
@@ -91,6 +92,12 @@ class VisualWorldModel:
             entity.parts[part] = bool(visible)
             return deepcopy(entity)
 
+    def set_visible(self, entity_id: str, visible: bool) -> Entity:
+        with self._lock:
+            entity = self._require_entity(entity_id)
+            entity.visible = bool(visible)
+            return deepcopy(entity)
+
     def add_relationship(self, source_id: str, target_id: str, kind: str = "related") -> dict[str, str]:
         with self._lock:
             self._require_entity(source_id)
@@ -124,6 +131,7 @@ class VisualWorldModel:
                         "concept": entity.concept,
                         "transform": deepcopy(entity.transform),
                         "parts": dict(entity.parts),
+                        "visible": entity.visible,
                     }
                     for entity in self._entities.values()
                 ],
@@ -140,6 +148,7 @@ class VisualWorldModel:
                     concept=str(raw["concept"]),
                     transform={key: list(value) for key, value in raw.get("transform", {}).items()},
                     parts={key: bool(value) for key, value in raw.get("parts", {}).items()},
+                    visible=bool(raw.get("visible", True)),
                 )
                 if entity.concept not in model._concepts:
                     raise UnknownConceptError(

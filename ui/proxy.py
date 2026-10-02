@@ -214,6 +214,10 @@ class OperaUI:
         """Thread-safe: animate a running automation in the 3D background."""
         self._win.set_background_active_automation(name, step)
 
+    def set_visual_command(self, command) -> None:
+        """Thread-safe: hand one structured visual command to the 3D background."""
+        self._win.set_visual_command(command)
+
     def write_log(self, text: str):
         self._win._log_sig.emit(text)
 

@@ -1644,3 +1644,8 @@ class WebGLBackground(QWidget):
         """Tint the dust lanes with machine load (cpu/ram as 0.0-1.0)."""
         self._run("if(window.setSystemStats) window.setSystemStats({});".format(
             json.dumps(dict(stats or {}))))
+
+    def execute_visual(self, command: dict) -> None:
+        """Dispatch one structured visual command (show/hide/rotate/...) into
+        the Three.js scene. JSON data only — never executable JavaScript."""
+        self._run(f"if(window.operoVisual) window.operoVisual({json.dumps(dict(command or {}))});")

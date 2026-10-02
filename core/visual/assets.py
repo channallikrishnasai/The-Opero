@@ -294,3 +294,37 @@ class AssetRegistry:
         for raw in raw_assets:
             registry.register_asset(AssetRecord.from_dict(raw))
         return registry
+
+
+# The project's own model files. Exactly one entry — a data-driven manifest
+# earns its file when a second asset arrives.
+_BUNDLED_ASSETS: tuple[AssetRecord, ...] = (
+    AssetRecord(
+        asset_id="apple_default",
+        concept_id="apple",
+        path="data/visual_world/assets/apple.glb",
+        format=AssetFormat.GLB,
+        status=AssetStatus.AVAILABLE,
+        source="procedurally authored for OPERO (data/visual_world/generate_apple_glb.py)",
+        license="CC0-1.0",
+        is_default=True,
+        available_parts=("body", "stem", "leaf"),
+    ),
+)
+
+
+def register_bundled_assets(registry: AssetRegistry) -> list[AssetRecord]:
+    """Register project-authored model files (idempotent; skips missing files).
+
+    Explicit call, never automatic: a bare AssetRegistry must stay
+    metadata-only so derived-record behaviour and its tests remain truthful.
+    """
+    registered: list[AssetRecord] = []
+    for asset in _BUNDLED_ASSETS:
+        if not _file_exists(asset.path):
+            continue
+        try:
+            registered.append(registry.register_asset(asset))
+        except DuplicateAssetError:
+            continue
+    return registered

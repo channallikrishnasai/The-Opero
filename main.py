@@ -25,7 +25,10 @@ from core.live_reconnect import is_clean_live_close
 from core.visual import (
     SEARCH_GUARD_TOOLS,
     UnknownConceptError,
+    VisualBridge,
+    get_visual_router,
     last_user_utterance,
+    register_bundled_assets,
     route_search_request,
 )
 from core.voice_state import VoiceGate
@@ -554,6 +557,14 @@ def _keep_context_of(exc: BaseException) -> bool:
 class OperaLive:
     def __init__(self, ui: OperaUI):
         self.ui             = ui
+        # Visual → renderer bridge: shares the router's world/registry so the
+        # entity id a route resolves and the command the 3D scene receives
+        # can never disagree. Bundled model files are registered here (once).
+        _visual_router = get_visual_router()
+        register_bundled_assets(_visual_router.registry)
+        self._visual_bridge = VisualBridge(
+            _visual_router.world, _visual_router.registry, ui.set_visual_command
+        )
         self._asst_name     = "OPERO"   # updated each session from config
         self.session              = None
         self.audio_in_queue       = None
@@ -1346,13 +1357,24 @@ class OperaLive:
                 )
             if routed is not None:
                 log.info("🧭 visual route: %s -> %s", args, routed.entity_id)
+                # STEP 3 of the visual pipeline: the bridge resolves the asset,
+                # dispatches one structured command to the Three.js scene and
+                # answers with a structured success or failure.
+                outcome = self._visual_bridge.execute(routed.intent)
+                outcome.setdefault("entity_id", routed.entity_id)
+                if outcome.get("success"):
+                    result = ("The object is now visible in the OPERO 3D scene. "
+                              "Say you are showing it — one short sentence — and never search the web.")
+                else:
+                    result = (f"Could not display it ({outcome.get('error', 'unknown')}). "
+                              "Tell the user you could not show it right now.")
                 return types.FunctionResponse(
                     id=fc.id, name=name,
                     response={
-                        "result": "Visual intent created; no web search was performed. "
-                                  "3D rendering is not wired yet.",
+                        "result": result,
                         "routed_to": "visual",
-                        **routed.to_dict(),
+                        "intent": routed.intent.to_dict(),
+                        **outcome,
                     },
                 )
 
