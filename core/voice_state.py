@@ -139,3 +139,47 @@ class VoiceGate:
                 self._state = VoiceState.LISTENING
             self._tail_until = self._clock() + self.latency + self.margin
             return self._generation
+
+
+class MicHealth:
+    """Aggregate-only microphone/stream counters for diagnostics.
+
+    Counts captured frames, bytes, non-silent frames, queue drops and chunks
+    successfully handed to Gemini. Never stores audio, so a snapshot is safe
+    to log. The PortAudio callback thread and the event loop both touch these
+    counters; under the GIL a race can lose one increment, which is harmless
+    for a health signal.
+    """
+
+    __slots__ = ("frames", "bytes", "non_silent", "dropped", "sent_chunks", "sent_bytes")
+
+    def __init__(self) -> None:
+        self.frames = 0
+        self.bytes = 0
+        self.non_silent = 0
+        self.dropped = 0
+        self.sent_chunks = 0
+        self.sent_bytes = 0
+
+    def frame(self, nbytes: int, non_silent: bool) -> None:
+        self.frames += 1
+        self.bytes += nbytes
+        if non_silent:
+            self.non_silent += 1
+
+    def drop(self, n: int = 1) -> None:
+        self.dropped += n
+
+    def sent(self, nbytes: int) -> None:
+        self.sent_chunks += 1
+        self.sent_bytes += nbytes
+
+    def snapshot(self) -> dict:
+        return {
+            "frames": self.frames,
+            "bytes": self.bytes,
+            "non_silent": self.non_silent,
+            "dropped": self.dropped,
+            "sent_chunks": self.sent_chunks,
+            "sent_bytes": self.sent_bytes,
+        }

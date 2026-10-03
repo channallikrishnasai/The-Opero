@@ -30,7 +30,7 @@ from core.visual import (
     register_bundled_assets,
     route_search_request,
 )
-from core.voice_state import VoiceGate
+from core.voice_state import VoiceGate, MicHealth
 from core.context import (
     current_utterance, env_cache, summarize_args, task_ctx, verdict,
 )
@@ -682,6 +682,10 @@ class OperaLive:
         # One gate for every mic/transcript/TTS boundary — both the Gemini-native
         # and the AssemblyAI paths refuse audio and transcripts through it.
         self._voice_gate          = VoiceGate()
+        # Aggregate-only mic/stream counters — MIC_AUDIO_HEALTH reads them.
+        self._mic_health          = MicHealth()
+        self._mic_cb_failed       = False   # MIC_CALLBACK_FAILED is logged once, not per block
+        self._mic_streaming       = False   # True while audio chunks are flowing since the last flush
         self._phone_active        = False   # True while phone mic is streaming; pauses PC mic
         self._pending_vision       = None    # (img_bytes, mime_type, question, angle) to inject after tool response
         self._vision_cam_active    = False   # True if camera was opened for vision → auto-close after response
@@ -1758,91 +1762,161 @@ class OperaLive:
         )
 
     async def _send_realtime(self):
+        _active_logged = False
         while True:
             msg = await self.out_queue.get()
             # Gemini 3.x Live rejects the old realtime_input.media_chunks field
             # (what `media=...` maps to) and closes the socket with a 1007. Send
             # mic / phone PCM through the new `audio` field instead. Queue items
             # are {"data": <bytes>, "mime_type": <str>} from _listen_audio and
-            # the phone relay.
-            await self.session.send_realtime_input(
-                audio=types.Blob(
-                    data=msg["data"],
-                    mime_type=msg.get("mime_type", "audio/pcm"),
+            # the phone relay, or {"stream_end": True} when a gate pauses the
+            # stream (the server's VAD hangs through a >1s pause that is not
+            # flushed with audio_stream_end).
+            if msg.get("stream_end"):
+                try:
+                    await self.session.send_realtime_input(audio_stream_end=True)
+                except Exception as e:
+                    log.error(f"[OPERO] GEMINI_AUDIO_SEND_FAILED error={type(e).__name__}")
+                    raise
+                continue
+            try:
+                await self.session.send_realtime_input(
+                    audio=types.Blob(
+                        data=msg["data"],
+                        mime_type=msg.get("mime_type", "audio/pcm;rate=16000"),
+                    )
                 )
-            )
+            except Exception as e:
+                # Never swallow: a dead send must tear the session down (the run
+                # loop reconnects) instead of leaving the queue to fill silently.
+                log.error(f"[OPERO] GEMINI_AUDIO_SEND_FAILED error={type(e).__name__}")
+                raise
+            self._mic_health.sent(len(msg["data"]))
+            if not _active_logged:
+                _active_logged = True
+                log.info("[OPERO] GEMINI_AUDIO_SEND_ACTIVE")
+            elif self._mic_health.sent_chunks % 100 == 0:
+                log.info(f"[OPERO] GEMINI_AUDIO_HEALTH chunks_sent={self._mic_health.sent_chunks} "
+                         f"bytes={self._mic_health.sent_bytes}")
+
+    def _mic_stream_pause(self, loop) -> None:
+        """A gate just stopped the mic flow — flush the server's VAD buffer.
+
+        Gemini's server-side VAD hangs when the audio stream pauses for more
+        than about a second without `audio_stream_end`: later speech is then
+        ignored until the session is rebuilt (the ~150 s "operation aborted"
+        reconnects in logs/opero.log are this hang materialising). At most one
+        flush per pause; the next captured frame re-arms it.
+        """
+        if not self._mic_streaming:
+            return
+        self._mic_streaming = False
+
+        def _put_end():
+            try:
+                self.out_queue.put_nowait({"stream_end": True})
+            except (asyncio.QueueFull, AttributeError):
+                pass
+
+        loop.call_soon_threadsafe(_put_end)
 
     async def _listen_audio(self):
         log.info("[OPERO] 🎤 Mic started")
         loop = asyncio.get_event_loop()
 
         def callback(indata, frames, time_info, status):
-            # ── Wake-word gate ───────────────────────────────────────────────
-            # While asleep, the mic audio NEVER goes to Gemini (nothing is
-            # streamed, so OPERO can't respond to speech not addressed to it and
-            # nothing leaves the machine). Frames are instead handed to the local
-            # detector, which runs its model in ITS OWN thread — the cost here is
-            # only a queue push, so the audio path is never slowed. When wake word
-            # is off (default) or we're awake, this is a single boolean check.
-            if self._wake_enabled and not self._awake:
-                det = self._wake_detector
-                if det is not None:
-                    det.feed(indata)
-                return
-            opero_speaking = not self._voice_gate.accept_mic()
+            try:
+                self._mic_health.frame(int(indata.nbytes), _pcm_level(indata) > 0.0)
 
-            # ── Barge-in ─────────────────────────────────────────────────────
-            # While OPERO talks the mic is not streamed, but it is still worth
-            # listening to locally: if the user starts speaking, cut the answer
-            # short the way a person would stop when interrupted.
-            #
-            # The whole difficulty is echo — on speakers the mic hears OPERO.
-            # So the test is not "is the mic loud" but "is the mic louder than
-            # the echo of what we are playing right now", sustained long enough
-            # that a cough or a keystroke cannot trigger it.
-            if opero_speaking:
-                # Nothing is streamed while OPERO talks.
-                #
-                # Interrupting by voice used to live here: `EchoGuard` can pick a
-                # user out from under our own echo, and `core/echo.py` still does
-                # that for the tail below. Re-enabling is small — classify each
-                # block here and call interrupt() after `required_blocks` of
-                # agreement — but it depends on the listener's room, so it stays
-                # out until it can be tried on real hardware.
-                return
-
-            # ── Echo tail ────────────────────────────────────────────────────
-            # The speaking flag has dropped but the speakers have not finished.
-            # Sending this to the model is how an assistant hears itself, decides
-            # it was addressed, and answers its own last sentence. The microphone
-            # stays OPEN — the guard only drops blocks that are our own voice, so
-            # replying the instant it stops still works.
-            if self._tail_active():
-                try:
-                    if not self._echo.is_user_speech(
-                            indata, SEND_SAMPLE_RATE, _pcm_level(indata)):
-                        return
-                    self._voice_gate.clear_tail()   # a real voice ends the tail early
-                except Exception:
+                # ── Wake-word gate ───────────────────────────────────────────
+                # While asleep, the mic audio NEVER goes to Gemini (nothing is
+                # streamed, so OPERO can't respond to speech not addressed to it
+                # and nothing leaves the machine). Frames are instead handed to the local
+                # detector, which runs its model in ITS OWN thread — the cost here is
+                # only a queue push, so the audio path is never slowed. When wake word
+                # is off (default) or we're awake, this is a single boolean check.
+                if self._wake_enabled and not self._awake:
+                    det = self._wake_detector
+                    if det is not None:
+                        det.feed(indata)
+                    self._mic_stream_pause(loop)
                     return
-            elif self._echo._hist:
-                self._echo.reset()
+                opero_speaking = not self._voice_gate.accept_mic()
 
-            # ── Push-to-talk ─────────────────────────────────────────────────
-            # When it is on the microphone is closed by default and the chord
-            # opens it, which is the whole point: nothing leaves the machine
-            # unless you are holding the key.
-            if self._ptt_enabled and not self._ptt_held:
-                return
+                # ── Barge-in ─────────────────────────────────────────────
+                # While OPERO talks the mic is not streamed, but it is still worth
+                # listening to locally: if the user starts speaking, cut the answer
+                # short the way a person would stop when interrupted.
+                #
+                # The whole difficulty is echo — on speakers the mic hears OPERO.
+                # So the test is not "is the mic loud" but "is the mic louder than
+                # the echo of what we are playing right now", sustained long enough
+                # that a cough or a keystroke cannot trigger it.
+                if opero_speaking:
+                    # Nothing is streamed while OPERO talks.
+                    #
+                    # Interrupting by voice used to live here: `EchoGuard` can pick a
+                    # user out from under our own echo, and `core/echo.py` still does
+                    # that for the tail below. Re-enabling is small — classify each
+                    # block here and call interrupt() after `required_blocks` of
+                    # agreement — but it depends on the listener's room, so it stays
+                    # out until it can be tried on real hardware.
+                    self._mic_stream_pause(loop)
+                    return
 
-            if not self.ui.muted and not self._phone_active:
-                self._voice_gate.note_mic()
-                data = indata.tobytes()
-                def _safe_put():
+                # ── Echo tail ────────────────────────────────────────────────
+                # The speaking flag has dropped but the speakers have not finished.
+                # Sending this to the model is how an assistant hears itself, decides
+                # it was addressed, and answers its own last sentence. The microphone
+                # stays OPEN — the guard only drops blocks that are our own voice, so
+                # replying the instant it stops still works.
+                if self._tail_active():
                     try:
-                        self.out_queue.put_nowait({"data": data, "mime_type": "audio/pcm"})
-                    except asyncio.QueueFull as e:
+                        if not self._echo.is_user_speech(
+                                indata, SEND_SAMPLE_RATE, _pcm_level(indata)):
+                            self._mic_stream_pause(loop)
+                            return
+                        self._voice_gate.clear_tail()   # a real voice ends the tail early
+                    except Exception:
+                        self._mic_stream_pause(loop)
+                        return
+                elif self._echo._hist:
+                    self._echo.reset()
+
+                # ── Push-to-talk ─────────────────────────────────────────────────
+                # When it is on the microphone is closed by default and the chord
+                # opens it, which is the whole point: nothing leaves the machine
+                # unless you are holding the key.
+                if self._ptt_enabled and not self._ptt_held:
+                    self._mic_stream_pause(loop)
+                    return
+
+                if not self.ui.muted and not self._phone_active:
+                    self._voice_gate.note_mic()
+                    self._mic_streaming = True
+                    data = indata.tobytes()
+                    def _safe_put():
+                        try:
+                            self.out_queue.put_nowait(
+                                {"data": data, "mime_type": "audio/pcm;rate=16000"})
+                        except asyncio.QueueFull:
+                            self._mic_health.drop()
+                    loop.call_soon_threadsafe(_safe_put)
+                    # Feed the live mic level to the HUD so the waveform reacts to
+                    # the user's actual voice while listening. Purely cosmetic — any
+                    # failure here must never disturb the mic.
+                    try:
+                        self.ui.set_audio_level(_pcm_level(indata))
+                    except Exception as e:
                         log.debug("{}", e)
+                else:
+                    self._mic_stream_pause(loop)
+            except Exception as e:
+                # One line, ever: a callback raising on every block would
+                # otherwise flood the log while the mic silently stops working.
+                if not self._mic_cb_failed:
+                    self._mic_cb_failed = True
+                    log.error(f"[OPERO] MIC_CALLBACK_FAILED error={type(e).__name__}")
                 loop.call_soon_threadsafe(_safe_put)
                 # Feed the live mic level to the HUD so the waveform reacts to
                 # the user's actual voice while listening. Purely cosmetic — any
@@ -1888,9 +1962,23 @@ class OperaLive:
 
             with _mic_stream:
                 log.info("[OPERO] 🎤 Mic stream open")
+                _dev_lbl = str(_mic_name or "default").replace('"', "").replace("\n", " ")[:64]
+                log.info(f"[OPERO] MIC_CAPTURE_STARTED device=\"{_dev_lbl}\" "
+                         f"rate=16000 channels=1 dtype=int16")
+                _tick = 0
+                _last_snap = None
                 while not self._stop:
                     await asyncio.sleep(0.1)
+                    _tick += 1
+                    if _tick % 100 == 0:   # every ~10 s
+                        snap = self._mic_health.snapshot()
+                        if snap != _last_snap:
+                            _last_snap = snap
+                            log.info("[OPERO] MIC_AUDIO_HEALTH frames={frames} bytes={bytes} "
+                                     "rate=16000 channels=1 non_silent={non_silent} "
+                                     "dropped={dropped}".format(**snap))
         except Exception as e:
+            log.error(f"[OPERO] MIC_CAPTURE_FAILED error={type(e).__name__}")
             log.error(f"[OPERO] ❌ Mic: {e}")
             raise
 
@@ -1994,17 +2082,19 @@ class OperaLive:
                                 # nothing measurable to the response path.
                                 self._visemes.feed_text(txt)
 
-                        if (sc.input_transcription and sc.input_transcription.text
-                                and self._voice_gate.accept_transcript()):
-                            txt = _clean_transcript(sc.input_transcription.text)
-                            if txt:
-                                in_buf.append(txt)
-                                # Keep the in-progress utterance readable NOW:
-                                # a tool call can arrive before turn_complete
-                                # appends "User:" to the session log, and tool
-                                # guards must not act on the previous turn.
-                                self._live_utterance = " ".join(in_buf).strip()
-                                self._last_user_speech = time.monotonic()
+                        if sc.input_transcription and sc.input_transcription.text:
+                            log.info("[OPERO] GEMINI_INPUT_TRANSCRIPT_RECEIVED "
+                                     f"chars={len(sc.input_transcription.text)}")
+                            if self._voice_gate.accept_transcript():
+                                txt = _clean_transcript(sc.input_transcription.text)
+                                if txt:
+                                    in_buf.append(txt)
+                                    # Keep the in-progress utterance readable NOW:
+                                    # a tool call can arrive before turn_complete
+                                    # appends "User:" to the session log, and tool
+                                    # guards must not act on the previous turn.
+                                    self._live_utterance = " ".join(in_buf).strip()
+                                    self._last_user_speech = time.monotonic()
 
                         if sc.turn_complete:
                             if self._turn_done_event:
@@ -2622,6 +2712,7 @@ class OperaLive:
                     self.session          = session
                     self.audio_in_queue   = asyncio.Queue()
                     self.out_queue        = asyncio.Queue(maxsize=200)
+                    self._mic_streaming   = False   # new session: no flush owed yet
                     self._turn_done_event = asyncio.Event()
 
                     # Reset transient state that must not carry over from a previous session
