@@ -1,5 +1,4 @@
 #computer_control.py
-import io
 import json
 import re
 import string
@@ -191,17 +190,110 @@ def _scroll(direction: str = "down", amount: int = 3) -> str:
     return f"Scrolled {direction} ×{amount}"
 
 
-def _move(x: int, y: int, duration: float = 0.3) -> str:
-    _require_pyautogui()
-    pyautogui.moveTo(x, y, duration=duration)
-    return f"Mouse → ({x}, {y})"
-
-
-def _drag(x1: int, y1: int, x2: int, y2: int, duration: float = 0.5) -> str:
+def _drag(x1: int, y1: int, x2: int, y2: int, duration: float = 0.5,
+          button: str = "left") -> str:
     _require_pyautogui()
     pyautogui.moveTo(x1, y1, duration=0.2)
-    pyautogui.dragTo(x2, y2, duration=duration, button="left")
-    return f"Dragged ({x1},{y1}) → ({x2},{y2})"
+    pyautogui.dragTo(x2, y2, duration=duration, button=button)
+    return f"Dragged ({x1},{y1}) → ({x2},{y2}) [{button}]"
+
+
+_EASES = {
+    "linear": None,
+    "ease_out": "easeOutQuad",
+    "ease_in": "easeInQuad",
+    "ease_in_out": "easeInOutQuad",
+}
+
+
+def _tween(ease: str):
+    name = _EASES.get(str(ease or "").lower().strip(), "easeOutQuad")
+    if name is None:
+        return None
+    return getattr(pyautogui, name, None)
+
+
+def _move(x: int, y: int, duration: float = 0.3, ease: str = "ease_out") -> str:
+    """Smooth cursor move; duration>0 eases along the tween (default ease-out)."""
+    _require_pyautogui()
+    duration = max(0.0, min(float(duration), 10.0))
+    tween = _tween(ease)
+    if tween is not None:
+        pyautogui.moveTo(x, y, duration=duration, tween=tween)
+    else:
+        pyautogui.moveTo(x, y, duration=duration)
+    return f"Mouse → ({x}, {y}) in {duration}s"
+
+
+def _move_relative(dx: int, dy: int, duration: float = 0.3, ease: str = "ease_out") -> str:
+    """Relative move from the CURRENT cursor position."""
+    _require_pyautogui()
+    duration = max(0.0, min(float(duration), 10.0))
+    tween = _tween(ease)
+    if tween is not None:
+        pyautogui.moveRel(int(dx), int(dy), duration=duration, tween=tween)
+    else:
+        pyautogui.moveRel(int(dx), int(dy), duration=duration)
+    return f"Mouse moved by ({dx}, {dy})"
+
+
+def _move_path(points, duration: float = 0.5, ease: str = "linear") -> str:
+    """Move through a list of [x, y] waypoints in order (smooth path)."""
+    _require_pyautogui()
+    pts = _parse_points(points)
+    if len(pts) < 2:
+        return "move_path needs at least two [x, y] points."
+    per_leg = max(0.05, min(float(duration), 30.0) / max(1, len(pts) - 1))
+    tween = _tween(ease)
+    for px, py in pts:
+        if tween is not None:
+            pyautogui.moveTo(px, py, duration=per_leg, tween=tween)
+        else:
+            pyautogui.moveTo(px, py, duration=per_leg)
+    return f"Moved through {len(pts)} points ({duration}s total)"
+
+
+def _parse_points(points) -> list[tuple[int, int]]:
+    """Accept [[x,y], …] or 'x,y x,y …' — anything the model JSON-encodes."""
+    out: list[tuple[int, int]] = []
+    if isinstance(points, str):
+        for pair in re.findall(r"(-?\d+)\s*,\s*(-?\d+)", points):
+            out.append((int(pair[0]), int(pair[1])))
+        return out
+    if isinstance(points, (list, tuple)):
+        for p in points:
+            try:
+                if isinstance(p, dict):
+                    out.append((int(p.get("x")), int(p.get("y"))))
+                else:
+                    out.append((int(p[0]), int(p[1])))
+            except (TypeError, ValueError, KeyError):
+                continue
+    return out
+
+
+def _mouse_button_down(button: str = "left") -> str:
+    _require_pyautogui()
+    pyautogui.mouseDown(button=button)
+    return f"Mouse {button} button DOWN"
+
+
+def _mouse_button_up(button: str = "left") -> str:
+    _require_pyautogui()
+    pyautogui.mouseUp(button=button)
+    return f"Mouse {button} button UP"
+
+
+def _key_down(key: str) -> str:
+    _require_pyautogui()
+    pyautogui.keyDown(key)
+    return f"Key held: {key}"
+
+
+def _key_up(key: str) -> str:
+    _require_pyautogui()
+    pyautogui.keyUp(key)
+    return f"Key released: {key}"
 
 
 def _clipboard_get() -> str:
@@ -291,34 +383,139 @@ def _focus_window(title: str) -> str:
             return f"focus_window (Linux) failed: {e}"
 
     return f"focus_window: unknown OS '{os_name}'"
+
+
+# ── spatial targeting: explicit x,y > window+anchor > monitor+anchor ─────────
+def _resolve_point(params: dict) -> tuple[str, int | None, int | None]:
+    """Resolve WHERE to act from spatial language, via the world model.
+
+    Returns ("ok", x, y) for explicit/resolved coordinates, ("current", None,
+    None) when no location was given (click at the cursor), or ("unresolved",
+    None, None) when an anchor was given but nothing fits — the caller must
+    fail loudly, never guess a point.
+    """
+    if params.get("x") is not None and params.get("y") is not None:
+        try:
+            return "ok", int(params.get("x")), int(params.get("y"))
+        except (TypeError, ValueError):
+            pass
+    anchor = str(params.get("anchor", "") or "").strip()
+    if not anchor:
+        return "current", None, None
+
+    from core.world_model import anchor_point, parse_spatial, pick_window, world
+    rect = None
+    wref = params.get("window") or params.get("title")
+    if wref:
+        matches = world().find_windows(str(wref))
+        if not matches and parse_spatial(str(wref)):
+            matches = world().windows()
+        win = pick_window(matches, str(wref)) if matches else None
+        rect = getattr(win, "rect", None) if win is not None else None
+        if not rect:
+            return "unresolved", None, None
+    if rect is None:
+        mons = world().monitors()
+        try:
+            idx = int(params.get("monitor", 0))
+        except (TypeError, ValueError):
+            idx = 0
+        rect = mons[idx].rect if 0 <= idx < len(mons) else world().primary_rect()
+    pt = anchor_point(tuple(rect) if rect else None, anchor)
+    if pt is None:
+        return "unresolved", None, None
+    return "ok", pt[0], pt[1]
+
+
+_UNRESOLVED = (
+    "Could not resolve coordinates for anchor '{anchor}' (window={win}). "
+    "Check the target with environment_status, or give explicit x,y."
+)
+
+# ── targeted window ops (win32): computer_settings' minimize/maximize act on
+# the FOCUSED window; these act on the window matching `title` and verify.
+_SW = {"minimize": 6, "maximize": 3, "restore": 9}
+
+
+def _window_op(op: str, title: str) -> str:
+    if _get_os() != "windows" or not title:
+        return (f"window_{op} needs a title fragment and is implemented on Windows only "
+                "(for the focused window use computer_settings minimize/maximize/close_window).")
+    import ctypes
+    from core.world_model import world
+
+    w = world().find_windows(title)
+    if not w:
+        return f"No window matching '{title}' — check environment_status."
+    target = w[0]
+    hwnd = getattr(target, "hwnd", 0)
+    if not hwnd:
+        return f"Window '{target.title}' has no handle — cannot address it directly."
+    user32 = ctypes.windll.user32
+    label = (target.title or title)[:60]
+
+    if op == "close":
+        user32.PostMessageW(hwnd, 0x0010, 0, 0)   # WM_CLOSE
+        for _ in range(20):
+            time.sleep(0.1)
+            world().invalidate()          # TTL cache would answer "still there"
+            if not world().find_windows(title):
+                return f"Closed window: {label} (verified: title gone)."
+        return (f"WM_CLOSE sent to '{label}' but the window is still there — "
+                "unsaved-work prompt may be waiting on screen. Check before retrying.")
+
+    user32.ShowWindow(hwnd, _SW[op])
+    time.sleep(0.2)
+    world().invalidate()
+    fresh = [x for x in world().find_windows(title) if getattr(x, "hwnd", 0) == hwnd]
+    if not fresh:
+        # minimize keeps the window in EnumWindows (visible=False) — re-read raw state
+        try:
+            import sys as _sys
+            if _sys.platform == "win32" and user32.IsWindow(hwnd):
+                if op == "minimize" and user32.IsIconic(hwnd):
+                    return f"Minimized window: {label} (verified: IsIconic)."
+                if op == "maximize" and user32.IsZoomed(hwnd):
+                    return f"Maximized window: {label} (verified: IsZoomed)."
+                if op == "restore" and not user32.IsIconic(hwnd) and not user32.IsZoomed(hwnd):
+                    return f"Restored window: {label} (verified: normal state)."
+        except Exception:
+            pass
+        return f"window_{op}: '{label}' could not be re-read after the change — state unverified."
+    state = getattr(fresh[0], "state", "unknown")
+    expected = {"minimize": "minimized", "maximize": "maximized", "restore": "normal"}[op]
+    if state == expected:
+        return f"{op.capitalize()}d window: {label} (verified: {state})."
+    return f"window_{op} sent to '{label}' but state is '{state}', expected '{expected}'."
+
+
 def _screen_find(description: str) -> tuple[int, int] | None:
-    try:
-        import base64
-        from llm_client import client
+    """Semantic screen targeting needs a vision model inside the tool — and
+    this build has none (the old `llm_client` backend was orphaned). Refuse
+    honestly instead of swallowing the ImportError and answering NOT_FOUND,
+    which reads as 'the element does not exist' when really we never looked."""
+    raise _VisionUnavailable(
+        "screen_find/screen_click have no vision backend in this build. "
+        "To act on something you can see: call screen_process (attaches a live "
+        "screenshot), read the coordinates off it, then click with x,y "
+        "(or window + anchor)."
+    )
 
-        _require_pyautogui()
-        w, h  = pyautogui.size()
-        img   = pyautogui.screenshot()
-        buf   = io.BytesIO()
-        img.save(buf, format="PNG")
-        b64 = base64.b64encode(buf.getvalue()).decode()
 
-        text = client.vision(
-            f"This is a screenshot of a {w}×{h} pixel screen. "
-            f"Locate the UI element: '{description}'. "
-            f"Reply ONLY with center coordinates as: x,y — or NOT_FOUND",
-            image_b64=b64,
-            mime="image/png",
-        )
+class _VisionUnavailable(RuntimeError):
+    pass
 
-        if "NOT_FOUND" in text.upper():
-            return None
-        match = re.search(r"(\d+)\s*,\s*(\d+)", text)
-        if match:
-            return int(match.group(1)), int(match.group(2))
-    except Exception as e:
-        print(f"[ComputerControl] ⚠️ screen_find failed: {e}")
-    return None
+def _button(params: dict) -> str:
+    b = str(params.get("button", "left") or "left").lower()
+    return b if b in ("left", "right", "middle") else "left"
+
+
+def _fail_unresolved(params: dict) -> str:
+    return _UNRESOLVED.format(
+        anchor=params.get("anchor", ""),
+        win=params.get("window") or params.get("title") or "(none)",
+    )
+
 
 def computer_control(
     parameters: dict,
@@ -333,14 +530,23 @@ def computer_control(
       action        : (required) one of the actions listed below
       text          : text to type or paste
       x, y          : screen coordinates
-      button        : 'left' | 'right' (default: left)
+      anchor        : spatial target — 'top-left', 'center', 'bottom right', …
+                      resolved against `window` (title/spatial) or `monitor`
+      window        : window title fragment (or 'the window on the right')
+      monitor       : monitor index for an anchor (default: 0 = primary)
+      button        : 'left' (default) | 'right' | 'middle'
       keys          : hotkey string, e.g. 'ctrl+c'
       key           : single key name, e.g. 'enter'
       direction     : 'up' | 'down' | 'left' | 'right'
       amount        : scroll amount (default: 3)
       seconds       : wait duration
-      title         : window title fragment for focus_window
-      description   : natural-language element description for screen_find/click
+      title         : window title fragment for focus_window / window_* ops
+      duration      : seconds for move/drag (default 0.3; smooth tween)
+      ease          : 'ease_out' (default) | 'ease_in' | 'ease_in_out' | 'linear'
+      dx, dy        : relative mouse move
+      points        : [[x,y], …] waypoints for move_path
+      description   : natural-language element description (screen_find/click
+                      are UNAVAILABLE in this build — see below)
       type          : data type for random_data
       field         : memory field name for user_data
       clear_first   : bool, clear field before typing (default: true)
@@ -349,11 +555,15 @@ def computer_control(
     Actions:
       type          — type text at cursor
       smart_type    — clear field + type (clipboard-backed)
-      click         — left click
-      double_click  — double left click
+      click         — click at x,y / anchor / current position
+      double_click  — double click
       right_click   — right click
-      move          — move mouse
-      drag          — click-drag between two points
+      move          — smooth move to x,y or anchor (duration + ease)
+      move_relative — move dx,dy from current position
+      move_path     — move through waypoints [[x,y], …]
+      mouse_down/up — hold/release a mouse button (for custom drags)
+      key_down/up   — hold/release a key (for custom chords)
+      drag          — click-drag between two points (button honored)
       hotkey        — key combination
       press         — single key
       scroll        — scroll the wheel
@@ -363,8 +573,9 @@ def computer_control(
       wait          — sleep N seconds
       clear_field   — select-all + delete
       focus_window  — bring window to foreground
-      screen_find   — AI element finder (returns x,y)
-      screen_click  — AI element finder + click
+      window_minimize/maximize/restore/close — targeted at `title`, verified
+      screen_find   — UNAVAILABLE (no vision backend); says so honestly
+      screen_click  — UNAVAILABLE (no vision backend); says so honestly
       random_data   — generate fake form data
       user_data     — pull real data from memory
     """
@@ -390,22 +601,54 @@ def computer_control(
                 clear_first=params.get("clear_first", True),
             )
 
-        if action in ("click", "left_click"):
-            return _click(params.get("x"), params.get("y"), "left", 1)
-
-        if action == "double_click":
-            return _click(params.get("x"), params.get("y"), "left", 2)
-
-        if action == "right_click":
-            return _click(params.get("x"), params.get("y"), "right", 1)
+        if action in ("click", "left_click", "double_click", "right_click"):
+            st, cx, cy = _resolve_point(params)
+            if st == "unresolved":
+                return _fail_unresolved(params)
+            clicks = 2 if action == "double_click" else 1
+            btn = "right" if action == "right_click" else _button(params)
+            if st == "current":
+                return _click(None, None, btn, clicks)
+            return _click(cx, cy, btn, clicks)
 
         if action == "move":
-            return _move(int(params.get("x", 0)), int(params.get("y", 0)))
+            st, cx, cy = _resolve_point(params)
+            if st == "unresolved":
+                return _fail_unresolved(params)
+            if st == "current":
+                return "move needs a location: x,y or an anchor (e.g. anchor='top-left')."
+            return _move(cx, cy,
+                         duration=float(params.get("duration", 0.3)),
+                         ease=str(params.get("ease", "ease_out")))
+
+        if action == "move_relative":
+            return _move_relative(int(params.get("dx", 0)), int(params.get("dy", 0)),
+                                  duration=float(params.get("duration", 0.3)),
+                                  ease=str(params.get("ease", "ease_out")))
+
+        if action == "move_path":
+            return _move_path(params.get("points"),
+                              duration=float(params.get("duration", 0.5)),
+                              ease=str(params.get("ease", "linear")))
+
+        if action == "mouse_down":
+            return _mouse_button_down(_button(params))
+
+        if action == "mouse_up":
+            return _mouse_button_up(_button(params))
+
+        if action == "key_down":
+            return _key_down(str(params.get("key", "shift")))
+
+        if action == "key_up":
+            return _key_up(str(params.get("key", "shift")))
 
         if action == "drag":
             return _drag(
                 int(params.get("x1", 0)), int(params.get("y1", 0)),
                 int(params.get("x2", 0)), int(params.get("y2", 0)),
+                duration=float(params.get("duration", 0.5)),
+                button=_button(params),
             )
 
         if action == "hotkey":
@@ -432,12 +675,18 @@ def computer_control(
             return _screenshot(params.get("path"))
 
         if action == "screen_find":
-            coords = _screen_find(params.get("description", ""))
+            try:
+                coords = _screen_find(params.get("description", ""))
+            except _VisionUnavailable as e:
+                return f"UNAVAILABLE: {e}"
             return f"{coords[0]},{coords[1]}" if coords else "NOT_FOUND"
 
         if action == "screen_click":
-            desc   = params.get("description", "")
-            coords = _screen_find(desc)
+            desc = params.get("description", "")
+            try:
+                coords = _screen_find(desc)
+            except _VisionUnavailable as e:
+                return f"UNAVAILABLE: {e}"
             if coords:
                 time.sleep(0.2)
                 _click(x=coords[0], y=coords[1])
@@ -455,6 +704,9 @@ def computer_control(
 
         if action == "focus_window":
             return _focus_window(params.get("title", ""))
+
+        if action in ("window_minimize", "window_maximize", "window_restore", "window_close"):
+            return _window_op(action.split("_", 1)[1], str(params.get("title", "")))
 
         if action == "random_data":
             dt     = params.get("type", "name")
@@ -481,11 +733,16 @@ def computer_control(
 TOOL = {
     "name": "computer_control",
     "description": (
-        "Mouse and keyboard automation by coordinates or by describing the on-screen element: "
-        "click/double/right click at x,y, move, drag, type at the cursor, hotkeys, key presses, "
-        "scroll, copy/paste, screenshot, find-and-click a described element, focus a window by "
-        "title, clear a field, wait, fill random/user form data. For OS settings such as volume, "
-        "brightness, dark mode, Wi-Fi, windows or lock screen use computer_settings instead."
+        "Mouse and keyboard automation by coordinates or by spatial language: "
+        "click/move/drag at x,y or at an anchor ('top-left', 'center') of a window "
+        "(by title, e.g. window='Notepad') or monitor, smooth moves with duration/ease, "
+        "relative moves and waypoint paths, mouse/key down-up for custom gestures, typing, "
+        "hotkeys, key presses, scroll, copy/paste, screenshot, targeted window "
+        "minimize/maximize/restore/close by title (verified after acting), focus a window, "
+        "clear a field, wait, fill random/user form data. screen_find/screen_click are "
+        "UNAVAILABLE in this build — to click something you can see, take screen_process "
+        "and give x,y. For OS settings (volume, brightness, Wi-Fi, virtual desktops, "
+        "app search) use computer_settings instead."
     ),
     "parameters": {
         "type": "OBJECT",
@@ -493,26 +750,37 @@ TOOL = {
             "action": {
                 "type": "STRING",
                 "description": (
-                    "type | smart_type | click | double_click | right_click | move | drag | hotkey | "
-                    "press | scroll | copy | paste | screenshot | screen_find | screen_click | wait | "
-                    "clear_field | focus_window | random_data | user_data"
+                    "type | smart_type | click | double_click | right_click | move | "
+                    "move_relative | move_path | mouse_down | mouse_up | key_down | key_up | "
+                    "drag | hotkey | press | scroll | copy | paste | screenshot | "
+                    "screen_find | screen_click | wait | clear_field | focus_window | "
+                    "window_minimize | window_maximize | window_restore | window_close | "
+                    "random_data | user_data"
                 ),
             },
             "text": {"type": "STRING", "description": "Text to type or paste (type/smart_type)."},
             "x": {"type": "NUMBER", "description": "Screen X coordinate."},
             "y": {"type": "NUMBER", "description": "Screen Y coordinate."},
+            "anchor": {"type": "STRING", "description": "Spatial target: top-left, top, bottom right, center, left, right, … resolved against `window` (or `monitor` when no window is given)."},
+            "window": {"type": "STRING", "description": "Window title fragment (or spatial phrase like 'the window on the right') for `anchor` resolution."},
+            "monitor": {"type": "NUMBER", "description": "Monitor index for anchors without a window (default 0 = primary)."},
+            "dx": {"type": "NUMBER", "description": "Relative mouse move: X delta (move_relative)."},
+            "dy": {"type": "NUMBER", "description": "Relative mouse move: Y delta (move_relative)."},
+            "points": {"type": "ARRAY", "description": "Waypoints [[x,y], …] for move_path."},
+            "duration": {"type": "NUMBER", "description": "Seconds for move/drag/move_path (smooth tween; default 0.3)."},
+            "ease": {"type": "STRING", "description": "ease_out (default) | ease_in | ease_in_out | linear."},
             "x1": {"type": "NUMBER", "description": "Drag start X."},
             "y1": {"type": "NUMBER", "description": "Drag start Y."},
             "x2": {"type": "NUMBER", "description": "Drag end X."},
             "y2": {"type": "NUMBER", "description": "Drag end Y."},
-            "button": {"type": "STRING", "description": "left (default) | right"},
+            "button": {"type": "STRING", "description": "left (default) | right | middle — honored by click, drag, mouse_down/up."},
             "keys": {"type": "STRING", "description": "Hotkey combination, e.g. ctrl+c."},
-            "key": {"type": "STRING", "description": "Single key name, e.g. enter, esc, tab."},
+            "key": {"type": "STRING", "description": "Single key name, e.g. enter, esc, tab (also key_down/key_up)."},
             "direction": {"type": "STRING", "description": "up | down | left | right for scroll."},
             "amount": {"type": "NUMBER", "description": "Scroll amount (default: 3)."},
             "seconds": {"type": "NUMBER", "description": "Wait duration in seconds (max 30)."},
-            "title": {"type": "STRING", "description": "Window title fragment for focus_window."},
-            "description": {"type": "STRING", "description": "Natural-language element description for screen_find/screen_click."},
+            "title": {"type": "STRING", "description": "Window title fragment for focus_window and window_minimize/maximize/restore/close."},
+            "description": {"type": "STRING", "description": "Element description for screen_find/screen_click (UNAVAILABLE in this build — use screen_process + x,y)."},
             "type": {"type": "STRING", "description": "Data type for random_data (name, email, phone...)."},
             "field": {"type": "STRING", "description": "Memory field name for user_data."},
             "clear_first": {"type": "BOOLEAN", "description": "Clear the field before typing (default: true)."},

@@ -367,6 +367,57 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "continuous_action",
+        "description": (
+            "Start, stop, modify or inspect a CONTINUOUS cursor pattern (line, circle, "
+            "figure_eight, square, spiral). Use when the user asks to keep moving/drawing/"
+            "circling the mouse, e.g. 'draw circles', 'keep the cursor moving'. "
+            "action=start|stop|status|modify; stop also runs automatically on the UI "
+            "interrupt (ESC/Stop) — after an interrupt, never claim a pattern is still "
+            "running without a status check. Patterns are bounded (max 60s per pass) and "
+            "release any held mouse button when they stop."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "start | stop | status | modify"},
+                "pattern": {"type": "STRING", "description": "line | circle | figure_eight | square | spiral"},
+                "x": {"type": "NUMBER", "description": "Center X (default: current cursor)."},
+                "y": {"type": "NUMBER", "description": "Center Y (default: current cursor)."},
+                "size": {"type": "NUMBER", "description": "Extent in px (diameter/length), max 2000."},
+                "duration": {"type": "NUMBER", "description": "Seconds per pass, max 60."},
+                "repeat": {"type": "NUMBER", "description": "How many passes (max 100)."},
+                "button": {"type": "STRING", "description": "Hold this mouse button while moving (left|right) — draws where apps need drag."},
+                "speed": {"type": "NUMBER", "description": "modify: speed multiplier 0.1-10 (2 = twice as fast)."},
+                "scale": {"type": "NUMBER", "description": "modify: size multiplier 0.1-10 (2 = twice as big)."},
+                "reason": {"type": "STRING", "description": "modify/stop: what changed (faster, slower, bigger, smaller)."},
+            },
+            "required": ["action"],
+        },
+    },
+    {
+        "name": "context_note",
+        "description": (
+            "Correct or record the current task context. action=current (default) records "
+            "a resource the user just named ('the Excel file' → id=that path) so later "
+            "'open it' resolves to it; action=correct REPLACES a wrong reference when the "
+            "user corrects you ('no, the other one', 'I meant the PDF') — apply it "
+            "immediately instead of arguing with the wrong target. Records the result "
+            "sets too (kind=… items=[…]) so 'the second result' resolves."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "current | correct | results"},
+                "kind": {"type": "STRING", "description": "file | folder | tab | url | application | window"},
+                "id": {"type": "STRING", "description": "Resource identifier (path, URL, title)."},
+                "label": {"type": "STRING", "description": "Human-readable name for the resource."},
+                "items": {"type": "ARRAY", "description": "For results: the labels returned by the last tool, in order."},
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "screen_process",
         "description": (
             "Captures the screen or webcam image and lets you analyze it. "
@@ -1204,6 +1255,15 @@ class OperaLive:
         self._play_cursor = 0.0     # next batch starts a fresh timeline
         if self._turn_done_event:
             self._turn_done_event.clear()
+        # A continuous cursor pattern must not outlive the turn that asked
+        # for it — "stop" has to stop the machine, not just the speech.
+        try:
+            from core.continuous import engine
+            if engine().status().get("state") == "running":
+                engine().stop(reason="interrupt")
+                self.ui.write_log("SYS: Continuous action stopped")
+        except Exception:
+            log.debug("continuous stop failed", exc_info=True)
         self.ui.write_log("SYS: Interrupted — listening...")
 
     def speak(self, text: str):
@@ -1416,7 +1476,7 @@ class OperaLive:
         try:
             _resp = fr.response if isinstance(fr.response, dict) else {"result": str(fr.response)}
             _text = str(_resp.get("result", ""))
-            if fc.name != "environment_status":   # reading state is not an action
+            if fc.name not in ("environment_status", "context_note"):
                 task_ctx().note_action(
                     fc.name,
                     target=summarize_args(dict(fc.args or {})),
@@ -1506,6 +1566,43 @@ class OperaLive:
                               ) if items else "I have not changed anything I can undo yet."
                 else:
                     result = await loop.run_in_executor(None, undo_stack.undo_last)
+
+            elif name == "continuous_action":
+                from core.continuous import engine
+                act = str(args.get("action", "status")).lower().strip()
+                if act == "start":
+                    r = await asyncio.to_thread(engine().start, args)
+                elif act == "stop":
+                    r = await asyncio.to_thread(
+                        engine().stop, str(args.get("reason", "requested")))
+                elif act == "modify":
+                    r = await asyncio.to_thread(engine().modify, args)
+                else:
+                    r = await asyncio.to_thread(engine().status)
+                result = json.dumps(r, ensure_ascii=False, default=str)
+
+            elif name == "context_note":
+                # Bookkeeping on the task context — excluded from note_action
+                # below for the same reason environment_status is: recording
+                # a fact is not acting on the machine.
+                act = str(args.get("action", "current")).lower().strip()
+                kind = str(args.get("kind", "file") or "file")
+                if act == "correct":
+                    rec = task_ctx().correct_resource(
+                        str(args.get("id") or args.get("label") or ""), kind=kind)
+                    result = f"Corrected current resource → {rec.get('label', '(none)')}."
+                elif act == "results":
+                    items = list(args.get("items") or [])
+                    task_ctx().note_results(kind, items)
+                    result = f"Noted {len(items)} result(s) — ordinals now resolve against them."
+                else:
+                    ident = str(args.get("id") or args.get("label") or "")
+                    if not ident:
+                        result = "context_note needs id (or label)."
+                    else:
+                        rec = task_ctx().note_resource(kind, ident,
+                                                       str(args.get("label") or ident))
+                        result = f"Current resource set: {rec['kind']} {rec['label']}."
 
             elif name == "screen_process":
                 import time as _t_mod
@@ -1598,7 +1695,12 @@ class OperaLive:
                 _ctx = {"player": self.ui, "speak": self.speak,
                         "response": None, "session_memory": None}
                 r = await loop.run_in_executor(None, lambda: self._action_registry.run(name, args, _ctx))
-                result = r or "Done."
+                # Structured results are returned as JSON, never Python repr —
+                # the model reads `{...}`, not `{'key': ...}`.
+                if isinstance(r, (dict, list)):
+                    result = json.dumps(r, ensure_ascii=False, default=str)
+                else:
+                    result = r or "Done."
                 # web_search: mirror results to the on-screen content panel
                 if (name == "web_search" and r
                         and not r.startswith("No results")

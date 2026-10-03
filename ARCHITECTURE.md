@@ -25,8 +25,11 @@ Related: `PRD.md`, `RULES.md`, `PHASES.md`, `DESIGN.md`, `MEMORY.md`.
 │   ├── core/plugin_loader.py ── plugins/*.py                                            │
 │   │     └── safety: core/confirm.py · core/undo.py (UI-issued, never model-forgeable)  │
 │   ├── core/visual/  router → intent → world model → assets → bridge                    │
-│   ├── core/perception/  PARTIAL — one lazy import (get_active_window) in               │
-│   │        actions/screen_processor.py; otherwise test-only                             │
+│   ├── core/perception/  PARTIAL — observation layer: one lazy import in                │
+│   │        actions/screen_processor.py + world-model probes (7B: windows/monitors/      │
+│   │        cursor); wired into the live path via core/world_model.py + core/context.py  │
+│   ├── core/world_model.py  ComputerWorld (TTL observation cache, spatial language)      │
+│   ├── core/continuous.py   bounded pattern engine (continuous_action, interruptible)    │
 │   └── memory/memory_manager.py  bounded, categorized recall                            │
 │                                                                                        │
 │ ui/ ── OperaUI (ui/proxy.py) → MainWindow (ui/window.py, PyQt6)                        │
@@ -98,9 +101,19 @@ core/
   audio_pipeline.py     ORPHANED
   llm_client.py         ORPHANED (no importers)
   echo/viseme/wake_word/hotkey/audio_devices   wired
+  context.py             wired (7A/7B): EnvironmentSnapshot (TTL, invalidated
+                         after every dispatch) + TaskContext (references,
+                         ordinals, corrections); prompt blocks from main.py
+  telemetry.py           wired (7A): ring-buffer tool telemetry in _execute_tool
+  world_model.py         wired (7B): ComputerWorld TTL observation cache
+                         (windows/monitors/cursor, known/stale/unknown/
+                         unavailable) + anchor/pick_window spatial language
+  continuous.py          wired (7B): bounded pattern engine behind
+                         continuous_action + the UI interrupt path
   perception/           PARTIAL — observation-only screen/windows/browser capture;
-                        production use = one lazy get_active_window import
-                        (actions/screen_processor.py L490), otherwise test-only
+                        live use via core/world_model.py probes (windows, monitors,
+                        cursor) plus one lazy get_active_window import
+                        (actions/screen_processor.py L490)
   visual/               world_model, intent, assets, routing, bridge, concepts (wired)
   avatar.py · avatar_mesh.py · gradient_orb.py      HUD centrepieces
   task_manager · recovery · health · boot_sentry   task_manager journals every
@@ -339,16 +352,16 @@ Nothing named "Visual Director" exists in the codebase today.
 
 ---
 
-## 8. Perception architecture — PARTIAL
+## 8. Perception architecture — CURRENT (windows/monitors/cursor wired; screen.py test-only)
 
 `core/perception/` — **observation only**:
 
-> **Runtime status:** NOT on the live-session path. The only production importer is a single lazy `from core.perception import get_active_window` inside `actions/screen_processor.py` (L490); `main.py`'s screen/camera capture (`_capture_screenshot`, `_capture_camera`) uses PIL/mss directly. Everything else is exercised by `tests/test_perception.py` / `tests/test_screen_capture.py` only.
+> **Runtime status:** ON the live-session path since Phase 7A/7B, observation-only: `core/world_model.py` probes `get_open_windows` / `get_active_window` / `get_monitors` / `get_cursor_pos` for the environment snapshot and spatial targeting, `core/context.py` builds the environment snapshot from `get_screen_context()`, and `actions/screen_processor.py` holds one lazy `from core.perception import get_active_window` (L490). `main.py`'s screen/camera capture (`_capture_screenshot`, `_capture_camera`) still uses PIL/mss directly.
 
 | Module | Capability |
 |---|---|
 | `screen.py` | `capture_screen()` one-shot PNG + `ScreenCapture` metadata (`to_dict` deliberately excludes image bytes) |
-| `windows.py` | `get_active_window()`, `get_open_windows()` → `WindowInfo` |
+| `windows.py` | `get_active_window()`, `get_open_windows()` → `WindowInfo` (title/process/pid + `rect`/`state`/`hwnd`, Phase 7B); `get_monitors()` → `MonitorInfo`; `get_cursor_pos()` |
 | `context.py` | `get_screen_context()`, `probe_browser()` → `PerceptionContext` / `BrowserContext` (metadata-level) |
 | `errors.py` | `PerceptionError`, `PerceptionUnavailableError` |
 
@@ -465,7 +478,7 @@ Rules at the boundary:
 | Piece | Detail |
 |---|---|
 | Runner | `pytest` (`testpaths = ["tests"]` in `pyproject.toml`) |
-| Suite | 263 tests across 30 files (measured Phase 7A; 214 at Phase 7); visual suite covers world model, intent, assets, routing, bridge (77 tests); plus perception, voice/echo, memory, confirm, dispatch loaders, recovery, Python guard, and Phase 7A's runtime-context / manage-monitor / tool-intelligence suites (49 tests) |
+| Suite | 355 tests across 36 files (measured Phase 7B; 263 at Phase 7A; 214 at Phase 7); visual suite covers world model, intent, assets, routing, bridge (77 tests); plus perception, voice/echo, memory, confirm, dispatch loaders, recovery, Python guard, Phase 7A's runtime-context / manage-monitor / tool-intelligence suites (49 tests), and Phase 7B's world-model / continuous-action / cursor-control / browser-reuse / targeting / context-reference suites (92 tests) |
 | CI | `.github/workflows/ci.yml`: Python **3.11/3.12/3.13** matrix → `pip install -e ".[dev]"` → `python -m compileall` → `ruff check . --select F821` → `pytest tests -q` — F821 gate **GREEN (0 findings)** since Phase 6A |
 | Lint scope | CI enforces **F821 (undefined names) only** — deliberate policy, currently passing. Full `ruff check` reports 1,844 pre-existing findings (measured after Phase 6A); `ruff format --check` reports 160 files would reformat. Neither is enforced by CI; the broader cleanup is deferred technical debt (`PHASES.md` 6, §16.5), not a passing gate |
 | JS checks | No automated JS test harness; `node --check` passes for `whatsapp_bridge/bridge.js` and `_site_verify.cjs`; the Three.js page has an in-page `diagnostics` object |
@@ -483,7 +496,7 @@ Recorded so no document pretends they don't exist:
 4. **Schema ahead of execution:** intent modes/actions/camera/animation enums outnumber the 6 wired bridge actions and 6 JS-handled commands.
 5. **Lint/format debt (deferred by policy):** 1,844 ruff findings and 160 unformatted files remain (measured after Phase 6A); CI deliberately gates F821 only. Full lint/format cleanup is separate technical debt (`PHASES.md` 6) — "ruff passes" means "the F821 gate passes", not a clean full run.
 6. **Branch state:** local branch `abc` is ahead of `origin/main` (`c1206fa`) by the unpushed phase history — 10 commits measured during Phase 6B, plus this documentation commit; 0 behind. Push policy is "never push unless explicitly requested" (`RULES.md` §7 rule 10).
-7. **Orphaned modules (retained deliberately):** `core/session.py`, `core/session_reconnect.py`, `core/tool_dispatch.py`, `core/stt.py`, `core/tts.py`, `core/audio_pipeline.py`, `core/llm_client.py`, `core/validator.py` are imported by nothing on the live path (session/tool_dispatch only import each other; validator is test-only). `core/perception/` is PARTIAL (one lazy import). `main.py` owns the live Gemini session and dispatch. Do NOT read the §3 tree entries for these as active — wiring/migration requires a separate architectural decision phase (PHASES.md).
+7. **Orphaned modules (retained deliberately):** `core/session.py`, `core/session_reconnect.py`, `core/tool_dispatch.py`, `core/stt.py`, `core/tts.py`, `core/audio_pipeline.py`, `core/llm_client.py`, `core/validator.py` are imported by nothing on the live path (session/tool_dispatch only import each other; validator is test-only). `core/perception/` was PARTIAL (one lazy import) through Phase 7A; Phase 7B wired its windows/monitors/cursor probes through `core/world_model.py` (screen.py capture still test-only — `main.py` uses PIL/mss directly). `main.py` owns the live Gemini session and dispatch. Do NOT read the §3 tree entries for the orphaned modules as active — wiring/migration requires a separate architectural decision phase (PHASES.md).
 8. **RESOLVED (Phase 7) — Apple GLB rendering: RUNTIME VERIFIED.** The chain (router → intent → world model → registry → bridge → `window.operoVisual` GLB load) was verified live in the canonical desktop app: dispatched SHOW returns `{"ok":true,"entity":"apple_01"}`, the anchor is in-frustum, and the apple + galaxy are visible on screen (screenshots under `%TEMP%\opencode\phase7*`). Root cause of the earlier black-desktop symptom: `HudCanvas.paintEvent` filled itself with the opaque theme colour (`C.BG`, `WA_OpaquePaintEvent`) on top of `WebGLBackground` in the `QStackedLayout(StackAll)` stack, so the live 3D layer never reached the screen (test harnesses used `QWidget.grab()` on the WebGL widget itself, bypassing the occlusion). Fixed by the `webgl_backed` flag (`ui/widgets.py`, `ui/window.py`). The voice-staleness finding recorded in Phase 7 is **RESOLVED (Phase 7A):** the search guard now reads `current_utterance(live buffer, session log)` (`core/context.py`) — the in-progress voice utterance is buffered on input-transcript chunks and cleared at `turn_complete`, so a live "show me an apple" reaches the guard even though the session log's `User:` line only arrives after the tool call. Typed and AssemblyAI paths append before send and are unaffected. The freshness rule is unit-tested (`tests/test_runtime_context.py`); the live-voice path itself is NOT VERIFIED end-to-end (Gemini tool-choice variance) — recorded in §17.
 9. **Wired-but-unreachable actions:** `ROTATE / ZOOM / FOCUS / HIDE / RETURN_TO_FACE` are wired end to end (intent → bridge → JS) but have **no conversational producer** — production utterances only ever route `SHOW` (`route_visual_request`), and no prompt surface emits the other commands. They were verified at the intent/bridge/JS layers, not from an utterance.
 10. **Gemini Live instability (environmental):** Live sessions drop periodically with `APIError 1008 (GoAway, session duration)` and auto-reconnect (`main.py` reconnect loop); a typed turn sent during a drop is silently lost. Not a visual-pipeline defect, but it bounds what live end-to-end testing can prove in one session.
@@ -521,3 +534,37 @@ Short-lived, explicitly-invalidated state so follow-up requests resolve against 
 | Wallpaper verification (SPI return + read-back) | PARTIAL — code CURRENT, failure branch NOT VERIFIED (no CI-safe hook; touches the real desktop) |
 | Browser reuse in *the user's own* windows | **NOT VERIFIED / out of scope** — `browser_control` drives a Playwright-managed window with its own profile; acting inside the user's browser remains `computer_control` hotkeys |
 | Task-context persistence across sessions | PLANNED — deliberately not built (would be a memory system, out of Phase 7A scope) |
+
+---
+
+## 18. Computer world model & control intelligence — CURRENT (Phase 7B)
+
+Observation and targeting for computer control: what the OS actually reports, how spatial language maps onto pixels, and how actions verify themselves. Still an observation layer — control and verification stay with the tools that act.
+
+| Piece | File | Contract |
+|---|---|---|
+| Computer world model | `core/world_model.py` `ComputerWorld` | TTL-cached (5 s) per-section observation cache (`windows` / `monitors` / `cursor`); explicit statuses `known / stale / unknown / unavailable` — a failed probe never reads as fact; targeted `refresh(section, force)`; `snapshot()` / `prompt_block()` are JSON-safe; singleton `world()` |
+| Window geometry & state | `core/perception/windows.py` | `WindowInfo.rect/state/hwnd`, `MonitorInfo`, `get_monitors()`, `get_cursor_pos()` — observation only, no actuation |
+| Spatial language | `core/world_model.py` `anchor_point` / `parse_spatial` / `pick_window` | anchor phrases → pixel inside a rect (edge-nudged ±8 px); z-order/ordinal/right-left/title-token window picks; returns `None` rather than guessing (fourth+ ordinals included) |
+| Targeted resolution | `actions/computer_control.py` `_resolve_point` | explicit `x,y` > `window` + `anchor` > `monitor` + `anchor`; unresolvable → loud refusal with guidance, never a guessed click |
+| Cursor control | `actions/computer_control.py` | smooth moves (duration + pyautogui eases), relative moves, waypoint paths, mouse/key down-up, button-honoring drags |
+| Targeted window ops | `actions/computer_control.py` `_window_op` | title-addressed `window_minimize/maximize/restore/close` via Win32 with post-action verification (`IsIconic`/`IsZoomed`/title-gone); the close loop **invalidates the world TTL cache each poll** (live verification caught a stale-cache false "still there"); honest "unverified" wording otherwise; distinct from `computer_settings`' focused-window ops |
+| Semantic screen targeting | `actions/computer_control.py` `_screen_find` | **UNAVAILABLE in this build** (no vision backend — the old `llm_client` is orphaned): `screen_find` / `screen_click` return an honest `UNAVAILABLE: …` directing to `screen_process` + explicit `x,y`, never a fake `NOT_FOUND` |
+| Continuous actions | `core/continuous.py` | bounded pattern engine (line/circle/figure-eight/square/spiral; caps 60 s / 2000 px / 100 repeats); start/modify/stop, one run at a time, stop event checked every leg, held button released on exit; wired to `continuous_action` and the UI interrupt path |
+| App-scoped search | `actions/computer_settings.py` `app_search` | machine queries (settings / explorer / in-page) never route to `web_search`; virtual-desktop hotkeys `virtual_desktop_new/next/prev/close` with honest "index UNVERIFIED" wording |
+| Context references | `core/context.py` `TaskContext` | `note_results` (last result set, capped 8) + ordinal resolution ("the second result"), `correct_resource` (user corrections replace current, counted), `prompt_block` ordinal/correction guidance |
+| Browser reuse & recovery | `actions/browser_control.py` | `open_tab` reuses a matching open tab (host+path URL compare) before creating one; stale-target detection with one bounded `close()` + liveness probe retry, then honest failure; tab URL noted as a resource for references |
+| Prompt rules | `core/prompt.txt` `[EXECUTION]` | machine-search scoping, correction recording, screenshot escalation (structured coordinates first), reuse-before-create, never-claim-observation |
+
+**Capabilities (status labels):**
+
+| Capability | Status |
+|---|---|
+| World model TTL/statuses/spatial helpers | CURRENT (unit-tested; live OS probes verified in smoke: 11 windows with states, primary 1536×960, cursor read) |
+| Anchor targeting + unresolvable refusal | CURRENT (refusals VERIFIED live; landing VERIFIED via cursor read-back — resolved center → move → cursor at exactly that point; click-target accuracy is manual) |
+| Continuous pattern engine + interrupt | CURRENT (live circle completed 49 points; modify/stop VERIFIED live with injected specs; UI-interrupt click NOT VERIFIED — session-level) |
+| Targeted window ops (verify-after-act) | **VERIFIED live** — minimize/restore/maximize/close each hit their verification branch on a spawned `cmd` window; close-loop cache bug found & fixed by that run; WM_CLOSE-ignoring window correctly reported "still there" |
+| `screen_find` / `screen_click` semantic targeting | **UNAVAILABLE (honest refusal)** — no vision backend in this build; refusal VERIFIED live |
+| App-scoped search + virtual desktops | PARTIAL — `app_search` explorer target VERIFIED live (query appeared in the spawned Explorer window title); settings/page branches wiring CURRENT; virtual-desktop hotkey effect NOT VERIFIED |
+| Ordinals/corrections + file recency ranking | CURRENT (unit-tested) |
+| Browser tab reuse + stale recovery | PARTIAL → reuse **VERIFIED live** (same-process double open returned "Reused the already-open tab 1 … no new tab created", incl. URL drift); stale-recovery path unit-tested only (a real stale target cannot be forced safely) |

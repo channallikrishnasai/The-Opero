@@ -317,6 +317,60 @@ def show_desktop():
     elif _OS == "Windows": pyautogui.hotkey("win", "d")
     else:                  pyautogui.hotkey("super", "d")
 
+
+# ── Virtual desktops (Windows) ───────────────────────────────────────────────
+# Windows gives no programmatic handle on "which desktop am I on" without
+# shell COM hacks, so these EXECUTE the shortcuts and say so honestly: the
+# switch happens, the resulting index is not discoverable — never claim it.
+_VD = {
+    "virtual_desktop_new":   ("win", "ctrl", "d"),
+    "virtual_desktop_next":  ("win", "ctrl", "right"),
+    "virtual_desktop_prev":  ("win", "ctrl", "left"),
+    "virtual_desktop_close": ("win", "ctrl", "f4"),
+}
+
+
+def virtual_desktop(action: str) -> str:
+    if _OS != "Windows":
+        return f"{action} is implemented on Windows only."
+    pyautogui.hotkey(*_VD[action])
+    time.sleep(0.3)
+    return (f"Sent {action} ({'+'.join(_VD[action])}). "
+            "Windows does not report the desktop index — which desktop is now "
+            "active is UNVERIFIED; take a screenshot if it matters.")
+
+
+# ── App-scoped search ────────────────────────────────────────────────────────
+# Settings, Explorer and in-page queries are MACHINE searches — routing them
+# to web_search wastes a round trip and returns internet noise for something
+# already on screen.
+def app_search(query: str, target: str) -> str:
+    query = str(query or "").strip()
+    target = str(target or "").lower().strip()
+    if not query:
+        return "app_search needs a query (value=...)."
+    if target == "settings":
+        open_system_settings()
+        time.sleep(1.2)
+        type_text(query, press_enter_after=True)
+        where = "Windows Settings search"
+    elif target == "explorer":
+        open_file_explorer()
+        time.sleep(1.0)
+        pyautogui.hotkey("ctrl", "e")   # focus the Explorer search box
+        time.sleep(0.3)
+        type_text(query, press_enter_after=True)
+        where = "File Explorer search"
+    elif target == "page":
+        find_on_page()                   # ctrl+f — the find bar takes focus
+        time.sleep(0.3)
+        type_text(query, press_enter_after=False)
+        where = "in-page find"
+    else:
+        return "app_search target must be 'settings', 'explorer' or 'page'."
+    return (f"Opened {where} and searched for '{query[:60]}'. "
+            "Results are on screen — take screen_process to confirm them.")
+
 def open_task_manager():
     if _OS == "Windows":
         pyautogui.hotkey("ctrl", "shift", "esc")
@@ -739,7 +793,7 @@ def _detect_action(description: str) -> dict:
     if not norm:
         return {"action": "", "value": None}
 
-    known = set(ACTION_MAP) | _VALUE_ACTIONS
+    known = set(ACTION_MAP) | _VALUE_ACTIONS | set(_VD) | {"app_search"}
 
     # 1. Already an action name.
     if norm in known:
@@ -870,6 +924,13 @@ def computer_settings(
         scroll_down(int(value or 500))
         return "Scrolled down."
 
+    if action == "app_search":
+        return app_search(str(value or params.get("query", "")),
+                          str(params.get("target", params.get("scope", ""))))
+
+    if action in _VD:
+        return virtual_desktop(action)
+
     func = ACTION_MAP.get(action)
     if not func:
         return _suggest(raw_action or description)
@@ -911,7 +972,7 @@ def computer_settings(
 # ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
 TOOL = {
     "name": "computer_settings",
-    "description": "Controls the computer: volume, brightness, window management, keyboard shortcuts, typing text on screen, closing apps, fullscreen, dark mode, WiFi, restart, shutdown, scrolling, tab management, zoom, screenshots, lock screen, refresh/reload page. Use for ANY single computer control command. restart, shutdown and toggle_wifi put a confirmation on the user's screen and do NOT happen until they press it — never claim they are done. Volume, brightness and dark mode can be reversed with the `undo` tool.",
+    "description": "Controls the computer: volume, brightness, window management, keyboard shortcuts, typing text on screen, closing apps, fullscreen, dark mode, WiFi, restart, shutdown, scrolling, tab management, zoom, screenshots, lock screen, refresh/reload page, virtual desktops (new/next/prev/close), and app-scoped search (app_search with target='settings'|'explorer'|'page' for queries about this machine — never send those to web_search). Use for ANY single computer control command. restart, shutdown and toggle_wifi put a confirmation on the user's screen and do NOT happen until they press it — never claim they are done. Volume, brightness and dark mode can be reversed with the `undo` tool.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
@@ -941,7 +1002,8 @@ TOOL = {
                     "undo | redo | select_all | save | enter | escape | press_key | "
                     "type_text | screenshot | lock_screen | open_settings | "
                     "file_explorer | open_run | dark_mode | toggle_wifi | "
-                    "restart | shutdown"
+                    "restart | shutdown | app_search | virtual_desktop_new | "
+                    "virtual_desktop_next | virtual_desktop_prev | virtual_desktop_close"
                 )
             },
             "description": {
@@ -953,7 +1015,11 @@ TOOL = {
             },
             "value": {
                 "type": "STRING",
-                "description": "Optional value: volume level 0-100, text to type, key name, etc."
+                "description": "Optional value: volume level 0-100, text to type, key name, search query for app_search, etc."
+            },
+            "target": {
+                "type": "STRING",
+                "description": "For app_search only: settings (Windows Settings) | explorer (File Explorer) | page (find-in-page)."
             }
         },
         "required": []

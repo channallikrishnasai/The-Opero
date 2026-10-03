@@ -155,7 +155,7 @@ Upload source code to Stanford's MOSS server and get back a report URL with the 
 
 | **Module Category** | **Example Files** | **Inputs** | **Outputs** |
 |---------------------|-------------------|------------|-------------|
-| System Control      | `computer_control.py`, `system_manager.py` | Voice, Text | Mouse/Keyboard events, Settings changes |
+| System Control      | `computer_control.py`, `system_manager.py` | Voice, Text | Mouse/keyboard by coordinates **or spatial anchors** (window + 'top-left'), smooth/relative/path moves, targeted window ops, Settings changes |
 | Media & Audio       | `plugins/spotify_controller.py`, `youtube_video.py` | Voice | Audio playback, media key events |
 | File Processing     | `file_controller.py`, `file_processor.py` | File paths, NL description | Moved/renamed files, OCR text, extracted data |
 | Document Generation | `docx_tools.py`, `ppt_builder.py`, `pdf_tools.py` | Topic, content guidelines | `.docx`, `.pptx`, `.pdf` |

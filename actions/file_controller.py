@@ -521,13 +521,12 @@ def write_file(path: str, name: str = "", content: str = "",
 
 def rank_matches(name: str, items: list) -> list:
     """Best match first: exact filename > filename prefix > substring >
-    extension-only hits. Stable within a tier, so results stay deterministic.
-
-    Replaces raw filesystem scan order, where the first 20 arbitrary hits
-    could bury the file the user meant.
+    extension-only hits — and within a tier, the MOST RECENTLY MODIFIED file
+    first, so "the report" lands on the file actually being worked on.
+    Stable and deterministic: no timestamps missing means tier order only.
     """
     if not name:
-        return list(items)
+        return sorted(items, key=lambda i: -_mtime(i))
     n = name.lower()
 
     def tier(item) -> int:
@@ -540,7 +539,14 @@ def rank_matches(name: str, items: list) -> list:
             return 2
         return 3
 
-    return sorted(items, key=tier)
+    return sorted(items, key=lambda it: (tier(it), -_mtime(it)))
+
+
+def _mtime(item) -> float:
+    try:
+        return float(item.stat().st_mtime)
+    except Exception:
+        return 0.0
 
 
 def _ctx_note(kind: str = "", identifier: str = "", folder: str = "",
@@ -554,6 +560,16 @@ def _ctx_note(kind: str = "", identifier: str = "", folder: str = "",
             tc.note_folder(folder)
         if identifier:
             tc.note_resource(kind, identifier, label=label, verified=verified)
+    except Exception:
+        pass
+
+
+def _ctx_results(kind: str, items: list) -> None:
+    """Record the ORDERED result list so ordinals ('the second result',
+    'open the third one') resolve against what was actually shown."""
+    try:
+        from core.context import task_ctx
+        task_ctx().note_results(kind, items)
     except Exception:
         pass
 
@@ -604,6 +620,7 @@ def find_files(name: str = "", extension: str = "",
         # Remember what was found (and where) for follow-up references.
         top = ordered[0]
         _ctx_note(kind="file", identifier=str(top), label=top.name, folder=str(search_path))
+        _ctx_results("file", [i.name for i in ordered])   # ordinals resolve here
 
         header = f"Found {len(matches)} match(es)"
         if len(matches) > len(results):
@@ -640,6 +657,7 @@ def get_largest_files(path: str = "downloads", count: int = 10) -> str:
         lines = [f"Top {len(top)} largest files in {search_path.name}/:"]
         for size, f in top:
             lines.append(f"  {_format_size(size):>10}  {f.name}  ({f.parent})")
+        _ctx_results("file", [f.name for _, f in top])
 
         return "\n".join(lines)
 

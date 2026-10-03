@@ -246,6 +246,10 @@ No ISL data, hand rigs, or sign assets exist in the repository today.
 | Bridge to the existing Three.js renderer (6 actions) | **CURRENT** (`core/visual/bridge.py`, `site/web_background/index.html`) |
 | GLB loading in the live scene | **CURRENT** (base64 → GLTF loader in the background page) |
 | Desktop/window/browser perception (explicit, observation-only) | **CURRENT** (`core/perception/`) |
+| Computer world model: TTL windows/monitors/cursor with known/stale/unknown/unavailable statuses | **CURRENT** (`core/world_model.py`, unit-tested) |
+| Spatial targeting (anchors, window picking, verified title-targeted window ops) | **CURRENT** (`actions/computer_control.py`; window ops + landing VERIFIED live, click-target accuracy manual) |
+| Continuous, interruptible cursor motion (patterns, modify, stop) | **CURRENT** (`core/continuous.py`; live circle/modify/stop VERIFIED; UI-interrupt click session-level) |
+| Semantic screen targeting (`screen_find`/`screen_click`) | **UNAVAILABLE in this build** (no vision backend; returns honest `UNAVAILABLE`, never a fake NOT_FOUND) |
 | Memory with bounded categories and search | **CURRENT** (`memory/memory_manager.py`) |
 | Semantic object understanding beyond a JSON concept vocabulary | PLANNED |
 | image → concept → 3D asset pipeline | PLANNED (`PHASES.md` 14) |

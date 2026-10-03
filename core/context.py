@@ -18,6 +18,7 @@ verify).
   model's tool call.
 """
 
+import re
 import threading
 import time
 from collections import deque
@@ -31,6 +32,18 @@ ENV_TTL = 5.0          # seconds an environment snapshot stays fresh
 MAX_WINDOWS = 12        # window titles carried into prompt/tool output
 MAX_ACTIONS = 12        # recent actions kept in task context
 MAX_RESOURCES = 8       # recent resources kept for reference resolution
+MAX_RESULTS = 8         # last result set kept for ordinal references
+
+# Ordinal language — "the second result", "open the third one". Resolution is
+# deterministic against the LAST noted result set; never guessed.
+_ORDINALS = {
+    "first": 0, "1st": 0, "second": 1, "2nd": 1, "third": 2, "3rd": 2,
+    "fourth": 3, "4th": 3, "fifth": 4, "5th": 4, "sixth": 5, "6th": 5,
+    "seventh": 6, "7th": 6, "eighth": 7, "8th": 7, "last": -1, "final": -1,
+}
+_ORDINAL_RE = re.compile(
+    r"\b(first|1st|second|2nd|third|3rd|fourth|4th|fifth|5th|sixth|6th|"
+    r"seventh|7th|eighth|8th|last|final)\b", re.I)
 
 # The model's reference words, resolved deterministically against TaskContext.
 _KIND_WORDS = (
@@ -123,35 +136,70 @@ class EnvironmentSnapshot:
             return data
 
     def _build(self) -> dict:
-        try:
-            if self._probe is not None:
+        # Test/injected path: the probe returns a PerceptionContext-shaped
+        # object and gets the original 7A shape back, unchanged.
+        if self._probe is not None:
+            try:
                 ctx = self._probe()
-            else:
-                from .perception import get_screen_context
-                ctx = get_screen_context(capture=False)
+            except Exception as exc:  # perception must never break a tool call
+                return {"error": f"environment unavailable: {exc}", "timestamp": None}
+            active = ctx.active_window
+            windows = [
+                {"title": (w.title or "")[:90], "process": w.process}
+                for w in list(ctx.windows)[:MAX_WINDOWS]
+            ]
+            browser = ctx.browser.to_dict() if ctx.browser and ctx.browser.detected else {"detected": False}
+            return {
+                "timestamp": ctx.timestamp,
+                "foreground": (
+                    {"title": (active.title or "")[:90], "process": active.process}
+                    if active else None
+                ),
+                "window_count": len(ctx.windows),
+                "open_windows": windows,
+                "browser": browser,
+            }
+
+        # Real path: sectioned computer world model — geometry, state,
+        # monitors and cursor with explicit per-section status, plus browser
+        # detection from the observed foreground (no second window scan).
+        try:
+            from .perception.context import probe_browser
+            from .world_model import world
+            w = world()
+            snap = w.snapshot()
+            fg = w.foreground()
+            browser = probe_browser(fg).to_dict() if fg else {"detected": False}
+            return {
+                "timestamp": time.time(),
+                "foreground": (
+                    {"title": (snap["foreground"]["title"] or "")[:90],
+                     "process": snap["foreground"]["process"],
+                     "state": snap["foreground"]["state"],
+                     "rect": snap["foreground"]["rect"]}
+                    if snap["foreground"] else None
+                ),
+                "window_count": snap["window_count"],
+                "open_windows": snap["open_windows"],
+                "browser": browser,
+                "monitors": snap["monitors"],
+                "cursor": snap["cursor"],
+                "world_status": snap["status"],
+            }
         except Exception as exc:  # perception must never break a tool call
             return {"error": f"environment unavailable: {exc}", "timestamp": None}
-        active = ctx.active_window
-        windows = [
-            {"title": (w.title or "")[:90], "process": w.process}
-            for w in list(ctx.windows)[:MAX_WINDOWS]
-        ]
-        browser = ctx.browser.to_dict() if ctx.browser and ctx.browser.detected else {"detected": False}
-        return {
-            "timestamp": ctx.timestamp,
-            "foreground": (
-                {"title": (active.title or "")[:90], "process": active.process}
-                if active else None
-            ),
-            "window_count": len(ctx.windows),
-            "open_windows": windows,
-            "browser": browser,
-        }
 
     def invalidate(self) -> None:
-        """Drop the cached facts; the next get() performs a targeted refresh."""
+        """Drop the cached facts; the next get() performs a targeted refresh.
+        Also drops world-model freshness — one dispatch may move windows,
+        the cursor or the foreground app."""
         with self._lock:
             self._data = None
+        try:
+            from .world_model import world
+            world().invalidate()
+        except Exception:
+            pass
 
     def prompt_block(self) -> str:
         """Compact [CURRENT ENVIRONMENT] block for the system prompt."""
@@ -169,6 +217,16 @@ class EnvironmentSnapshot:
         browser = data.get("browser") or {}
         if browser.get("detected"):
             lines.append(f"Browser in foreground: {browser.get('name')}")
+        if data.get("cursor"):
+            lines.append(f"Cursor: ({data['cursor']['x']}, {data['cursor']['y']})")
+        monitors = data.get("monitors") or []
+        if monitors:
+            prim = next((m for m in monitors if m.get("primary")), monitors[0])
+            l, t, r, b = prim["rect"]
+            lines.append(f"Monitors: {len(monitors)} (primary {r - l}x{b - t})")
+        for sec, st in (data.get("world_status") or {}).items():
+            if st in ("stale", "unknown", "unavailable"):
+                lines.append(f"{sec}: {st} — re-check with environment_status refresh=true.")
         lines.append("Observed just now from the OS — re-check with environment_status before relying on it.")
         return "\n".join(lines)
 
@@ -182,6 +240,8 @@ class TaskContext:
         self._resources: deque[dict] = deque(maxlen=max_resources)
         self._clock = clock
         self._current_folder: str | None = None
+        self._results: list[tuple[str, str]] = []   # (kind, label) — last result set
+        self._corrected = 0
 
     # ── recording ────────────────────────────────────────────────────────
     def note_action(self, tool: str, target: str = "", outcome: str = "done",
@@ -219,6 +279,46 @@ class TaskContext:
         if path:
             self._current_folder = str(path)
 
+    def note_results(self, kind: str, items) -> None:
+        """Record the result LIST a tool just returned, so ordinals ('the
+        second result', 'open the third one') resolve against real output.
+        Replaces the previous set — results are the latest answer, not logs."""
+        out: list[tuple[str, str]] = []
+        for it in (items or [])[:MAX_RESULTS]:
+            if it is None:
+                continue
+            if isinstance(it, dict):
+                label = str(it.get("label") or it.get("title") or it.get("name")
+                            or it.get("path") or it.get("id") or "")[:80]
+            else:
+                label = str(it)[:80]
+            if label:
+                out.append((str(kind), label))
+        self._results = out
+
+    def correct_resource(self, label: str, kind: str | None = None) -> dict:
+        """User correction: the current resource reference was wrong —
+        replace it. Records the correction so the fact is auditable, and
+        never keeps the wrong entry as 'current'."""
+        label = str(label).strip()
+        cur = self.current_resource()
+        keep = [r for r in self._resources if r is not cur]
+        self._resources = deque(keep, maxlen=self._resources.maxlen)
+        if not label:
+            return cur or {}
+        rec = self.note_resource(kind or (cur or {}).get("kind") or "file",
+                                 label, label, verified=False)
+        rec["corrected"] = True
+        self._corrected += 1
+        return rec
+
+    @staticmethod
+    def _ordinal(text: str) -> int | None:
+        m = _ORDINAL_RE.search(text or "")
+        if not m:
+            return None
+        return _ORDINALS[m.group(1).lower()]
+
     # ── reading ──────────────────────────────────────────────────────────
     @property
     def current_folder(self) -> str | None:
@@ -244,7 +344,8 @@ class TaskContext:
 
     def resolve(self, phrase: str) -> dict | None:
         """Deterministic reference resolution for 'it' / 'that tab' / 'the
-        previous one'. Returns the matching resource or None — never guesses."""
+        previous one' / 'the second result'. Returns the matching resource or
+        None — never guesses."""
         text = (phrase or "").strip().lower()
         if not text:
             return None
@@ -253,6 +354,21 @@ class TaskContext:
             if word in text:
                 kind = k
                 break
+
+        # Ordinals resolve against the LAST result set — and only that set.
+        idx = self._ordinal(text)
+        if idx is not None:
+            hits = [(k, lab) for k, lab in self._results
+                    if kind is None or k == kind]
+            if not hits:
+                return None
+            pos = idx if idx >= 0 else len(hits) + idx
+            if not (0 <= pos < len(hits)):
+                return None
+            k, lab = hits[pos]
+            return {"kind": k, "id": lab, "label": f"result {pos + 1}: {lab}",
+                    "verified": False, "ts": self._clock()}
+
         if any(marker in text for marker in _PREV_MARKERS):
             return self.previous_resource(kind)
         return self.current_resource(kind)
@@ -270,6 +386,8 @@ class TaskContext:
             "current_resource": self.current_resource(),
             "recent_actions": self.recent_actions(),
             "recent_resources": self.recent_resources(),
+            "last_results": [lab for _, lab in self._results],
+            "corrections": self._corrected,
         }
 
     def prompt_block(self) -> str:
@@ -284,6 +402,9 @@ class TaskContext:
             age = max(0, int(self._clock() - cur["ts"]))
             state = "verified" if cur["verified"] else "unverified"
             lines.append(f"Current resource: {cur['kind']} {cur['label']} ({state}, {age}s ago)")
+        if self._results:
+            lines.append("Last results (pick with 'the second one' etc.): "
+                         + "; ".join(f"{i + 1}. {lab}" for i, (_, lab) in enumerate(self._results)))
         if self._actions:
             lines.append("Recent actions (outcomes are tool-reported: done = returned, "
                          "failed = tool-reported failure, pending = waiting for on-screen confirmation):")
@@ -292,7 +413,10 @@ class TaskContext:
                 lines.append(f"  - {rec['tool']}{target} → {rec['outcome']}")
         lines.append('Words like "it", "this", "that", "there", "the file we just '
                      'found" or "the one I opened" refer to the current resource; '
-                     '"previous/other one" to the one before it. If nothing fits, ask.')
+                     '"previous/other one" to the one before it; ordinals ("the '
+                     'second result") to the last result list above. If a reference '
+                     'is wrong, correct it with context_note (correct=...) — do not '
+                     'keep arguing with the wrong target. If nothing fits, ask.')
         return "\n".join(lines)
 
 

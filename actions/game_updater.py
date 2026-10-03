@@ -512,36 +512,42 @@ def _handle_install_dialog_pyautogui(game_name: str, best_drive: dict) -> str:
     except ImportError:
         return f"Install dialog opened for '{game_name}'. Please select '{best_drive['letter']}:' and click Install manually."
 
+    # FAILSAFE off only while this dialog dance runs — a function-wide off
+    # switch leaked process-wide and disabled the corner-abort everywhere else.
+    prev_failsafe = pyautogui.FAILSAFE
     pyautogui.FAILSAFE = False
-    drive_label  = f"{best_drive['letter']}:"
-    install_win  = None
-
-    for _ in range(30):
-        time.sleep(0.5)
-        for w in gw.getAllWindows():
-            if ("install" in w.title.lower() or "steam" in w.title.lower()) and w.width > 300 and w.visible:
-                install_win = w
-                break
-        if install_win:
-            break
-
-    if not install_win:
-        return f"Please select '{drive_label}' and click Install in Steam for '{game_name}'."
-
     try:
-        install_win.activate()
-        time.sleep(0.4)
-    except Exception:
-        pass
+        drive_label  = f"{best_drive['letter']}:"
+        install_win  = None
 
-    wx, wy = install_win.left, install_win.top
-    ww, wh = install_win.width, install_win.height
-    pyautogui.click(wx + int(ww * 0.35), wy + int(wh * 0.45))
-    time.sleep(0.2)
-    pyautogui.typewrite(best_drive["letter"], interval=0.05)
-    time.sleep(0.2)
-    pyautogui.click(wx + int(ww * 0.72), wy + int(wh * 0.88))
-    return f"Attempted drive {drive_label} selection and Install click for '{game_name}'."
+        for _ in range(30):
+            time.sleep(0.5)
+            for w in gw.getAllWindows():
+                if ("install" in w.title.lower() or "steam" in w.title.lower()) and w.width > 300 and w.visible:
+                    install_win = w
+                    break
+            if install_win:
+                break
+
+        if not install_win:
+            return f"Please select '{drive_label}' and click Install in Steam for '{game_name}'."
+
+        try:
+            install_win.activate()
+            time.sleep(0.4)
+        except Exception:
+            pass
+
+        wx, wy = install_win.left, install_win.top
+        ww, wh = install_win.width, install_win.height
+        pyautogui.click(wx + int(ww * 0.35), wy + int(wh * 0.45))
+        time.sleep(0.2)
+        pyautogui.typewrite(best_drive["letter"], interval=0.05)
+        time.sleep(0.2)
+        pyautogui.click(wx + int(ww * 0.72), wy + int(wh * 0.88))
+        return f"Attempted drive {drive_label} selection and Install click for '{game_name}'."
+    finally:
+        pyautogui.FAILSAFE = prev_failsafe
 
 
 def _install_steam_game(steam_path: Path, game_name: str = None, app_id: str = None) -> str:

@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import threading
 import concurrent.futures
 import platform
@@ -524,11 +525,266 @@ def _ensure_started():
 
 # ── Public API ───────────────────────────────────────────────────────────────
 
+# Playwright's own phrases when the MCP server lost its page/context. Kept
+# as exact-ish phrases, and only trusted on SHORT results (error strings are
+# short; a page's text may legitimately contain any words).
+_STALE_MARKERS = (
+    "target page, context or browser has been closed",
+    "target, context or browser has been closed",
+    "target page, context or browser",
+    "browser has been closed",
+    "context has been closed",
+    "page crashed",
+    "execution context was destroyed",
+    "target page was closed",
+    "browser closed unexpectedly",
+)
+
+
+def _looks_stale(result) -> bool:
+    text = str(result or "")
+    if len(text) > 600:
+        return False                       # page content, not an error string
+    low = text.lower().strip()
+    if any(m in low for m in _STALE_MARKERS):
+        return True
+    # Short Playwright failure strings: "Error: Target closed", "Failed: …".
+    # Requiring the error prefix keeps ordinary page text that happens to
+    # contain "target closed" from triggering a spurious recovery.
+    return (
+        low.startswith(("error", "failed", "browser error"))
+        and "target" in low
+        and ("closed" in low or "crashed" in low)
+    )
+
+
+def _norm_url(u) -> str:
+    """Compare URLs by host+path: scheme, www and trailing slash are noise."""
+    import re as _re
+    u = str(u or "").strip().lower()
+    u = _re.sub(r"^https?://", "", u)
+    u = _re.sub(r"^www\.", "", u)
+    return u.rstrip("/")
+
+
+def _url_matches(tab_url, want) -> bool:
+    t, w = _norm_url(tab_url), _norm_url(want)
+    if not t or not w:
+        return False
+    return t == w or t.startswith(w) or w.startswith(t)
+
+
+def _reuse_tab(mcp, url) -> str | None:
+    """Reuse-before-create: an open tab already showing this URL wins over a
+    new tab. Returns the reuse message, or None when nothing matches."""
+    if not _norm_url(url):
+        return None
+    try:
+        listing = str(mcp.tabs(action="list"))
+    except Exception:
+        return None
+    if _looks_stale(listing):
+        return None
+    import re as _re
+    # Real MCP tab listing shape (verified live):
+    #   - 0: (current) [Title](https://host/path)
+    for line in listing.splitlines():
+        m = _re.search(r"-\s*(\d+):\s*(?:\(current\)\s*)?\[[^\]]*\]\((\S+?)\)", line)
+        if not m or not _url_matches(m.group(2), url):
+            continue
+        idx = int(m.group(1))
+        try:
+            sel = str(mcp.tabs(action="select", index=idx))
+        except Exception:
+            return None
+        if _looks_stale(sel) or "does not exist" in sel.lower():
+            return None
+        return (f"Reused the already-open tab {idx} ({m.group(2).rstrip('/')}) "
+                f"— no new tab created.")
+    return None
+
+
+def _recover_stale(mcp) -> bool:
+    """One bounded stale-target recovery: shut the MCP server + browser down
+    (call_tool respawns it) and prove liveness with a trivial evaluate.
+    Never loops — a single attempt, then honest failure upstream."""
+    try:
+        mcp.close()
+        probe = str(mcp.evaluate("document.title"))
+        return not _looks_stale(probe) and "Failed to start" not in probe
+    except Exception as e:
+        _log(f"[Browser] ⚠️ stale recovery failed: {e}")
+        return False
+
+
+def _mcp_dispatch(mcp, parameters: dict, action: str) -> str:
+    """The full MCP action set. Raises on transport failure (caller falls
+    back to the native thread); stale TARGETS come back as short error
+    strings and are recovered by the caller."""
+    import time
+
+    result = "Unknown action."
+
+    if action in {"go_to", "navigate"}:
+        url = parameters.get("url", "").strip()
+        if not url and parameters.get("query"):
+            return browser_control({**parameters, "action": "search"})
+        result = mcp.navigate(url)
+
+    elif action == "search":
+        query = parameters.get("query", "").strip()
+        engine = parameters.get("engine", "google").lower()
+        engines = {
+            "google":     f"https://www.google.com/search?q={query.replace(' ', '+')}",
+            "bing":       f"https://www.bing.com/search?q={query.replace(' ', '+')}",
+            "duckduckgo": f"https://duckduckgo.com/?q={query.replace(' ', '+')}",
+        }
+        url = engines.get(engine, engines["google"])
+        result = mcp.navigate(url)
+
+    elif action in {"click", "smart_click"}:
+        element = parameters.get("element")
+        selector = parameters.get("selector")
+        text = parameters.get("text") or parameters.get("description")
+        if not element and not selector and text:
+            selector = f"text={text}"
+        result = mcp.click(element=element, selector=selector)
+
+    elif action in {"hover", "smart_hover"}:
+        element = parameters.get("element")
+        selector = parameters.get("selector")
+        text = parameters.get("text") or parameters.get("description")
+        if not element and not selector and text:
+            selector = f"text={text}"
+        result = mcp.hover(element=element, selector=selector)
+
+    elif action in {"type", "smart_type"}:
+        element = parameters.get("element")
+        selector = parameters.get("selector")
+        text = str(parameters.get("text", ""))
+        desc = parameters.get("description")
+        if not element and not selector and desc:
+            selector = f"input[placeholder*='{desc}'], [aria-label*='{desc}'], textarea"
+        result = mcp.type_text(text=text, element=element, selector=selector)
+
+    elif action == "press":
+        result = mcp.press_key(parameters.get("key", "Enter"))
+
+    elif action == "scroll":
+        direction = parameters.get("direction", "down")
+        amount = int(parameters.get("amount", 500))
+        y = amount if direction == "down" else -amount
+        result = mcp.evaluate(f"window.scrollBy(0, {y}); 'Scrolled {direction}'")
+
+    elif action in {"snapshot", "inspect"}:
+        result = mcp.snapshot()
+
+    elif action == "find":
+        query = parameters.get("query") or parameters.get("text") or ""
+        result = mcp.find(query)
+
+    elif action == "get_text":
+        result = mcp.evaluate("document.body ? document.body.innerText.substring(0, 4000) : ''")
+        if not result or result == "''":
+            result = mcp.snapshot()
+
+    elif action in {"evaluate", "eval"}:
+        expr = parameters.get("expression") or parameters.get("script") or "document.title"
+        result = mcp.evaluate(expr)
+
+    elif action in {"run_code", "execute"}:
+        code = parameters.get("code") or parameters.get("snippet") or ""
+        result = mcp.run_code_unsafe(code)
+
+    elif action in {"screenshot", "take_screenshot"}:
+        out_dir = Path.home() / "Desktop" / "BrahmaAI"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        custom_path = parameters.get("path")
+        if not custom_path:
+            custom_path = str(out_dir / f"browser_screenshot_{int(time.time())}.png")
+        result = mcp.take_screenshot(custom_path)
+
+    elif action == "fill_form":
+        raw_fields = parameters.get("fields", {})
+        fields_list = []
+        if isinstance(raw_fields, dict):
+            for k, v in raw_fields.items():
+                fields_list.append({"element": k, "value": str(v)})
+        elif isinstance(raw_fields, list):
+            fields_list = raw_fields
+        result = mcp.fill_form(fields_list)
+
+    elif action == "select_option":
+        vals = parameters.get("values") or [parameters.get("value")]
+        result = mcp.select_option(
+            values=[str(v) for v in vals if v],
+            element=parameters.get("element"),
+            selector=parameters.get("selector")
+        )
+
+    elif action in {"tabs", "list_tabs"}:
+        result = mcp.tabs(action="list")
+
+    elif action in {"open_tab", "new_tab"}:
+        url = (parameters.get("url") or "").strip()
+        reused = _reuse_tab(mcp, url)   # reuse-before-create
+        if reused is not None:
+            result = reused
+        else:
+            mcp.tabs(action="new")
+            if url:
+                result = mcp.navigate(url)
+            else:
+                result = "Opened new tab."
+
+    elif action == "switch_tab":
+        idx = int(parameters.get("tab", 1))
+        result = mcp.tabs(action="select", index=idx)
+
+    elif action == "back":
+        result = mcp.navigate_back()
+
+    elif action == "forward":
+        result = mcp.evaluate("window.history.forward(); 'Forward navigated'")
+
+    elif action in {"refresh", "reload"}:
+        result = mcp.evaluate("window.location.reload(); 'Page reloaded'")
+
+    elif action in {"wait_for", "wait"}:
+        text = parameters.get("text")
+        t_ms = parameters.get("time_ms") or parameters.get("time")
+        result = mcp.wait_for(text=text, time_ms=int(t_ms) if t_ms else 2000)
+
+    elif action in {"dialog", "handle_dialog"}:
+        accept = parameters.get("accept", True)
+        p_text = parameters.get("prompt_text")
+        result = mcp.handle_dialog(accept=accept, prompt_text=p_text)
+
+    elif action in {"upload", "file_upload"}:
+        paths = parameters.get("paths") or [parameters.get("path")]
+        paths = [str(p) for p in paths if p]
+        # file_upload accepts ONLY paths — element/selector raised TypeError.
+        result = mcp.file_upload(paths=paths)
+
+    elif action == "console":
+        result = mcp.console_messages()
+
+    elif action == "network":
+        result = mcp.network_requests()
+
+    elif action == "close":
+        result = mcp.close()
+
+    else:
+        result = f"Unknown action: {action}"
+
+    return result
+
 def browser_control(
-    parameters:     dict,
+    parameters: dict,
     response=None,
     player=None,
-    session_memory=None
+    session_memory=None,
 ) -> str:
     """
     Complete browser automation powered by Microsoft Playwright MCP (@playwright/mcp),
@@ -537,193 +793,32 @@ def browser_control(
     Scope: a Playwright-managed window with its own profile — NOT the user's
     everyday browser windows (use computer_control hotkeys for those).
 
-    parameters:
-        action      : go_to | navigate | search | click | type | scroll | fill_form |
-                      smart_click | smart_type | get_text | press | back | forward |
-                      refresh | open_tab | new_tab | switch_tab | list_tabs | close |
-                      snapshot | find | hover | evaluate | run_code | screenshot |
-                      wait_for | select_option | dialog | upload | console | network
-        url         : URL for go_to / navigate
-        query       : search query
-        engine      : google | bing | duckduckgo (default: google)
-        selector    : CSS selector for click/type/hover/select
-        element     : Snapshot element reference (e.g. 'e2')
-        text        : text to click, type, or wait for
-        description : element description for smart_click/smart_type
-        direction   : up | down for scroll
-        amount      : scroll amount in pixels (default: 500)
-        key         : key name for press (e.g. Enter, Escape, Tab, Backspace)
-        fields      : {selector: value} dict or list of fields for fill_form
-        expression  : JavaScript expression for evaluate
-        code        : Playwright code snippet for run_code
-        path        : output path for screenshot
-        tab         : 1-based tab index for switch_tab
-        time_ms     : milliseconds to wait
+    Parameters and actions are declared in TOOL below.
+
+    Reuse: opening a tab with a URL first checks whether a tab already shows
+    it and reuses that tab instead of creating another.
+
+    Stale targets: when Playwright reports its page/context died, the MCP
+    server is shut down once (call_tool respawns it) and the action retried;
+    if that fails the result says so — never an infinite loop.
     """
-    import time
     from actions.playwright_mcp_client import get_playwright_mcp_client
 
-    action = (parameters or {}).get("action", "").lower().strip()
-    result = "Unknown action."
+    parameters = parameters or {}
+    action = parameters.get("action", "").lower().strip()
 
-    # Try Microsoft Playwright MCP first
     try:
         mcp = get_playwright_mcp_client()
-
-        if action in {"go_to", "navigate"}:
-            url = parameters.get("url", "").strip()
-            if not url and parameters.get("query"):
-                return browser_control({**parameters, "action": "search"}, response, player, session_memory)
-            result = mcp.navigate(url)
-
-        elif action == "search":
-            query = parameters.get("query", "").strip()
-            engine = parameters.get("engine", "google").lower()
-            engines = {
-                "google":     f"https://www.google.com/search?q={query.replace(' ', '+')}",
-                "bing":       f"https://www.bing.com/search?q={query.replace(' ', '+')}",
-                "duckduckgo": f"https://duckduckgo.com/?q={query.replace(' ', '+')}",
-            }
-            url = engines.get(engine, engines["google"])
-            result = mcp.navigate(url)
-
-        elif action in {"click", "smart_click"}:
-            element = parameters.get("element")
-            selector = parameters.get("selector")
-            text = parameters.get("text") or parameters.get("description")
-            if not element and not selector and text:
-                selector = f"text={text}"
-            result = mcp.click(element=element, selector=selector)
-
-        elif action in {"hover", "smart_hover"}:
-            element = parameters.get("element")
-            selector = parameters.get("selector")
-            text = parameters.get("text") or parameters.get("description")
-            if not element and not selector and text:
-                selector = f"text={text}"
-            result = mcp.hover(element=element, selector=selector)
-
-        elif action in {"type", "smart_type"}:
-            element = parameters.get("element")
-            selector = parameters.get("selector")
-            text = str(parameters.get("text", ""))
-            desc = parameters.get("description")
-            if not element and not selector and desc:
-                selector = f"input[placeholder*='{desc}'], [aria-label*='{desc}'], textarea"
-            result = mcp.type_text(text=text, element=element, selector=selector)
-
-        elif action == "press":
-            result = mcp.press_key(parameters.get("key", "Enter"))
-
-        elif action == "scroll":
-            direction = parameters.get("direction", "down")
-            amount = int(parameters.get("amount", 500))
-            y = amount if direction == "down" else -amount
-            result = mcp.evaluate(f"window.scrollBy(0, {y}); 'Scrolled {direction}'")
-
-        elif action in {"snapshot", "inspect"}:
-            result = mcp.snapshot()
-
-        elif action == "find":
-            query = parameters.get("query") or parameters.get("text") or ""
-            result = mcp.find(query)
-
-        elif action == "get_text":
-            result = mcp.evaluate("document.body ? document.body.innerText.substring(0, 4000) : ''")
-            if not result or result == "''":
-                result = mcp.snapshot()
-
-        elif action in {"evaluate", "eval"}:
-            expr = parameters.get("expression") or parameters.get("script") or "document.title"
-            result = mcp.evaluate(expr)
-
-        elif action in {"run_code", "execute"}:
-            code = parameters.get("code") or parameters.get("snippet") or ""
-            result = mcp.run_code_unsafe(code)
-
-        elif action in {"screenshot", "take_screenshot"}:
-            out_dir = Path.home() / "Desktop" / "BrahmaAI"
-            out_dir.mkdir(parents=True, exist_ok=True)
-            custom_path = parameters.get("path")
-            if not custom_path:
-                custom_path = str(out_dir / f"browser_screenshot_{int(time.time())}.png")
-            result = mcp.take_screenshot(custom_path)
-
-        elif action == "fill_form":
-            raw_fields = parameters.get("fields", {})
-            fields_list = []
-            if isinstance(raw_fields, dict):
-                for k, v in raw_fields.items():
-                    fields_list.append({"element": k, "value": str(v)})
-            elif isinstance(raw_fields, list):
-                fields_list = raw_fields
-            result = mcp.fill_form(fields_list)
-
-        elif action == "select_option":
-            vals = parameters.get("values") or [parameters.get("value")]
-            result = mcp.select_option(
-                values=[str(v) for v in vals if v],
-                element=parameters.get("element"),
-                selector=parameters.get("selector")
-            )
-
-        elif action in {"tabs", "list_tabs"}:
-            result = mcp.tabs(action="list")
-
-        elif action in {"open_tab", "new_tab"}:
-            mcp.tabs(action="new")
-            url = parameters.get("url")
-            if url:
-                result = mcp.navigate(url)
-            else:
-                result = "Opened new tab."
-
-        elif action == "switch_tab":
-            idx = int(parameters.get("tab", 1))
-            result = mcp.tabs(action="select", index=idx)
-
-        elif action == "back":
-            result = mcp.navigate_back()
-
-        elif action == "forward":
-            result = mcp.evaluate("window.history.forward(); 'Forward navigated'")
-
-        elif action in {"refresh", "reload"}:
-            result = mcp.evaluate("window.location.reload(); 'Page reloaded'")
-
-        elif action in {"wait_for", "wait"}:
-            text = parameters.get("text")
-            t_ms = parameters.get("time_ms") or parameters.get("time")
-            result = mcp.wait_for(text=text, time_ms=int(t_ms) if t_ms else 2000)
-
-        elif action in {"dialog", "handle_dialog"}:
-            accept = parameters.get("accept", True)
-            p_text = parameters.get("prompt_text")
-            result = mcp.handle_dialog(accept=accept, prompt_text=p_text)
-
-        elif action in {"upload", "file_upload"}:
-            paths = parameters.get("paths") or [parameters.get("path")]
-            paths = [str(p) for p in paths if p]
-            result = mcp.file_upload(
-                paths=paths,
-                element=parameters.get("element"),
-                selector=parameters.get("selector")
-            )
-
-        elif action == "console":
-            result = mcp.console_messages()
-
-        elif action == "network":
-            result = mcp.network_requests()
-
-        elif action == "close":
-            result = mcp.close()
-
-        else:
-            result = f"Unknown action: {action}"
-
+        result = _mcp_dispatch(mcp, parameters, action)
+        if _looks_stale(result):
+            _log("[Browser] stale browser target - recovering (one bounded attempt)")
+            if _recover_stale(mcp):
+                result = _mcp_dispatch(mcp, parameters, action)
+            if _looks_stale(result):
+                result = (f"Browser target went stale and one recovery attempt "
+                          f"did not fix it: {str(result)[:200]}")
     except Exception as mcp_err:
-        _log(f"[Browser] ⚠️ MCP server issue ({mcp_err}) — falling back to native browser thread")
+        _log(f"[Browser] MCP server issue ({mcp_err}) - falling back to native browser thread")
         # Legacy Fallback
         try:
             _ensure_started()
@@ -766,6 +861,22 @@ def browser_control(
     if player and hasattr(player, "write_log"):
         player.write_log(f"[browser] {safe_res[:80]}")
 
+    # Where we actually landed becomes the current tab reference, so later
+    # "open it" / "that tab" resolves against a real URL — not a hope.
+    if (action in {"go_to", "navigate", "search", "open_tab", "new_tab"}
+            and not _looks_stale(result)
+            and "stale" not in safe_res.lower()):
+        low = safe_res.lower()
+        if "navigat" in low or "opened" in low or "reused" in low:
+            m_url = re.search(r"https?://\S+", safe_res)
+            if m_url:
+                try:
+                    from core.context import task_ctx
+                    task_ctx().note_resource("tab", m_url.group(0).rstrip(".,)"),
+                                             label=safe_res[:80])
+                except Exception:
+                    pass
+
     return result
 
 # ── OPERO tool registration ───────────────────────────────────────────────────
@@ -777,7 +888,10 @@ TOOL = {
         "everyday browser); it reuses that one window and its tabs throughout "
         "the session, but does not control browser windows already open on the "
         "desktop — to act inside the user's own browser window, use "
-        "computer_control (OS hotkeys) instead. Actions: navigate, search, "
+        "computer_control (OS hotkeys) instead. Opening a tab with a URL REUSES "
+        "an already-open tab showing that URL instead of duplicating it. If the "
+        "browser target goes stale, it is recovered once automatically and the "
+        "result says whether that worked. Actions: navigate, search, "
         "click, type, fill forms, read page text/snapshots, manage tabs, "
         "evaluate JS, run code, screenshot, console/network logs."
     ),

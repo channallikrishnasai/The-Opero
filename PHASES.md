@@ -184,6 +184,24 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 
 ---
 
+## PHASE 7B — Computer Perception, World Model, Targeting & Control (execution session)
+
+**Status: IMPLEMENTED** (session increment recorded here; unrelated to roadmap Phase 7 "Face ↔ 3D" below)
+
+| | |
+|---|---|
+| Goal | Make computer control observe before it acts: a real world model (windows/monitors/cursor with explicit staleness), spatial targeting that refuses to guess, smooth/relative/path cursor motion with interruption, machine-scoped search, and references that survive corrections |
+| Why | Actions clicked blind coordinates; `screen_find` faked NOT_FOUND with no vision backend; duplicate tabs/windows spawned; the environment block aged silently; "the second result" had nothing to resolve against; `game_updater` disabled pyautogui FAILSAFE process-wide |
+| Dependencies | Phase 7A (context/task/invalidation), `core/perception/` |
+| Scope | `core/world_model.py` (new), `core/continuous.py` (new), `core/perception/windows.py`, `core/context.py`, `core/prompt.txt`, `actions/computer_control.py`, `actions/computer_settings.py`, `actions/browser_control.py`, `actions/file_controller.py`, `actions/game_updater.py`, `main.py` (declarations, handlers, interrupt) |
+| Deliverables | `ComputerWorld` TTL cache with `known/stale/unknown/unavailable` statuses + `snapshot()`/`prompt_block()`; window rect/state/hwnd + monitors + cursor probes; anchor/window/monitor targeting (`_resolve_point`) with loud unresolved refusals; title-targeted verified `window_*` ops; smooth/relative/path moves, mouse/key down-up, button-honoring drags; honest `UNAVAILABLE` for visionless `screen_find`/`screen_click`; interruptible bounded pattern engine behind `continuous_action` (+ UI interrupt stops it); `app_search` (settings/explorer/page) + virtual-desktop actions; browser tab reuse-before-create + one-shot stale-target recovery + tab URL noting; `note_results` ordinals + `correct_resource` corrections + file-rank recency tiebreak; `[EXECUTION]` scoping/correction/screenshot-escalation rules; `game_updater` FAILSAFE restored via finally |
+| Tests | +92 (`tests/test_world_model.py`, `test_continuous_actions.py`, `test_cursor_control.py`, `test_browser_reuse.py`, `test_targeting_spatial.py`, `test_context_references.py`; `test_perception.py` schema updated); full suite **355/355**, F821 green |
+| Acceptance | No action guesses coordinates; unresolvable targets fail loudly; screen ops that need vision say UNAVAILABLE honestly; a running pattern can be stopped from the interrupt path; machine queries never route to the web; ordinals/corrections resolve deterministically; FAILSAFE cannot leak disabled |
+| Non-goals | Visual Director, face/3D/HUD changes, embeddings/FAISS, a second browser/dispatcher framework, a giant EnvironmentManager or memory system, weakening confirmation gates, gemini as machine-state authority, installing whatsapp-web.js, new LLM/vision backends |
+| Exit criteria | ✅ met (this session's commit; every claim labelled IMPLEMENTED / VERIFIED / PARTIAL / NOT VERIFIED / DEFERRED in the session report) |
+
+---
+
 ## PHASE 7 — Face ↔ 3D Transition
 
 **Status: PLANNED** (only primitive hooks exist: `RETURN_TO_FACE` command; Qt face and WebGL scene are separate layers)
@@ -430,6 +448,7 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 | 5 | Three.js Visual Bridge | IMPLEMENTED MVP (`b3affe3`) |
 | 6 | Runtime Stabilization | **IMPLEMENTED (6A `05874b1` + 6B)** |
 | 7A | Tool / Environment / Context Intelligence (session) | **IMPLEMENTED** (263 tests, F821 green) |
+| 7B | Computer Perception / World Model / Control (session) | **IMPLEMENTED** (355 tests, F821 green) |
 | 7 | Face ↔ 3D Transition | PLANNED (hooks exist) |
 | 8 | Visual Director | PLANNED (role reserved) |
 | 9 | Object Inspection | PLANNED (schema partial) |

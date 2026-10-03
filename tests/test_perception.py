@@ -46,23 +46,30 @@ def test_screen_capture_can_be_called_safely(monkeypatch) -> None:
 
 
 def test_active_window_has_stable_schema(monkeypatch) -> None:
-    monkeypatch.setattr("core.perception.windows._active_raw", lambda: ("Fake Editor", 4242))
+    monkeypatch.setattr("core.perception.windows._active_raw", lambda: ("Fake Editor", 4242, 1001))
     monkeypatch.setattr("core.perception.windows._process_name", lambda pid: "editor.exe")
+    monkeypatch.setattr("core.perception.windows._window_rect", lambda u, h: (0, 0, 100, 50))
+    monkeypatch.setattr("core.perception.windows._window_state", lambda u, h: "normal")
     active = get_active_window()
     assert active is not None
     payload = active.to_dict()
-    assert list(payload) == ["title", "process", "pid"]
-    assert payload == {"title": "Fake Editor", "process": "editor.exe", "pid": 4242}
+    assert list(payload) == ["title", "process", "pid", "rect", "state"]
+    assert payload == {"title": "Fake Editor", "process": "editor.exe", "pid": 4242,
+                       "rect": (0, 0, 100, 50), "state": "normal"}
     assert isinstance(payload["pid"], int)
+    assert active.hwnd == 1001
 
     monkeypatch.setattr("core.perception.windows._active_raw", lambda: None)
     assert get_active_window() is None
 
 
 def test_perception_context_serializes(monkeypatch) -> None:
-    monkeypatch.setattr("core.perception.windows._active_raw", lambda: ("Fake Window", 1))
-    monkeypatch.setattr("core.perception.windows._enumerate_raw", lambda: [("Fake Window", 1), ("Other Window", 2)])
+    monkeypatch.setattr("core.perception.windows._active_raw", lambda: ("Fake Window", 1, 11))
+    monkeypatch.setattr("core.perception.windows._enumerate_raw",
+                        lambda: [("Fake Window", 1, 11), ("Other Window", 2, 22)])
     monkeypatch.setattr("core.perception.windows._process_name", lambda pid: "fake.exe")
+    monkeypatch.setattr("core.perception.windows._window_rect", lambda u, h: (0, 0, 80, 60))
+    monkeypatch.setattr("core.perception.windows._window_state", lambda u, h: "normal")
     monkeypatch.setattr("core.perception.context._integration_available", lambda: False)
 
     payload = get_screen_context().to_dict()
@@ -70,7 +77,10 @@ def test_perception_context_serializes(monkeypatch) -> None:
     assert set(payload) == {"timestamp", "screen", "windows", "browser"}
     assert payload["screen"] is None  # no capture unless explicitly requested
     assert set(payload["windows"]) == {"active_window", "windows"}
-    assert payload["windows"]["active_window"] == {"title": "Fake Window", "process": "fake.exe", "pid": 1}
+    assert payload["windows"]["active_window"] == {
+        "title": "Fake Window", "process": "fake.exe", "pid": 1,
+        "rect": (0, 0, 80, 60), "state": "normal",
+    }
     assert len(payload["windows"]["windows"]) == 2
     assert payload["browser"]["detected"] is False
     assert payload["browser"]["integration_available"] is False
