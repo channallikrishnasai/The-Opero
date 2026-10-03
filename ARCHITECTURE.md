@@ -169,9 +169,12 @@ TTS output ─► begin_speaking() ───────┘                     
 ```text
 Gemini function call (main.py L1850–1854)
       ↓
-main.py _execute_tool (L1338)   ← the effective dispatcher (CURRENT)
+main.py _execute_tool (wrapper) + _execute_tool_inner   ← the effective dispatcher (CURRENT)
+      ↓ wrapper bookkeeping (Phase 7A): telemetry record, environment-cache
+        invalidation (next read = targeted refresh), task-context action note
       ↓
-search guard / visual routing first (core/visual/routing.py, main.py L1350+)
+search guard / visual routing first (core/visual/routing.py, main.py L1350+;
+      guard reads current_utterance(live buffer, session log) — Phase 7A)
       ↓
 inline TOOL_DECLARATIONS (main.py L325)
    ── or ── action registry run (core/action_loader → actions/*.py,
@@ -462,7 +465,7 @@ Rules at the boundary:
 | Piece | Detail |
 |---|---|
 | Runner | `pytest` (`testpaths = ["tests"]` in `pyproject.toml`) |
-| Suite | 214 tests across 27 files (measured Phase 7); visual suite covers world model, intent, assets, routing, bridge (77 tests); plus perception, voice/echo, memory, confirm, dispatch loaders, recovery, Python guard |
+| Suite | 263 tests across 30 files (measured Phase 7A; 214 at Phase 7); visual suite covers world model, intent, assets, routing, bridge (77 tests); plus perception, voice/echo, memory, confirm, dispatch loaders, recovery, Python guard, and Phase 7A's runtime-context / manage-monitor / tool-intelligence suites (49 tests) |
 | CI | `.github/workflows/ci.yml`: Python **3.11/3.12/3.13** matrix → `pip install -e ".[dev]"` → `python -m compileall` → `ruff check . --select F821` → `pytest tests -q` — F821 gate **GREEN (0 findings)** since Phase 6A |
 | Lint scope | CI enforces **F821 (undefined names) only** — deliberate policy, currently passing. Full `ruff check` reports 1,844 pre-existing findings (measured after Phase 6A); `ruff format --check` reports 160 files would reformat. Neither is enforced by CI; the broader cleanup is deferred technical debt (`PHASES.md` 6, §16.5), not a passing gate |
 | JS checks | No automated JS test harness; `node --check` passes for `whatsapp_bridge/bridge.js` and `_site_verify.cjs`; the Three.js page has an in-page `diagnostics` object |
@@ -481,6 +484,40 @@ Recorded so no document pretends they don't exist:
 5. **Lint/format debt (deferred by policy):** 1,844 ruff findings and 160 unformatted files remain (measured after Phase 6A); CI deliberately gates F821 only. Full lint/format cleanup is separate technical debt (`PHASES.md` 6) — "ruff passes" means "the F821 gate passes", not a clean full run.
 6. **Branch state:** local branch `abc` is ahead of `origin/main` (`c1206fa`) by the unpushed phase history — 10 commits measured during Phase 6B, plus this documentation commit; 0 behind. Push policy is "never push unless explicitly requested" (`RULES.md` §7 rule 10).
 7. **Orphaned modules (retained deliberately):** `core/session.py`, `core/session_reconnect.py`, `core/tool_dispatch.py`, `core/stt.py`, `core/tts.py`, `core/audio_pipeline.py`, `core/llm_client.py`, `core/validator.py` are imported by nothing on the live path (session/tool_dispatch only import each other; validator is test-only). `core/perception/` is PARTIAL (one lazy import). `main.py` owns the live Gemini session and dispatch. Do NOT read the §3 tree entries for these as active — wiring/migration requires a separate architectural decision phase (PHASES.md).
-8. **RESOLVED (Phase 7) — Apple GLB rendering: RUNTIME VERIFIED.** The chain (router → intent → world model → registry → bridge → `window.operoVisual` GLB load) was verified live in the canonical desktop app: dispatched SHOW returns `{"ok":true,"entity":"apple_01"}`, the anchor is in-frustum, and the apple + galaxy are visible on screen (screenshots under `%TEMP%\opencode\phase7*`). Root cause of the earlier black-desktop symptom: `HudCanvas.paintEvent` filled itself with the opaque theme colour (`C.BG`, `WA_OpaquePaintEvent`) on top of `WebGLBackground` in the `QStackedLayout(StackAll)` stack, so the live 3D layer never reached the screen (test harnesses used `QWidget.grab()` on the WebGL widget itself, bypassing the occlusion). Fixed by the `webgl_backed` flag (`ui/widgets.py`, `ui/window.py`). Remaining open finding: **voice turns append `User:` at `turn_complete` (`main.py`), after the model's tool call, so the search guard's `last_user_utterance` can be stale and a voice "show me an apple" may fall through to a real search** — typed and AssemblyAI paths append before send and are unaffected. This is a Gemini-Live voice-path ordering defect, recorded as open (a fix touches live voice handling and is deliberately out of the test-only commit scope).
+8. **RESOLVED (Phase 7) — Apple GLB rendering: RUNTIME VERIFIED.** The chain (router → intent → world model → registry → bridge → `window.operoVisual` GLB load) was verified live in the canonical desktop app: dispatched SHOW returns `{"ok":true,"entity":"apple_01"}`, the anchor is in-frustum, and the apple + galaxy are visible on screen (screenshots under `%TEMP%\opencode\phase7*`). Root cause of the earlier black-desktop symptom: `HudCanvas.paintEvent` filled itself with the opaque theme colour (`C.BG`, `WA_OpaquePaintEvent`) on top of `WebGLBackground` in the `QStackedLayout(StackAll)` stack, so the live 3D layer never reached the screen (test harnesses used `QWidget.grab()` on the WebGL widget itself, bypassing the occlusion). Fixed by the `webgl_backed` flag (`ui/widgets.py`, `ui/window.py`). The voice-staleness finding recorded in Phase 7 is **RESOLVED (Phase 7A):** the search guard now reads `current_utterance(live buffer, session log)` (`core/context.py`) — the in-progress voice utterance is buffered on input-transcript chunks and cleared at `turn_complete`, so a live "show me an apple" reaches the guard even though the session log's `User:` line only arrives after the tool call. Typed and AssemblyAI paths append before send and are unaffected. The freshness rule is unit-tested (`tests/test_runtime_context.py`); the live-voice path itself is NOT VERIFIED end-to-end (Gemini tool-choice variance) — recorded in §17.
 9. **Wired-but-unreachable actions:** `ROTATE / ZOOM / FOCUS / HIDE / RETURN_TO_FACE` are wired end to end (intent → bridge → JS) but have **no conversational producer** — production utterances only ever route `SHOW` (`route_visual_request`), and no prompt surface emits the other commands. They were verified at the intent/bridge/JS layers, not from an utterance.
 10. **Gemini Live instability (environmental):** Live sessions drop periodically with `APIError 1008 (GoAway, session duration)` and auto-reconnect (`main.py` reconnect loop); a typed turn sent during a drop is silently lost. Not a visual-pipeline defect, but it bounds what live end-to-end testing can prove in one session.
+
+---
+
+## 17. Runtime context & execution intelligence — CURRENT (Phase 7A)
+
+Short-lived, explicitly-invalidated state so follow-up requests resolve against what OPERO actually just did — **not** a memory system and **not** a second source of truth; every fact is re-derivable from the OS and is always presented to the model as an observation.
+
+| Piece | File | Contract |
+|---|---|---|
+| Environment snapshot | `core/context.py` `EnvironmentSnapshot` | TTL 5 s window/foreground/browser facts from `core.perception.get_screen_context()` (lazy import); invalidated after **every** tool dispatch, so the next read is a targeted refresh; probe errors degrade to an explicit `(unavailable: …)` block, never a claim |
+| Task context | `core/context.py` `TaskContext` | bounded deques (12 actions / 8 resources, dedup-by-id); `current_folder` from list/find/read; `resolve("it"/"that file"/"the previous one")` deterministic — returns the recorded resource or `None`, never guesses; outcomes labelled `done/failed/pending` as **tool-reported** |
+| Utterance freshness | `core/context.py` `current_utterance()` | live voice buffer (input-transcript chunks, cleared at `turn_complete`) wins over the session log; feeds the search guard (voice-staleness fix, §16.8) |
+| Prompt blocks | `main.py` `_build_config` | `[CURRENT ENVIRONMENT]` + `[CURRENT TASK CONTEXT]` injected at session build; empty blocks omitted so fresh sessions stay lean |
+| Tool wrapper | `main.py` `_execute_tool` | telemetry record + env invalidation + `task_ctx().note_action` (excludes `environment_status`) around `_execute_tool_inner` |
+| Status tool | `main.py` inline `environment_status` | model-callable refresh: snapshot JSON + task summary |
+| Monitor contract | `actions/background_monitor.py` `dispatch()` | validates `manage_monitor` args (type/target/threshold/condition/interval, legacy `topic` fallback, interval clamped 10–86400); never raises — returns guidance strings (fixes the add-TypeError, §6) |
+| Telemetry | `core/telemetry.py` | ring buffer (256 records), `record/recent/count/reset`; measurement only — no persistence, no invented baselines |
+| Reference resolution | `core/prompt.txt` `[EXECUTION]` | reuse-before-create rule, context-block resolution, `environment_status` refresh guidance, never-claim-observation rule |
+
+**Tool-level intelligence added:** `open_app` reuses/focuses an existing window by default (`new_window` opt-in), whole-token alias matching (no "word"→wordpad cross-fire), post-launch verification with honest `verified / could NOT verify / cannot verify` wording; `file_controller.find` ranks exact > prefix > substring and defaults to the task's current folder; `browser_control` declares its real scope; `desktop.set_wallpaper` checks the SPI/`osascript`/DE return code and read-back on Windows; `whatsapp_call` refuses to spawn when `whatsapp-web.js` is absent (no 3-cycle restart churn).
+
+**Capabilities (status labels):**
+
+| Capability | Status |
+|---|---|
+| Env snapshot TTL/invalidation/error degradation | CURRENT (unit-tested) |
+| Task context recording/resolve/prompt blocks | CURRENT (unit-tested) |
+| `manage_monitor` dispatch contract | CURRENT (unit-tested) |
+| open_app reuse + verification wording | CURRENT (unit-tested; live window focus NOT VERIFIED on a real desktop) |
+| find ranking + task-folder default | CURRENT (unit-tested) |
+| Voice search-guard freshness | CURRENT at unit level; **live-voice path NOT VERIFIED** (Gemini tool-choice variance, §16.10) |
+| Wallpaper verification (SPI return + read-back) | PARTIAL — code CURRENT, failure branch NOT VERIFIED (no CI-safe hook; touches the real desktop) |
+| Browser reuse in *the user's own* windows | **NOT VERIFIED / out of scope** — `browser_control` drives a Playwright-managed window with its own profile; acting inside the user's browser remains `computer_control` hotkeys |
+| Task-context persistence across sessions | PLANNED — deliberately not built (would be a memory system, out of Phase 7A scope) |

@@ -279,6 +279,9 @@ def list_files(path: str = "desktop", show_hidden: bool = False) -> str:
         if not items:
             return f"Directory is empty: {target.name}/"
 
+        # Listing sets the working folder: "find the screenshot" after
+        # "list downloads" searches Downloads, not Desktop.
+        _ctx_note(folder=str(target))
         return f"Contents of {target.name}/ ({len(items)} items):\n" + "\n".join(items)
 
     except PermissionError:
@@ -470,6 +473,9 @@ def read_file(path: str, name: str = "", max_chars: int = 4000) -> str:
         content = target.read_text(encoding="utf-8", errors="ignore")
         if len(content) > max_chars:
             content = content[:max_chars] + f"\n\n[Truncated — {len(content)} total chars]"
+        # Existence checked above → verified=True; "read it" resolves here next.
+        _ctx_note(kind="file", identifier=str(target), label=target.name,
+                  folder=str(target.parent), verified=True)
         return content
 
     except Exception as e:
@@ -513,6 +519,45 @@ def write_file(path: str, name: str = "", content: str = "",
         return f"Could not write file: {e}"
 
 
+def rank_matches(name: str, items: list) -> list:
+    """Best match first: exact filename > filename prefix > substring >
+    extension-only hits. Stable within a tier, so results stay deterministic.
+
+    Replaces raw filesystem scan order, where the first 20 arbitrary hits
+    could bury the file the user meant.
+    """
+    if not name:
+        return list(items)
+    n = name.lower()
+
+    def tier(item) -> int:
+        base = getattr(item, "name", str(item)).lower()
+        if base == n:
+            return 0
+        if base.startswith(n):
+            return 1
+        if n in base:
+            return 2
+        return 3
+
+    return sorted(items, key=tier)
+
+
+def _ctx_note(kind: str = "", identifier: str = "", folder: str = "",
+              verified: bool = False, label: str = "") -> None:
+    """Tell the current-task context what was just found/opened, so the next
+    request ('the screenshot', 'it') resolves without another broad search."""
+    try:
+        from core.context import task_ctx
+        tc = task_ctx()
+        if folder:
+            tc.note_folder(folder)
+        if identifier:
+            tc.note_resource(kind, identifier, label=label, verified=verified)
+    except Exception:
+        pass
+
+
 def find_files(name: str = "", extension: str = "",
                path: str = "home", max_results: int = 20) -> str:
     try:
@@ -522,9 +567,10 @@ def find_files(name: str = "", extension: str = "",
         if not search_path.exists():
             return f"Search path not found: {path}"
 
-        results    = []
+        matches    = []
         dir_count  = 0
         max_dirs   = 500  # performance + safety limit
+        max_scan   = 200  # collect enough to rank, then cut to max_results
 
         for item in search_path.rglob("*"):
             if item.is_dir():
@@ -538,16 +584,31 @@ def find_files(name: str = "", extension: str = "",
                 continue
             if name and name.lower() not in item.name.lower():
                 continue
-            size = _format_size(item.stat().st_size)
-            results.append(f"📄 {item.name} ({size}) — {item.parent}")
-            if len(results) >= max_results:
+            matches.append(item)
+            if len(matches) >= max_scan:
                 break
 
-        if not results:
+        if not matches:
             query = name or extension or "files"
             return f"No {query} found in {search_path.name}/"
 
-        return f"Found {len(results)} file(s):\n" + "\n".join(results)
+        ordered = rank_matches(name, matches)[:max_results]
+        results = []
+        for item in ordered:
+            try:
+                size = _format_size(item.stat().st_size)
+            except OSError:
+                size = "?"
+            results.append(f"📄 {item.name} ({size}) — {item.parent}")
+
+        # Remember what was found (and where) for follow-up references.
+        top = ordered[0]
+        _ctx_note(kind="file", identifier=str(top), label=top.name, folder=str(search_path))
+
+        header = f"Found {len(matches)} match(es)"
+        if len(matches) > len(results):
+            header += f", showing top {len(results)} best-first"
+        return header + ":\n" + "\n".join(results)
 
     except Exception as e:
         return f"Search error: {e}"
@@ -644,8 +705,16 @@ def file_controller(
 ) -> str:
     params = parameters or {}
     action = params.get("action", "").lower().strip()
-    path   = params.get("path", "desktop")
     name   = params.get("name", "")
+    path   = params.get("path") or params.get("folder") or ""
+    if not path:
+        # No path given: search the folder this task is currently working in
+        # (set by earlier list/find/read), else the historical Desktop default.
+        try:
+            from core.context import task_ctx
+            path = task_ctx().current_folder or "desktop"
+        except Exception:
+            path = "desktop"
 
     if player:
         player.write_log(f"[file] {action} {name or path}")
@@ -730,7 +799,7 @@ def file_controller(
 # ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
 TOOL = {
     "name": "file_controller",
-    "description": "Manages files and folders: list, create, delete, move, copy, rename, read, write, find, disk usage.",
+    "description": "Manages files and folders: list, create, delete, move, copy, rename, read, write, find, disk usage. find ranks best-first and (when path is omitted) searches the folder the current task last touched; list/read update that folder for follow-ups like 'now open it'.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
@@ -740,7 +809,11 @@ TOOL = {
             },
             "path": {
                 "type": "STRING",
-                "description": "File/folder path or shortcut: desktop, downloads, documents, home"
+                "description": "File/folder path or shortcut: desktop, downloads, documents, home. Omit to use the folder the current task is working in (falls back to desktop)."
+            },
+            "folder": {
+                "type": "STRING",
+                "description": "Alias for path."
             },
             "destination": {
                 "type": "STRING",
@@ -756,11 +829,15 @@ TOOL = {
             },
             "name": {
                 "type": "STRING",
-                "description": "File name to search for"
+                "description": "File name (or fragment) — used by find (best matches first: exact > prefix > substring), read, delete, rename, info"
             },
             "extension": {
                 "type": "STRING",
                 "description": "File extension to search (e.g. .pdf)"
+            },
+            "max_results": {
+                "type": "INTEGER",
+                "description": "Max results for find (default 20, cap 50)"
             },
             "count": {
                 "type": "INTEGER",

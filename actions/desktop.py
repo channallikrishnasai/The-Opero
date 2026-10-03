@@ -134,15 +134,29 @@ def set_wallpaper(image_path: str) -> str:
                     path = bmp_path
                 except ImportError:
                     pass 
-            ctypes.windll.user32.SystemParametersInfoW(20, 0, str(path), 3)
-            return f"Wallpaper set: {path.name}"
+            # SPI returns BOOL — a zero return means Windows rejected the call.
+            ok = ctypes.windll.user32.SystemParametersInfoW(20, 0, str(path), 3)
+            if not ok:
+                err = ctypes.windll.kernel32.GetLastError()
+                return f"Could not set wallpaper: Windows reported failure (error {err})"
+            # Read back the applied value so the result is verified, not assumed.
+            applied = get_current_wallpaper()
+            if applied.startswith("Current wallpaper:"):
+                current = applied[len("Current wallpaper:"):].strip()
+                if path.name.lower() not in current.lower():
+                    return (f"Wallpaper change was reported OK, but the system still "
+                            f"reports '{current}' — treating as NOT verified.")
+                return f"Wallpaper set: {path.name} (verified against system setting)"
+            return f"Wallpaper set: {path.name} (could not read back to verify)"
 
         elif _OS == "Darwin":
             script = (
                 f'tell application "System Events" to tell every desktop to '
                 f'set picture to POSIX file "{path}"'
             )
-            subprocess.run(["osascript", "-e", script], capture_output=True)
+            res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+            if res.returncode != 0:
+                return f"Could not set wallpaper: {(res.stderr or '').strip() or 'osascript failed'}"
             return f"Wallpaper set: {path.name}"
 
         else:
@@ -150,10 +164,12 @@ def set_wallpaper(image_path: str) -> str:
             uri = f"file://{path}"
 
             if "gnome" in desktop_env or "unity" in desktop_env:
-                subprocess.run([
+                res = subprocess.run([
                     "gsettings", "set", "org.gnome.desktop.background",
                     "picture-uri", uri
                 ], capture_output=True)
+                if res.returncode != 0:
+                    return f"Could not set wallpaper: {(res.stderr or b'').decode(errors='replace').strip() or 'gsettings failed'}"
                 subprocess.run([
                     "gsettings", "set", "org.gnome.desktop.background",
                     "picture-uri-dark", uri
@@ -170,18 +186,22 @@ for (var i = 0; i < allDesktops.length; i++) {{
     d.writeConfig("Image", "file://{path}");
 }}
 """
-                subprocess.run(
+                res = subprocess.run(
                     ["qdbus", "org.kde.plasmashell", "/PlasmaShell",
                      "org.kde.PlasmaShell.evaluateScript", script],
                     capture_output=True
                 )
+                if res.returncode != 0:
+                    return f"Could not set wallpaper: {(res.stderr or b'').decode(errors='replace').strip() or 'qdbus failed'}"
 
             elif "xfce" in desktop_env:
-                subprocess.run([
+                res = subprocess.run([
                     "xfconf-query", "-c", "xfce4-desktop",
                     "-p", "/backdrop/screen0/monitor0/workspace0/last-image",
                     "-s", str(path)
                 ], capture_output=True)
+                if res.returncode != 0:
+                    return f"Could not set wallpaper: {(res.stderr or b'').decode(errors='replace').strip() or 'xfconf-query failed'}"
 
             else:
                 result = subprocess.run(

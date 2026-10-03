@@ -534,6 +534,9 @@ def browser_control(
     Complete browser automation powered by Microsoft Playwright MCP (@playwright/mcp),
     with automatic failover to the built-in Playwright thread.
 
+    Scope: a Playwright-managed window with its own profile — NOT the user's
+    everyday browser windows (use computer_control hotkeys for those).
+
     parameters:
         action      : go_to | navigate | search | click | type | scroll | fill_form |
                       smart_click | smart_type | get_text | press | back | forward |
@@ -769,9 +772,14 @@ def browser_control(
 TOOL = {
     "name": "browser_control",
     "description": (
-        "Full browser automation (Playwright): navigate, search, click, type, fill forms, "
-        "read page text/snapshots, manage tabs, evaluate JS, run a code snippet, screenshot, "
-        "and capture console/network logs. Use for anything that needs a real browser."
+        "Browser automation via Playwright. SCOPE: drives a separately-managed "
+        "browser window with its own profile (logins/cookies are NOT the user's "
+        "everyday browser); it reuses that one window and its tabs throughout "
+        "the session, but does not control browser windows already open on the "
+        "desktop — to act inside the user's own browser window, use "
+        "computer_control (OS hotkeys) instead. Actions: navigate, search, "
+        "click, type, fill forms, read page text/snapshots, manage tabs, "
+        "evaluate JS, run code, screenshot, console/network logs."
     ),
     "parameters": {
         "type": "OBJECT",
@@ -785,7 +793,7 @@ TOOL = {
                     "screenshot | wait_for | select_option | dialog | upload | console | network"
                 ),
             },
-            "url": {"type": "STRING", "description": "URL for go_to / navigate."},
+            "url": {"type": "STRING", "description": "URL for go_to / navigate (for open_tab / new_tab: also opens it in the new tab)."},
             "query": {"type": "STRING", "description": "Search query for action=search."},
             "engine": {"type": "STRING", "description": "google | bing | duckduckgo (default: google)."},
             "selector": {"type": "STRING", "description": "CSS selector for click/type/hover/select."},

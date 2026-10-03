@@ -27,11 +27,14 @@ from core.visual import (
     UnknownConceptError,
     VisualBridge,
     get_visual_router,
-    last_user_utterance,
     register_bundled_assets,
     route_search_request,
 )
 from core.voice_state import VoiceGate
+from core.context import (
+    current_utterance, env_cache, summarize_args, task_ctx, verdict,
+)
+from core import telemetry
 log = get_logger(__name__)
 
 import sounddevice as sd
@@ -55,7 +58,7 @@ from actions.screen_processor  import _capture_camera, _capture_screenshot
 from actions.system_monitor    import SystemMonitor, get_system_status
 from actions.proactive         import ProactiveEngine
 from actions.background_monitor import (
-    add_monitor, remove_monitor, list_monitors, check_all as monitor_check_all,
+    dispatch as dispatch_monitor, list_monitors, check_all as monitor_check_all,
 )
 from actions.web_search        import _news as _fetch_news_sync
 from memory.config_manager     import (
@@ -342,6 +345,28 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "environment_status",
+        "description": (
+            "Read-only snapshot of the live desktop state as OS-observed FACTS: "
+            "foreground window, open windows (titles/processes), browser-in-foreground, "
+            "plus the current task context (current folder, current resource, recent "
+            "actions). Cached for a few seconds; pass refresh=true to force a fresh read. "
+            "Use when the user asks what is open/focused, before acting on 'the current "
+            "window/tab', or to resolve what 'it/that/there' refers to. It never changes "
+            "anything and is not proof an action succeeded — verification still belongs "
+            "to the tool that performed the action."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "refresh": {
+                    "type": "BOOLEAN",
+                    "description": "Force a fresh environment read (default false = use cache)",
+                },
+            },
+        }
+    },
+    {
         "name": "screen_process",
         "description": (
             "Captures the screen or webcam image and lets you analyze it. "
@@ -372,12 +397,15 @@ TOOL_DECLARATIONS = [
     {
         "name": "manage_monitor",
         "description": (
-            "Add, remove, or list background monitoring topics. "
-            "OPERO checks these topics once a day and alerts the user when there is a new development. "
-            "Use 'add' when the user says 'monitor X', 'track X', 'follow X'. "
-            "Use 'remove' when the user says 'stop monitoring X'. "
-            "Use 'list' when the user asks what is being monitored. "
-            "Do NOT add crypto, financial, or trading topics."
+            "Add, remove, or list background THRESHOLD monitors that poll system or "
+            "website state and raise a one-time alert when tripped. "
+            "Supported kinds: type=system (target cpu or ram, threshold percent), "
+            "type=crypto (target a coin id like bitcoin, threshold USD), "
+            "type=website (target a full URL, threshold unused). "
+            "Use 'add' when the user asks to be alerted when something crosses a level "
+            "(e.g. 'alert me if CPU goes above 90%'), 'remove' to stop one, "
+            "'list' to show active monitors. This does NOT track news or topics — "
+            "for ongoing news tracking suggest a reminder instead."
         ),
         "parameters": {
             "type": "OBJECT",
@@ -386,9 +414,25 @@ TOOL_DECLARATIONS = [
                     "type":        "STRING",
                     "description": "add | remove | list",
                 },
-                "topic": {
+                "type": {
                     "type":        "STRING",
-                    "description": "Topic to monitor or stop monitoring (e.g. 'space exploration', 'AI news')",
+                    "description": "For add: system | crypto | website",
+                },
+                "target": {
+                    "type":        "STRING",
+                    "description": "For add/remove: cpu, ram, a coin id (bitcoin), or a full URL",
+                },
+                "threshold": {
+                    "type":        "NUMBER",
+                    "description": "For add: the level that triggers the alert (e.g. 90)",
+                },
+                "condition": {
+                    "type":        "STRING",
+                    "description": "above (default) | below",
+                },
+                "interval": {
+                    "type":        "INTEGER",
+                    "description": "Seconds between checks (default 60, min 10)",
                 },
             },
             "required": ["action"],
@@ -638,6 +682,10 @@ class OperaLive:
         self._proactive        = ProactiveEngine()
         self._last_user_speech = time.monotonic()  # updated on every user utterance
         self._session_log: list[str] = []          # conversation turns for end-of-session summary
+        # Voice transcript of the turn in progress. The session log only gets
+        # its "User:" line at turn_complete — AFTER the model's tool call — so
+        # tool guards must read this buffer first or they see a stale utterance.
+        self._live_utterance = ""
 
         self._enhanced_live = True  # proactive audio; auto-disabled if the server rejects it
         self._tuned_live    = True  # turn-taking / media / thinking knobs; same fallback
@@ -1237,7 +1285,21 @@ class OperaLive:
             ),
         })
 
+        # Runtime environment + task context — observed facts, refreshed on
+        # connect and re-checkable on demand via environment_status. Empty
+        # blocks are omitted so a fresh session without history stays lean.
+        try:
+            env_ctx  = env_cache().prompt_block()
+            task_blk = task_ctx().prompt_block()
+        except Exception as exc:            # perception must never block boot
+            log.debug("context prompt build failed: %s", exc)
+            env_ctx, task_blk = "", ""
+
         parts = [time_ctx, identity_ctx]
+        if env_ctx:
+            parts.append(env_ctx + "\n")
+        if task_blk:
+            parts.append(task_blk + "\n")
         if mem_str:
             parts.append(mem_str)
         parts.append(sys_prompt)
@@ -1336,6 +1398,36 @@ class OperaLive:
         return out
 
     async def _execute_tool(self, fc) -> types.FunctionResponse:
+        """Timed, context-recording wrapper around the tool dispatch.
+
+        Every dispatch: (1) measures execution latency into core.telemetry,
+        (2) invalidates the cached environment snapshot — the action may have
+        changed the machine, so the next read is a targeted refresh — and
+        (3) records a truthful outcome line in the current-task context so
+        follow-up references ('it', 'the file we just found') resolve against
+        what actually happened.
+        """
+        _t0 = time.perf_counter()
+        try:
+            fr = await self._execute_tool_inner(fc)
+        finally:
+            telemetry.record("tool", (time.perf_counter() - _t0) * 1000, tool=fc.name)
+            env_cache().invalidate()
+        try:
+            _resp = fr.response if isinstance(fr.response, dict) else {"result": str(fr.response)}
+            _text = str(_resp.get("result", ""))
+            if fc.name != "environment_status":   # reading state is not an action
+                task_ctx().note_action(
+                    fc.name,
+                    target=summarize_args(dict(fc.args or {})),
+                    outcome=verdict(_text),
+                    detail=_text[:200],
+                )
+        except Exception:
+            log.debug("task-context note failed for %s", fc.name, exc_info=True)
+        return fr
+
+    async def _execute_tool_inner(self, fc) -> types.FunctionResponse:
         name = fc.name
         args = dict(fc.args or {})
 
@@ -1349,7 +1441,10 @@ class OperaLive:
         # image search. core.visual.routing is lexical and needs no model call.
         if name in SEARCH_GUARD_TOOLS:
             try:
-                routed = route_search_request(name, args, last_user_utterance(self._session_log))
+                routed = route_search_request(
+                    name, args,
+                    current_utterance(self._live_utterance, self._session_log),
+                )
             except UnknownConceptError as exc:
                 return types.FunctionResponse(
                     id=fc.id, name=name,
@@ -1468,17 +1563,16 @@ class OperaLive:
                 result = str(r)
 
             elif name == "manage_monitor":
-                action = args.get("action", "").lower().strip()
-                topic  = args.get("topic", "").strip()
-                if action == "add" and topic:
-                    result = await asyncio.to_thread(add_monitor, topic)
-                elif action == "remove" and topic:
-                    result = await asyncio.to_thread(remove_monitor, topic)
-                elif action == "list":
-                    topics = await asyncio.to_thread(list_monitors)
-                    result = ("Monitoring: " + ", ".join(topics)) if topics else "No topics are being monitored."
-                else:
-                    result = "Specify action (add/remove/list) and a topic."
+                # Contract lives in actions/background_monitor.dispatch: it
+                # validates type/target/threshold and answers with guidance
+                # instead of raising (the old call was missing 2 required args).
+                result = await asyncio.to_thread(dispatch_monitor, args)
+
+            elif name == "environment_status":
+                snap = env_cache().get(force=bool(args.get("refresh")))
+                payload = dict(snap)
+                payload["task"] = task_ctx().summary()
+                result = json.dumps(payload, ensure_ascii=False, default=str)
 
             elif name == "shutdown_opero":
                 self.ui.write_log("SYS: Shutdown requested.")
@@ -1791,6 +1885,11 @@ class OperaLive:
                             txt = _clean_transcript(sc.input_transcription.text)
                             if txt:
                                 in_buf.append(txt)
+                                # Keep the in-progress utterance readable NOW:
+                                # a tool call can arrive before turn_complete
+                                # appends "User:" to the session log, and tool
+                                # guards must not act on the previous turn.
+                                self._live_utterance = " ".join(in_buf).strip()
                                 self._last_user_speech = time.monotonic()
 
                         if sc.turn_complete:
@@ -1803,6 +1902,7 @@ class OperaLive:
                                 self._interrupted = False
                                 in_buf  = []
                                 out_buf = []
+                                self._live_utterance = ""
                                 self._visemes.reset()
                                 continue
 
@@ -1818,6 +1918,7 @@ class OperaLive:
                                         "ts": datetime.now().isoformat(),
                                     }))
                             in_buf = []
+                            self._live_utterance = ""   # now carried by the session log
 
                             full_out = " ".join(out_buf).strip()
                             # Second line of defence: even if a repeat slips

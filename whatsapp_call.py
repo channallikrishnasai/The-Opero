@@ -49,6 +49,16 @@ HEALTHY_RESET_SECONDS = 60.0
 _QR_ART = re.compile(r"^[\u2580-\u259f #.\-\s]+$")
 
 
+def _bridge_deps_present() -> bool:
+    """whatsapp-web.js must be installed before spawning.
+
+    Without it bridge.js dies on launch and the bounded-restart budget churns
+    three pointless spawn/backoff cycles before giving up — the guard reports
+    the real cause on the first attempt instead.
+    """
+    return (BRIDGE_DIR / "node_modules" / "whatsapp-web.js").is_dir()
+
+
 class WhatsAppCallManager:
     """
     Manages WhatsApp call detection and control via the Node.js bridge.
@@ -102,6 +112,10 @@ class WhatsAppCallManager:
     def _start_locked(self) -> bool:
         if not BRIDGE_JS.exists():
             self._log("❌ bridge.js not found — run: cd whatsapp_bridge && npm install")
+            return False
+
+        if not _bridge_deps_present():
+            self._log("❌ whatsapp-web.js not installed — run: cd whatsapp_bridge && npm install (bridge not started)")
             return False
 
         if self._proc and self._proc.poll() is None:

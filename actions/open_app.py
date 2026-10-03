@@ -53,13 +53,25 @@ _APP_ALIASES = {
 }
 
 
+def _token_contains(hay: str, needle: str) -> bool:
+    """True when needle's words appear contiguously in hay's words.
+
+    Replaces the old bidirectional substring test that fired cross-aliases:
+    alias 'word' matched request 'wordpad' and launched WinWord instead.
+    """
+    h, n = hay.split(), needle.split()
+    if not n:
+        return False
+    return any(h[i:i + len(n)] == n for i in range(len(h) - len(n) + 1))
+
+
 def _normalize(raw: str) -> str:
     system = platform.system()
     key    = raw.lower().strip()
     if key in _APP_ALIASES:
         return _APP_ALIASES[key].get(system, raw)
     for alias_key, os_map in _APP_ALIASES.items():
-        if alias_key in key or key in alias_key:
+        if _token_contains(key, alias_key):
             return os_map.get(system, raw)
     return raw
 
@@ -78,6 +90,71 @@ def _is_running(app_name: str) -> bool:
                 continue
     except Exception:
         pass
+    return False
+
+
+def _find_window(app_name: str):
+    """First open window whose title/process matches this app, or None."""
+    try:
+        from core.perception import get_open_windows
+        key = app_name.lower().strip()
+        for w in get_open_windows():
+            hay = f"{w.title or ''} {w.process or ''}".lower()
+            proc = (w.process or "").lower().replace(".exe", "")
+            if key in hay or (proc and proc in key.replace(" ", "")):
+                return w
+    except Exception:
+        return None
+    return None
+
+
+def _focus_existing(app_name: str):
+    """Reuse path: focus an already-open window of this app.
+
+    Returns (window_title, verified) — verified is None when the foreground
+    could not be re-read — or None when no matching window exists (caller
+    launches a fresh instance instead).
+    """
+    w = _find_window(app_name)
+    if w is None:
+        return None
+    try:
+        from actions.computer_control import _focus_window
+        res = _focus_window(w.title or app_name)
+    except Exception:
+        return None
+    if not str(res).startswith("Focused window"):
+        return None
+    verified = None
+    try:
+        from core.perception import get_active_window
+        fg = get_active_window()
+        if fg is not None:
+            title_frag = (w.title or "")[:20].lower()
+            fg_hay = f"{fg.title or ''} {fg.process or ''}".lower()
+            verified = bool(title_frag) and title_frag in fg_hay
+    except Exception:
+        verified = None
+    return (w.title or app_name, verified)
+
+
+def _verify_launch(app_name: str, was_running: bool, timeout: float = 4.0) -> bool | None:
+    """Poll for the app's process after a launch attempt.
+
+    True = running now, False = never appeared, None = cannot verify
+    (psutil unavailable). `was_running` short-circuits to True: the process
+    was already active, so a process check cannot prove a *new* instance —
+    the caller words its result accordingly.
+    """
+    if not _PSUTIL:
+        return None
+    if was_running:
+        return True
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if _is_running(app_name):
+            return True
+        time.sleep(0.3)
     return False
 
 
@@ -224,7 +301,8 @@ def open_app(
     player=None,
     session_memory=None,
 ) -> str:
-    app_name = (parameters or {}).get("app_name", "").strip()
+    params = parameters or {}
+    app_name = params.get("app_name", "").strip()
 
     if not app_name:
         return "Please specify which application to open, sir."
@@ -236,6 +314,21 @@ def open_app(
         return f"Unsupported OS: {system}"
 
     normalized = _normalize(app_name)
+    new_window = bool(params.get("new_window"))
+
+    # Reuse first: if the app already has a window and the user did not ask
+    # for a new instance, bring that window forward instead of spawning.
+    was_running = _is_running(normalized) or _is_running(app_name)
+    if was_running and not new_window:
+        focus = _focus_existing(app_name)
+        if focus is not None:
+            title, verified = focus
+            _note(app_name, verified=True)
+            if verified:
+                return f"{app_name} was already open — focused its existing window (verified in front): {title}"
+            return (f"{app_name} was already open — asked the OS to focus its window: {title} "
+                    f"(foreground could not be re-read to verify).")
+
     print(f"[open_app] 🚀 Launching: {app_name} → {normalized} ({system})")
 
     if player:
@@ -244,13 +337,19 @@ def open_app(
     try:
         success = launcher(normalized)
 
-        if success:
-            return f"Opened {app_name} successfully, sir."
-
-        if normalized != app_name:
+        if not success and normalized != app_name:
             success = launcher(app_name)
-            if success:
-                return f"Opened {app_name} successfully, sir."
+
+        if success:
+            verified = _verify_launch(app_name, was_running)
+            _note(app_name, verified=bool(verified))
+            if verified is None:
+                return f"Launched {app_name}, but I cannot verify it is running (process check unavailable)."
+            if verified:
+                if was_running:
+                    return f"Opened {app_name} — verified: its process is running."
+                return f"Opened {app_name} — verified: it is now running."
+            return f"Launched {app_name}, but I could NOT verify it is running — it may not have started."
 
         return (
             f"I tried to open {app_name}, sir, but couldn't confirm it launched. "
@@ -261,18 +360,32 @@ def open_app(
         print(f"[open_app] ❌ {e}")
         return f"Failed to open {app_name}, sir: {e}"
 
+
+def _note(app_name: str, verified: bool) -> None:
+    """Record the app as the current task resource for reference resolution."""
+    try:
+        from core.context import task_ctx
+        task_ctx().note_resource("application", app_name, label=app_name, verified=verified)
+    except Exception:
+        pass
+
 # ── OPERO tool registration ───────────────────────────────────────────────────
 TOOL = {
     "name": "open_app",
     "description": (
-        "Launch a desktop application by name (chrome, vscode, spotify, whatsapp, calculator, "
-        "excel, telegram, steam...) on Windows, macOS or Linux. To interact inside an already "
-        "open app, follow up with computer_control."
+        "Open a desktop application (chrome, vscode, spotify, whatsapp, calculator, "
+        "excel, telegram, steam...) on Windows, macOS or Linux. REUSE: if the app is "
+        "already open, its existing window is focused instead of launching a duplicate "
+        "— pass new_window=true only when the user explicitly wants another instance "
+        "('new window', 'open it again'). The result states whether the launch was "
+        "verified (process observed running) or unverified — never claim more. "
+        "To interact inside the app afterwards, follow up with computer_control."
     ),
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "app_name": {"type": "STRING", "description": "Application name or friendly alias to launch."},
+            "new_window": {"type": "BOOLEAN", "description": "Force a new instance even if the app is already open (default false = reuse/focus)."},
         },
         "required": ["app_name"],
     },

@@ -130,6 +130,58 @@ def remove_monitor(target: str) -> str:
             return f"Removed monitor for {target}."
         return f"No monitor found for {target}."
 
+def dispatch(parameters: dict) -> str:
+    """manage_monitor tool entry point.
+
+    The handler used to call add_monitor(topic) against a signature of
+    (monitor_type, target, threshold, ...) — every 'add' died with a
+    TypeError. This validates the model-facing arguments first and returns a
+    truthful guidance string instead of raising; supported monitor kinds are
+    exactly what _run_check implements (system / crypto / website thresholds).
+    """
+    params = parameters or {}
+    action = str(params.get("action", "")).lower().strip()
+    target = str(params.get("target", "")).strip()
+
+    if action == "list":
+        topics = list_monitors()
+        return ("Monitoring: " + ", ".join(topics)) if topics else "No topics are being monitored."
+
+    if action not in ("add", "remove"):
+        return "Specify action (add/remove/list)."
+
+    if action == "remove":
+        if not target:
+            return "Specify which target to stop monitoring (e.g. cpu, ram, bitcoin, or a URL)."
+        return remove_monitor(target)
+
+    # action == "add"
+    m_type = str(params.get("type", "")).lower().strip()
+    if not target:
+        target = str(params.get("topic", "")).strip()   # legacy field name
+    if m_type not in ("system", "crypto", "website") or not target:
+        return ("To add a monitor, provide type (system|crypto|website), target "
+                "(cpu/ram, a coin id like bitcoin, or a full URL) and threshold. "
+                "Example: type=system target=cpu threshold=90.")
+    if m_type == "system" and target not in ("cpu", "ram"):
+        return "System monitors watch 'cpu' or 'ram' only."
+    if m_type == "website" and not target.lower().startswith(("http://", "https://")):
+        return "Website monitors need a full URL starting with http:// or https://."
+    raw_threshold = params.get("threshold", None)
+    try:
+        threshold = float(raw_threshold)
+    except (TypeError, ValueError):
+        return "A numeric threshold is required (e.g. 90 for 90%)."
+    condition = str(params.get("condition", "above")).lower().strip() or "above"
+    if condition not in ("above", "below"):
+        return "condition must be 'above' or 'below'."
+    try:
+        interval = int(params.get("interval", 60))
+    except (TypeError, ValueError):
+        return "interval must be a whole number of seconds."
+    interval = min(max(interval, 10), 86400)
+    return add_monitor(m_type, target, threshold, condition, interval)
+
 def list_monitors() -> list[str]:
     with _monitor_lock:
         return [f"{v['type']} - {v['target']}" for v in _monitors.values()]

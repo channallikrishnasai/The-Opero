@@ -166,6 +166,24 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 
 ---
 
+## PHASE 7A — Tool, Environment & Context Intelligence (execution session)
+
+**Status: IMPLEMENTED** (session increment recorded here; unrelated to roadmap Phase 7 "Face ↔ 3D" below — the Phase 7 *runtime-verification* session was recorded inline in Phase 5's status line)
+
+| | |
+|---|---|
+| Goal | Make tool execution environmentally aware and conversationally referential: reuse what is open, verify what is claimed, resolve "it / that file" from recorded context |
+| Why | `manage_monitor` was a guaranteed `TypeError` (declared `{action, topic}`, handled as `add_monitor(topic)`, real signature `(monitor_type, target, threshold, …)`); `open_app` spawned duplicates and falsely claimed success; `find` returned unranked Desktop-only hits; the voice search guard could read a stale utterance |
+| Dependencies | Phase 6; `core/perception/` (now wired into the prompt via the environment snapshot) |
+| Scope | `core/context.py`, `core/telemetry.py`, `main.py` (declarations, `_execute_tool` wrapper, prompt blocks, receive-loop live buffer), `actions/open_app.py`, `actions/file_controller.py`, `actions/browser_control.py`, `actions/desktop.py`, `actions/background_monitor.py`, `whatsapp_call.py`, `core/prompt.txt` |
+| Deliverables | TTL environment snapshot + bounded task context injected at session build; `environment_status` refresh tool; wrapper bookkeeping (telemetry / env invalidation / action notes); `manage_monitor` → `dispatch()` contract; `open_app` reuse-by-default with honest `verified / could NOT verify / cannot verify` wording and whole-token aliases; `find` exact > prefix > substring ranking with task-folder default scope; truthful `browser_control` scope declaration; wallpaper return-code + read-back checks; WhatsApp `whatsapp-web.js` presence guard; `[EXECUTION]` reuse/reference-resolution rules |
+| Tests | +49 (`tests/test_runtime_context.py`, `tests/test_manage_monitor.py`, `tests/test_tool_intelligence.py`); full suite **263/263**, F821 green |
+| Acceptance | `manage_monitor` never raises; tool results carry no success claim without a verification marker; follow-up references resolve from recorded context; environment facts refresh after every dispatch |
+| Non-goals | Embeddings/FAISS, persistent memory, whatsapp-web.js installation, a second dispatcher, attaching to the user's own browser windows, live-voice manual verification (Gemini tool-choice variance — recorded **NOT VERIFIED**) |
+| Exit criteria | ✅ met (this session's commit; every claim labelled IMPLEMENTED / VERIFIED / PARTIAL / NOT VERIFIED / DEFERRED in the session report) |
+
+---
+
 ## PHASE 7 — Face ↔ 3D Transition
 
 **Status: PLANNED** (only primitive hooks exist: `RETURN_TO_FACE` command; Qt face and WebGL scene are separate layers)
@@ -411,6 +429,7 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 | 4 | Perception & Visual Routing | IMPLEMENTED (`b3edaac`, `d18e979`) |
 | 5 | Three.js Visual Bridge | IMPLEMENTED MVP (`b3affe3`) |
 | 6 | Runtime Stabilization | **IMPLEMENTED (6A `05874b1` + 6B)** |
+| 7A | Tool / Environment / Context Intelligence (session) | **IMPLEMENTED** (263 tests, F821 green) |
 | 7 | Face ↔ 3D Transition | PLANNED (hooks exist) |
 | 8 | Visual Director | PLANNED (role reserved) |
 | 9 | Object Inspection | PLANNED (schema partial) |
