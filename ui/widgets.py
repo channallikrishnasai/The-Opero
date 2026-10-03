@@ -319,6 +319,9 @@ class HudCanvas(QWidget):
         # opacity below the HUD grid so controls and text remain readable.
         galaxy_path = Path(__file__).resolve().parent / "assets" / "opero-light-galaxy.png"
         self._galaxy_bg = QPixmap(str(galaxy_path)) if galaxy_path.is_file() else QPixmap()
+        # True when a live WebGLBackground is stacked beneath this HUD: the
+        # opaque backdrop would hide the 3D layer, so it is skipped then.
+        self.webgl_backed = False
         self.muted    = False
         self.speaking = False
         self.state    = "INITIALISING"
@@ -764,11 +767,12 @@ class HudCanvas(QWidget):
         if not p.isActive():      # device not ready (e.g. 0-size during layout) — skip cleanly
             return
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.fillRect(self.rect(), qcol(C.BG))
-        if not self._galaxy_bg.isNull():
-            p.setOpacity(0.18)
-            p.drawPixmap(self.rect(), self._galaxy_bg)
-            p.setOpacity(1.0)
+        if not self.webgl_backed:
+            p.fillRect(self.rect(), qcol(C.BG))
+            if not self._galaxy_bg.isNull():
+                p.setOpacity(0.18)
+                p.drawPixmap(self.rect(), self._galaxy_bg)
+                p.setOpacity(1.0)
         W, H = self.width(), self.height()
         cx, cy = W / 2, H / 2
         fw = min(W, H)

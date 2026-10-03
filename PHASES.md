@@ -132,7 +132,7 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 
 ## PHASE 5 — Three.js Visual Bridge
 
-**Status: IMPLEMENTED (MVP)** (commit `b3affe3 feat(visual): bridge world model to threejs`)
+**Status: IMPLEMENTED (MVP) — RUNTIME VERIFIED (Phase 7 verification session)** (commit `b3affe3 feat(visual): bridge world model to threejs`; on-screen SHOW of `apple.glb` verified live in the canonical desktop app after the HUD-occlusion fix — `ARCHITECTURE.md` §7.7/§16.8)
 
 | | |
 |---|---|

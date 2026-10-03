@@ -294,6 +294,12 @@ class MainWindow(QMainWindow):
             _inner_stack_layout.addWidget(self._webgl_bg)
             _inner_stack_layout.addWidget(self.hud)
             _inner_stack_layout.setCurrentIndex(1)
+            # The 3D layer below must stay visible: HudCanvas drops its
+            # opaque backdrop (and stops claiming full opacity) so the
+            # galaxy and visual entities composite through.
+            self.hud.webgl_backed = True
+            self.hud.setAttribute(
+                Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
             _hud_wrapper_layout.addWidget(_inner_stack)
         else:
             _hud_wrapper_layout.addWidget(self.hud)

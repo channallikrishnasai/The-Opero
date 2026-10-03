@@ -1,5 +1,8 @@
 """Tests for the semantic Asset Registry (Phase 3)."""
 
+import json
+import struct
+
 import pytest
 
 from core.visual import (
@@ -14,6 +17,7 @@ from core.visual import (
     UnknownConceptError,
     VerificationStatus,
 )
+from core.visual.assets import PROJECT_ROOT
 
 
 def test_asset_registration() -> None:
@@ -189,3 +193,56 @@ def test_reset_listing_and_removal() -> None:
 
     registry.reset()
     assert registry.list_assets() == []
+
+
+def test_shipped_apple_glb_parses_under_js_subset() -> None:
+    """apple.glb must stay parseable by BOTH pipeline validators: the bridge
+    header checks (core/visual/bridge.py) and the shipped custom GLB parser in
+    site/web_background/index.html (no byteStride, triangle mode, POSITION
+    float32 VEC3, every accessor inside the BIN chunk)."""
+    data = (PROJECT_ROOT / "data/visual_world/assets/apple.glb").read_bytes()
+
+    # bridge.py header checks
+    assert len(data) >= 12 and data[:4] == b"glTF"
+    assert struct.unpack_from("<I", data, 4)[0] == 2
+    assert struct.unpack_from("<I", data, 8)[0] == len(data)
+
+    # index.html visualGlbGroup chunk walk
+    dv = memoryview(data)
+    assert len(dv) >= 28
+    json_len = struct.unpack_from("<I", dv, 12)[0]
+    assert dv[16:20] == b"JSON"
+    gj = json.loads(bytes(dv[20 : 20 + json_len]).decode("utf-8"))
+    bin_off = 20 + json_len
+    assert dv[bin_off + 4 : bin_off + 8] == b"BIN\x00"
+    bin_len = struct.unpack_from("<I", dv, bin_off)[0]
+    bin_bytes = dv[bin_off + 8 : bin_off + 8 + bin_len]
+
+    comp_bytes = {5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4}
+    type_count = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}
+
+    def check_accessor(idx: int) -> dict:
+        acc = gj["accessors"][idx]
+        view = gj["bufferViews"][acc["bufferView"]]
+        assert not view.get("byteStride"), "interleaved byteStride unsupported by index.html"
+        start = (view.get("byteOffset") or 0) + (acc.get("byteOffset") or 0)
+        size = comp_bytes[acc["componentType"]] * type_count[acc["type"]] * acc["count"]
+        assert start + size <= len(bin_bytes), "accessor outside BIN buffer"
+        return acc
+
+    total_verts = 0
+    total_tris = 0
+    for mesh in gj.get("meshes", []):
+        for prim in mesh.get("primitives", []):
+            assert prim.get("mode", 4) == 4, "only triangle-mode primitives are supported"
+            pos = check_accessor(prim["attributes"]["POSITION"])
+            assert pos["type"] == "VEC3" and pos["componentType"] == 5126
+            total_verts += pos["count"]
+            if "NORMAL" in prim["attributes"]:
+                check_accessor(prim["attributes"]["NORMAL"])
+            if "indices" in prim:
+                ia = check_accessor(prim["indices"])
+                assert ia["type"] == "SCALAR" and ia["componentType"] in (5121, 5123, 5125)
+                total_tris += ia["count"] // 3
+
+    assert total_verts > 0 and total_tris > 0, "no geometry"
