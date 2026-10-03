@@ -150,7 +150,7 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 
 ## PHASE 6 — Runtime Stabilization
 
-**Status: NOT COMPLETE — this is the next phase**
+**Status: IN PROGRESS — Phase 6A done (Python floor enforced at 3.11 with startup guard, README corrected, stale 3.10 `venv/` + mixed `__pycache__` purged, F821 gate green, guard tests added). Remaining: landing-page test divergence, StrEnum shim consolidation, lint policy, ARCHITECTURE §16 items**
 
 | | |
 |---|---|

@@ -16,7 +16,7 @@
 **Open Personal Execution & Response Operator**
 *Your desktop. Your AI. Fully autonomous.*
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![PyQt6](https://img.shields.io/badge/PyQt6-GUI-41cd52?style=for-the-badge&logo=qt&logoColor=white)](https://pypi.org/project/PyQt6/)
 [![Gemini](https://img.shields.io/badge/Gemini-AI%20Brain-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d4ff?style=for-the-badge)](LICENSE)
@@ -169,7 +169,7 @@ Upload source code to Stanford's MOSS server and get back a report URL with the 
 ## 🚀 Quick Start
 
 ### 1️⃣ Prerequisites
-- **Python 3.10+** (Windows 10/11 recommended)
+- **Python 3.11+** (Windows 10/11 recommended)
 - **Microphone & Speakers**
 - **Google Gemini API Key** – obtain from the [Gemini AI Studio](https://deepmind.google/technologies/gemini/).
 
@@ -180,7 +180,7 @@ git clone https://github.com/channallikrishnasai/The-Opero.git
 cd The-Opero
 
 # (Optional) create a virtual env
-python -m venv venv; .\venv\Scripts\Activate.ps1
+py -3.11 -m venv .venv; .\.venv\Scripts\Activate.ps1
 
 # Install dependencies
 pip install -r requirements.txt

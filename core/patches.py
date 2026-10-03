@@ -10,6 +10,12 @@ import subprocess as _subprocess
 import sys as _sys
 from pathlib import Path as _Path
 
+from core.python_guard import ensure_supported
+
+# Python floor guard: exit here with one clear line on Python < 3.11, before
+# any project module (and before asyncio.TaskGroup can be reached at runtime).
+ensure_supported()
+
 # PyInstaller bundles Playwright browsers beside OPERO.exe.  Tell Playwright
 # about that deterministic location before any browser module is imported.
 if getattr(_sys, "frozen", False):

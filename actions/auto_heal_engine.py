@@ -453,7 +453,7 @@ Do NOT include markdown fences outside the JSON. Return only the valid JSON obje
 # ── 4. Unified MCP Tool Dispatcher ──────────────────────────────────────────
 
 def auto_heal(
-    parameters: Optional[Union[Dict[str, Any], str]] = None,
+    parameters: Dict[str, Any] | str | None = None,
     player: Any = None,
     speak: Optional[Callable[[str], None]] = None,
 ) -> str:
