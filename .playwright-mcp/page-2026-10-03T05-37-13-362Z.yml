@@ -1,0 +1,698 @@
+- generic [active] [ref=f9e1]:
+  - generic:
+    - generic:
+      - link "Skip to main content" [ref=f9e2] [cursor=pointer]
+      - link "Accessibility help" [ref=f9e3] [cursor=pointer]:
+        - /url: https://support.google.com/websearch/answer/181196?hl=en-IN
+  - generic [ref=f9e8]:
+    - search [ref=f9e9]:
+      - generic [ref=f9e11]:
+        - link "Go to Google Home" [ref=f9e13] [cursor=pointer]:
+          - /url: https://www.google.com/webhp?hl=en&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQPHoECAYQBA
+        - generic [ref=f9e22]:
+          - combobox "Search" [ref=f9e24]: apple apple
+          - generic [ref=f9e25]:
+            - button "Clear" [ref=f9e29] [cursor=pointer]
+            - generic [ref=f9e34]:
+              - button "Search by voice" [ref=f9e37] [cursor=pointer]
+              - button "Search by image" [ref=f9e42] [cursor=pointer]
+    - generic [ref=f9e45]:
+      - button "Settings" [ref=f9e47] [cursor=pointer]
+      - button "Share" [ref=f9e52] [cursor=pointer]
+      - generic [ref=f9e58]:
+        - button "Google apps" [ref=f9e60] [cursor=pointer]
+        - link "Sign in" [ref=f9e65] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/search%3Fq%3Dapple&ec=futura_srp_og_si_72236_p
+  - generic [ref=f9e68]:
+    - navigation [ref=f9e74]:
+      - generic [ref=f9e80]:
+        - list [ref=f9e81]:
+          - listitem [ref=f9e82]:
+            - link "AI Mode" [ref=f9e85] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&udm=50&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7f_f3umjmwBiY-CMqDrIqWMT5Sk405fby8uRRtHmJ8drNOIxkeWPeJwR7kMMtgcXO-Omqxo2dH_qeD8vjOL0TEJFDYhzQ&vsint=&aep=1&ntc=1&cs=0&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ2J8OegQIEhAD
+          - listitem [ref=f9e89]:
+            - link "All" [disabled] [ref=f9e90]
+          - listitem [ref=f9e93]:
+            - link "Shopping" [ref=f9e94] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&udm=28&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7f_f3umjmwBiY-CMqDrIqWMT5Sk405fby8uRRtHmJ8drNOIxkeWPeJwR7kMMtgcXO-Omqxo2dH_qeD8vjOL0TEJFDYhzQ&q=apple&ved=1t:220175&ictx=111
+          - listitem [ref=f9e97]:
+            - link "Images" [ref=f9e98] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&udm=imgs&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7f_f3umjmwBiY-CMqDrIqWMT5Sk405fby8uRRtHmJ8drNOIxkeWPeJwR7kMMtgcXO-Omqxo2dH_qeD8vjOL0TEJFDYhzQ&q=apple&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQtKgLegQIHRAB
+          - listitem [ref=f9e101]:
+            - link "News" [ref=f9e102] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=apple&tbm=nws&source=lnms&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7f_f3umjmwBiY-CMqDrIqWMT5Sk405fby8uRRtHmJ8drNOIxkeWPeJwR7kMMtgcXO-Omqxo2dH_qeD8vjOL0TEJFDYhzQ&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ0pQJegQIGxAB
+          - listitem [ref=f9e105]:
+            - link "Videos" [ref=f9e106] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&udm=vids&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7f_f3umjmwBiY-CMqDrIqWMT5Sk405fby8uRRtHmJ8drNOIxkeWPeJwR7kMMtgcXO-Omqxo2dH_qeD8vjOL0TEJFDYhzQ&q=apple&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQtKgLegQIGhAB
+          - listitem [ref=f9e109]:
+            - link "Short videos" [ref=f9e110] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&udm=39&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7f_f3umjmwBiY-CMqDrIqWMT5Sk405fby8uRRtHmJ8drNOIxkeWPeJwR7kMMtgcXO-Omqxo2dH_qeD8vjOL0TEJFDYhzQ&q=apple&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQs6gLegQIFRAB
+          - listitem [ref=f9e113]:
+            - button [ref=f9e114] [cursor=pointer]:
+              - generic "More filters" [ref=f9e115]: More
+        - button "Tools" [ref=f9e122] [cursor=pointer]
+    - heading "Search Results" [level=1] [ref=f9e129]
+    - generic [ref=f9e134]:
+      - generic [ref=f9e135]:
+        - generic [ref=f9e142]:
+          - heading "Bengaluru, Karnataka 560023" [level=2] [ref=f9e143]
+          - generic [ref=f9e152]:
+            - text: ∙
+            - button "Choose area" [ref=f9e153] [cursor=pointer]
+          - button "How location is used" [ref=f9e156] [cursor=pointer]
+        - generic [ref=f9e172]:
+          - generic [ref=f9e193]:
+            - heading [level=2] [ref=f9e198]:
+              - strong [ref=f9e199]: AI Overview
+            - generic [ref=f9e203]:
+              - generic [ref=f9e204]:
+                - button [ref=f9e207]:
+                  - img "Apple Logo and symbol, meaning, history, PNG, brand" [ref=f9e208]
+                - text: You can explore the full range of devices, services, and entertainment directly at the
+                - mark [ref=f9e209]:
+                  - link "Apple India Store" [ref=f9e211] [cursor=pointer]:
+                    - /url: /goto?url=CAESVAHrOzAVW4-Uj1jnRhETZ1fTpOXozBFqT2zHAsa6E4FgopnMRpbGzzmYmPZZyN7rVGy5FSdMawxdeKwIj82e1uCa0NFg0LBQ9hlsYMi0RmkDl2khtg
+                - text: .
+                - button "Related results" [ref=f9e216] [cursor=pointer]
+              - generic [ref=f9e221]:
+                - text: Apple Inc. is a major American technology company. It designs and sells consumer electronics, computer software, and online services. Famous hardware products include the iPhone, Mac, iPad, and Apple Watch.
+                - generic [ref=f9e225]:
+                  - link "Apple" [ref=f9e226] [cursor=pointer]:
+                    - /url: /goto?url=CAESVAHrOzAVW4-Uj1jnRhETZ1fTpOXozBFqT2zHAsa6E4FgopnMRpbGzzmYmPZZyN7rVGy5FSdMawxdeKwIj82e1uCa0NFg0LBQ9hlsYMi0RmkDl2khtg
+                  - button "Apple (+1) – related results" [ref=f9e227] [cursor=pointer]:
+                    - generic [ref=f9e229]:
+                      - generic [ref=f9e230]: Apple
+                      - generic [ref=f9e231]: "+1"
+            - generic [ref=f9e242]:
+              - generic [ref=f9e243]:
+                - status [ref=f9e244]
+                - button [ref=f9e246] [cursor=pointer]
+              - button [ref=f9e256] [cursor=pointer]
+              - generic [ref=f9e262]:
+                - button [ref=f9e264] [cursor=pointer]
+                - button [ref=f9e269] [cursor=pointer]
+              - button [ref=f9e276] [cursor=pointer]
+          - button "Show more AI Overview" [ref=f9e284]:
+            - generic [ref=f9e285] [cursor=pointer]: Show more
+      - main [ref=f9e292]:
+        - generic [ref=f9e296]:
+          - generic [ref=f9e299]:
+            - heading "Web result with site links" [level=2] [ref=f9e300]
+            - generic [ref=f9e301]:
+              - generic [ref=f9e305]:
+                - generic [ref=f9e307]:
+                  - link "Apple (India) Apple https://www.apple.com › ..." [ref=f9e309] [cursor=pointer]:
+                    - /url: /goto?url=CAESVAHrOzAVdAmi0uyCFmGrcmRlmNkdm6iBpNBgEaDlf-z7rVQEXEdu4NsODQD4l1Mrl6ZoPY46juorp-MNnS4j5leeboUX5ryrKEdq9y2R_yI_Zf6KVg
+                    - heading "Apple (India)" [level=3] [ref=f9e310]
+                    - generic [ref=f9e316]:
+                      - generic [ref=f9e317]: Apple
+                      - generic [ref=f9e319]: https://www.apple.com › ...
+                  - button "About this result" [ref=f9e325] [cursor=pointer]
+                - generic [ref=f9e332]:
+                  - text: Discover the innovative world of
+                  - emphasis [ref=f9e333]: Apple
+                  - text: and shop everything iPhone, iPad,
+                  - emphasis [ref=f9e334]: Apple
+                  - text: Watch, Mac, and
+                  - emphasis [ref=f9e335]: Apple
+                  - text: TV, plus explore accessories, entertainment, ...
+              - group "Personalised recommendations based on your history" [ref=f9e336]:
+                - rowgroup [ref=f9e337]:
+                  - row [ref=f9e338]:
+                    - cell [ref=f9e339]:
+                      - generic [ref=f9e345]:
+                        - heading [level=3] [ref=f9e346]:
+                          - link [ref=f9e347] [cursor=pointer]:
+                            - /url: /goto?url=CAESWwHrOzAVTQ9gGHHywI7JRuacLo7XztoH14uLSUrm2eYeA7p8W8ZdYrL5vqV1wNhI-yz5JlABbQRTdpKV1_qU7nFF5ypeWiqLR7aqG-3WS-3l9mEN81dhS9bV7W8
+                        - generic [ref=f9e350]: Designed for Apple Intelligence. Discover iPhone Duo, iPhone ...
+                  - row [ref=f9e351]:
+                    - cell [ref=f9e352]:
+                      - generic [ref=f9e358]:
+                        - heading [level=3] [ref=f9e359]:
+                          - link [ref=f9e360] [cursor=pointer]:
+                            - /url: /goto?url=CAESWQHrOzAVyVMtMguthhL6E6xbuOP3TOeJhxFXEG4hJPoDQIj8lrpYvp_x4vtCPF_NHjA6XXHNzqOPgZG5ntDHIl0GtxYTTBOtUj-mE0LDtucXnvzhVBPTuFm9
+                        - generic [ref=f9e363]: Shop the latest Apple products, accessories and offers. Get ...
+                  - row [ref=f9e364]:
+                    - cell [ref=f9e365]:
+                      - generic [ref=f9e371]:
+                        - heading [level=3] [ref=f9e372]:
+                          - link [ref=f9e373] [cursor=pointer]:
+                            - /url: /goto?url=CAESWQHrOzAVdGV4wNZPP7SzmwOPxysq_3ezfxkP1fk_Cd00vYQCoXQHdp1LBwA2VB_mhPnGnXbY34SJJ8CtVZ-h3PpKda2sJkC-rDPiRU-nFwse7aSgoRUV4TfV
+                        - generic [ref=f9e376]: Explore every iPad. Featuring iPad Pro, iPad Air, iPad mini and ...
+                  - row [ref=f9e377]:
+                    - cell [ref=f9e378]:
+                      - generic [ref=f9e384]:
+                        - heading [level=3] [ref=f9e385]:
+                          - link [ref=f9e386] [cursor=pointer]:
+                            - /url: /goto?url=CAESYgHrOzAVLMmPd-Aq9xXYvCc6LY2NK4y0K-8fB8irofKH6wEZ6QS0ggyBlamaviv__2xiAGgKbyZc_gwAeTqoSj9r8Sud23zpMIFcaxA_g47H1JUsyLM8dii3yW8icY3xShee
+                        - generic [ref=f9e389]: Mac delivers exceptional performance, battery life, app ...
+                  - row [ref=f9e390]:
+                    - cell [ref=f9e391]:
+                      - generic [ref=f9e397]:
+                        - heading [level=3] [ref=f9e398]:
+                          - link [ref=f9e399] [cursor=pointer]:
+                            - /url: /goto?url=CAESaAHrOzAV7o0ImWbsNko-h97zJJ-CmNfqZsilVaAcHQdXPrgh17alGEgdwcO8KJbMzV-pAv4SDd3ABjKn3wYBreqAjR86W_Wo0Nd7tHpgf8x7CF0HM2JL57uDJ3F19eblwhsk4HyWxWhy
+                        - generic [ref=f9e402]: Shop Apple accessories for Apple Watch, iPhone, iPad and Mac ...
+                  - row [ref=f9e404]:
+                    - cell [ref=f9e405]:
+                      - link "More results from apple.com »" [ref=f9e407] [cursor=pointer]:
+                        - /url: /search?q=apple+site:apple.com&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQrAN6BAg3EAE
+          - generic [ref=f9e408]:
+            - generic [ref=f9e420]:
+              - generic [ref=f9e424]:
+                - generic [ref=f9e425]: Customer service
+                - link "Call phone number 000 800 100 9009" [ref=f9e428] [cursor=pointer]:
+                  - /url: "#"
+                  - text: 000 800 100 9009
+              - generic [ref=f9e432]:
+                - generic [ref=f9e433]: Founders
+                - generic [ref=f9e435]:
+                  - link "Steve Jobs" [ref=f9e436] [cursor=pointer]:
+                    - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Steve+Jobs&si=APenkKnxxBAKu8uEyVJp5QG7kNERIzt0EhsYdVrbw5Is3icMppoxeDGW8oaQl8s3FpJmwyYKGZ3Xiqv7WO6QL5Cb48KVGF48m2G6y6rNjWIStsPGVpDQuYrox2lbEGx_bN_u9MEX8_YzZD5oiulEEXZCU4qQWd74C8GuQdXGg1BWZ6CS9GvJsbo9Q_1pjDfU3D9xaqo1a3hBHR1tcO1Hu7oGd9pkQ7Lxk_-LtlAI4kh1UXIIoSvM8I-f5JobmSI36XTROZ1KZ_kT&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQmxN6BAglEAI
+                  - text: ","
+                  - link "Steve Wozniak" [ref=f9e437] [cursor=pointer]:
+                    - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Steve+Wozniak&si=APenkKnxxBAKu8uEyVJp5QG7kNERIzt0EhsYdVrbw5Is3icMpgnuQ4Ir0bMxSSXW6E7GXNCpkKgvjonh8uBvSyxRVW8Z0Apjm6fEfCWpP7_Nf9vzFr1yHOGBql3RrZzBQKESNcQp2yetdwutXzfgNXOuWu46Q6aNtPrhT6yAtE8D4tD3gi500wByVFC_TUI4IUTJ-1I6xRNqhmBkURDmjOav8xIjRD1UiQQBgLnRDLPCSpHOoWUbYjv9L0YxtukeflW0OMN-tcLl&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQmxN6BAglEAM
+                  - text: ","
+                  - link "Ronald Wayne" [ref=f9e438] [cursor=pointer]:
+                    - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Ronald+Wayne&si=APenkKlisoOXLiCMwraINHtdqOQii4CK9kOlkQc8Apn-pS60yZ8jjgOKtzNfzqOIfZ8RT4PKH3QI1GUI6BSYnZ_NIQ3uufITmS3a0e6gIusRawx32_JFOpgghFsbdGl0ZC4yXEA7efJg908wlBZ5H97VGGMLJIYvuxfkDNXcaxLZ2YhM8NMa3tQLV-Rxw5HQllH9vg06koGI1HR5QtNA6ESRWYc3K7rq96yjtGZq0tibtxe5qU3jmJfLPSHavPuRgEW24GofSRw6&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQmxN6BAglEAQ
+              - generic [ref=f9e442]:
+                - generic [ref=f9e443]: Founded
+                - generic [ref=f9e445]:
+                  - text: 1 April 1976,
+                  - link "Los Altos, California, United States" [ref=f9e446] [cursor=pointer]:
+                    - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Los+Altos&si=APenkKnxxBAKu8uEyVJp5QG7kNERIzt0EhsYdVrbw5Is3icMpn-A0LEUv13uSlQ0U1BWwbonkTn14fheAo-2QayqQiTOyTJOpMDFZqN90D9kDESGbMH8Kcr1HRd1VCv-Ghxya2ZDGAxOZyierRRiZRgeSxEVjg_J4PxTkDwvxxqw6mVnuts2D5b8mIQSNpq4pOpZDV5RRF5u&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQmxN6BAgjEAI
+              - generic [ref=f9e450]:
+                - generic [ref=f9e451]: Headquarters
+                - link "Cupertino, California, United States" [ref=f9e454] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Cupertino&si=APenkKnxxBAKu8uEyVJp5QG7kNERIzt0EhsYdVrbw5Is3icMppg269OreNVNI6an8TGHsKeO-YknAzcMADQ5nAxKDiJKpj-DIxriOukChwahRE3j2PAxfg6-qwkzHH0r_artLcgVjRTP439Unaslv77z8_HdpowpVyuj9ipow9zgW9keemNV5xZpTrCsFbflOeTWp1bpzZu8&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQmxN6BAguEAI
+              - generic [ref=f9e458]:
+                - generic [ref=f9e459]: COO
+                - link "Sabih Khan" [ref=f9e462] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Sabih+Khan&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0TcNERxRnKG5kYkPrQrDJvgGiuOjEI_yYLP8J89xarBnxQM1lHx2wUpuKRaZPlllKsS1_p2597Hwn-PwH2aSeAesGcaEzqtfgKDnXvv_etTSgtKl2Dsn6htXmbBd01AUCPPNBtd3WrZnhsG8uPAVg0tM-KzB6b7dvgdyFZ0ff3RbyG3FfA%3D%3D&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQmxN6BAgtEAI
+              - generic [ref=f9e466]:
+                - generic [ref=f9e467]: CEO
+                - generic [ref=f9e469]:
+                  - link "John Ternus" [ref=f9e470] [cursor=pointer]:
+                    - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=John+Ternus&si=APenkKmVGdgpMPDQZoEWS8RIAhsqXAKlNLP0B8DNkkiU9KPI0SWrSCSqkd1zzyG0tj5sHLoBl9z4pNDw2w1wIXwqJCLIe1qPSpjspwaC8YfKGZISGKqtLAzkOozSb142vu3heoTyz2r9CAGhuIdeboSHJ4ek4Yp0UOEgUCKikVXib5puhxSJV0myfH5c-4YWu_EsKLdUFbMdF0Gsvm-rAiHs95pLaaR3hA%3D%3D&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQmxN6BAgkEAI
+                  - text: (1 Sept 2026–)
+            - generic [ref=f9e476]:
+              - heading "Profiles" [level=3] [ref=f9e479]
+              - generic [ref=f9e481]:
+                - link "Apple Instagram" [ref=f9e485] [cursor=pointer]:
+                  - /url: /goto?url=CAESWgHrOzAVXc3Ch77CH5uu0QjP54IQtQv-vQ1CiTEaFqlow9EleHeZQpV22elLOuNht5ukZKagnQqxNYxQ9RJv0HbkDOAcbdm0_b-mNKIMtU1F4OoG0NzlpVZ--Q
+                  - generic [ref=f9e486]:
+                    - generic "Apple" [ref=f9e488]
+                    - generic [ref=f9e490]: Instagram
+                - link "Apple LinkedIn" [ref=f9e495] [cursor=pointer]:
+                  - /url: /goto?url=CAESYQHrOzAVlzW39TRIGsIk4UQ-Ya8amMaJklPPcAm_c6MLpmme106SmaV5Ng61Vz_B8GnsDDVisq1r4xHWqO_w71Oey3CsjWcsYPMfWAPl0Vq5ucoPQ0-LKB7aHHxm83CjcKY
+                  - generic [ref=f9e496]:
+                    - generic "Apple" [ref=f9e498]
+                    - generic [ref=f9e500]: LinkedIn
+                - link "Apple Facebook" [ref=f9e505] [cursor=pointer]:
+                  - /url: /goto?url=CAESWQHrOzAVuvC8j8UhWeBro6EosCS6YkWdQ_zUB5ozox-4orcaNFKcTK0FAPQxosKq_bqm3rE2YRrWN9A7sRUc3Jaa5Ss9bgokjLWU82Eymz-D7qMeGukmN95S
+                  - generic [ref=f9e506]:
+                    - generic "Apple" [ref=f9e508]
+                    - generic [ref=f9e510]: Facebook
+            - generic [ref=f9e514]:
+              - heading "People also search for" [level=3] [ref=f9e516]
+              - generic [ref=f9e521]:
+                - list [ref=f9e522]:
+                  - listitem [ref=f9e524]:
+                    - generic [ref=f9e525]:
+                      - link "Best Buy" [ref=f9e526] [cursor=pointer]:
+                        - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&si=APenkKlisoOXLiCMwraINHtdqOQii4CK9kOlkQc8Apn-pS60yc6B_jG4Sk6g-XEzaSpdZjfm5cHfoAvaYitPm-AC9gAmFMZxiu5qg_sAjYoH0UBuTxTNnj5P8kgfpQxthy_PIPPkK0e1fCAFMtI5jUJnoHsReFSghKMFfuSn8KVWaVVm4WKUYv-lDw4vEqJXZQ5BgInEfxe-&q=Best+Buy&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQs9oBKAB6BAgXEAY
+                      - heading [level=3] [aria-hidden] [ref=f9e531]:
+                        - generic [ref=f9e532]: Best Buy
+                  - listitem [ref=f9e534]:
+                    - generic [ref=f9e535]:
+                      - link "Samsung Electronics" [ref=f9e536] [cursor=pointer]:
+                        - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&si=APenkKlisoOXLiCMwraINHtdqOQii4CK9kOlkQc8Apn-pS60yRwu_ZqWDQqzT53YKgklMZLIJksd1Ix-08JnhtVw1aCdQ2OZxbNM4a9yRlrRWrfxNuJxG8Vkc1V0-Ju3n3w2b3ruowcGc5ZS2Ycl9l1JuMlfyHO92S7KCKpWye4IAyqNVKyitPJ1ZlDOc7ntOAuZb0ZbeDyI&q=Samsung&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQs9oBKAB6BAgXEAo
+                      - heading [level=3] [aria-hidden] [ref=f9e541]:
+                        - generic [ref=f9e542]: Samsung Electronics
+                  - listitem [ref=f9e544]:
+                    - generic [ref=f9e545]:
+                      - link "Samsung" [ref=f9e546] [cursor=pointer]:
+                        - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&si=APenkKkicnuBo3HChbgOSg9PTrSKjmOZoDYMZFfiLeKjxtW6706yL9mR5JzAcNGAw7rIads76UTXL-3S0PUtcUpNkPSeuhjrJsvaM9rsQJuI0GnlJe8X3ZpqwqluVq1q6yZHTobMUt6SBkakKvZlqj38L3NsRqLan1lg5FlVp5hmc5M7WpRaBuH3xIsljeouORP9kUM0I4bz&q=Samsung&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQs9oBKAB6BAgXEA4
+                      - heading [level=3] [aria-hidden] [ref=f9e551]:
+                        - generic [ref=f9e552]: Samsung
+                - link "See more" [ref=f9e554] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Apple&stick=H4sIAAAAAAAAAONgFmLXz9U3yLaoUoIxtASDM1NSyxMri_1SK0qCS1ILin8xigWk5hfkpCok5hTnKxSnJhYlZyik5RctYmV1LACK32KTZHjjUBGYy9fUuSTc8BCr9qLNEUnBNulh348DAGPvQQ5kAAAA&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQzO0BKAR6BAgXEBQ
+            - generic [ref=f9e561]:
+              - heading "Web results" [level=2] [ref=f9e562]
+              - generic [ref=f9e563]:
+                - generic [ref=f9e566]:
+                  - link "Apple Inc. Wikipedia https://en.wikipedia.org › wiki › Apple_Inc" [ref=f9e568] [cursor=pointer]:
+                    - /url: /goto?url=CAESYwHrOzAViyG35Zk_6XVS7iJwNibTBYc0rU7tqGG45dUIqRPkGhH6AdvXoWNAgscBh2RaEE6iYMfDF_Y4O__mJNfZ1alXzI77Bi5IgN3WNiYK3NzdTumlDfXaMEtb_bAzrDaCHQ
+                    - heading "Apple Inc." [level=3] [ref=f9e569]
+                    - generic [ref=f9e575]:
+                      - generic [ref=f9e576]: Wikipedia
+                      - generic [ref=f9e578]: https://en.wikipedia.org › wiki › Apple_Inc
+                  - button "About this result" [ref=f9e584] [cursor=pointer]
+                - generic [ref=f9e590]:
+                  - generic [ref=f9e591]:
+                    - text: Apple Inc. is
+                    - emphasis [ref=f9e592]: an American multinational technology company
+                    - text: headquartered in Cupertino, California, in Silicon Valley, and known for consumer electronics, ...
+                  - link "Read more" [ref=f9e593] [cursor=pointer]:
+                    - /url: /goto?url=CAESwwEB6zswFSOaydAZYS4CbqQG-pMIYRtODdFJ6QcoJSegcT17LzLATSwNCAT1uUkQ-DkY6xefo5Iii51DdhuZPT47xNVWdKZOQiZS2SRQMhIzU8l7FJ367RsoupGWmAL946FIKj2Kpa0AhG35jwqln9DI5GY0o3lN1zpk5YU3svJXVkqVo4-1LOgnRac7j9PRPbdnm3-BJh_gfsDxvjH0L59OHSUuUmzVnc31jOav1ZOLgOjQZ2R1CEWf7_sZwQmDByOvKEU
+          - generic [ref=f9e604]:
+            - heading [level=3] [ref=f9e605]:
+              - button "Popular products ." [expanded] [ref=f9e606] [cursor=pointer]:
+                - generic [ref=f9e607]:
+                  - generic [ref=f9e608]: Popular products
+                  - generic: .
+                  - generic [ref=f9e609]: In-demand favorites
+            - button "About this result" [ref=f9e618] [cursor=pointer]
+            - generic [ref=f9e634]:
+              - generic [ref=f9e646]:
+                - list [ref=f9e650]:
+                  - listitem [ref=f9e651]:
+                    - 'button "Apple MacBook Neo. Current price: ₹75,990. Amazon.in & more. Free delivery. Rated 4.8 out of 5. 6.1K reviews. Go to product viewer for this item." [ref=f9e655]':
+                      - generic [ref=f9e665] [cursor=pointer]:
+                        - generic [ref=f9e671]: Apple MacBook Neo
+                        - 'group "Current price: ₹75,990." [ref=f9e672]':
+                          - generic [ref=f9e674]: ₹75,990
+                        - generic [ref=f9e676]:
+                          - generic [ref=f9e677]:
+                            - img "Amazon.in" [ref=f9e683]
+                            - generic [ref=f9e684]: Amazon.in
+                          - generic [ref=f9e685]: "& more"
+                        - generic [ref=f9e686]: Free delivery
+                        - img "Rated 4.8 out of 5. 6.1K reviews." [ref=f9e688]:
+                          - img "Rated 4.8 out of 5, 6.1K user reviews" [ref=f9e689]: (6.1K)
+                  - listitem [ref=f9e693]:
+                    - 'button "Apple Shimla 1 kg (Value Pack). Current price: ₹99. JioMart Grocery. Free delivery by Tue. Go to product viewer for this item." [ref=f9e697]':
+                      - generic [ref=f9e707] [cursor=pointer]:
+                        - generic [ref=f9e713]: Apple Shimla 1 kg (Value Pack)
+                        - 'group "Current price: ₹99." [ref=f9e714]':
+                          - generic [ref=f9e716]: ₹99
+                        - generic [ref=f9e719]:
+                          - img "JioMart Grocery" [ref=f9e725]
+                          - generic [ref=f9e726]: JioMart Grocery
+                        - generic [ref=f9e727]: Free delivery by Tue
+                  - listitem [ref=f9e729]:
+                    - 'button "Apple iPhone 17. Current price: ₹99,900. Reliance Digital & more. Free delivery by Mon. Rated 4.9 out of 5. 69 reviews. Go to product viewer for this item." [ref=f9e733]':
+                      - generic [ref=f9e743] [cursor=pointer]:
+                        - generic [ref=f9e749]: Apple iPhone 17
+                        - 'group "Current price: ₹99,900." [ref=f9e750]':
+                          - generic [ref=f9e752]: ₹99,900
+                        - generic [ref=f9e754]:
+                          - generic [ref=f9e755]:
+                            - img "Reliance Digital" [ref=f9e761]
+                            - generic [ref=f9e762]: Reliance Digital
+                          - generic [ref=f9e763]: "& more"
+                        - generic [ref=f9e764]: Free delivery by Mon
+                        - img "Rated 4.9 out of 5. 69 reviews." [ref=f9e766]:
+                          - img "Rated 4.9 out of 5, 69 user reviews" [ref=f9e767]: (69)
+                  - listitem [ref=f9e771]:
+                    - 'button "Apple Shimla. Current price: ₹127. Zepto. Free 10 min delivery. Go to product viewer for this item." [ref=f9e775]':
+                      - generic [ref=f9e785] [cursor=pointer]:
+                        - generic [ref=f9e791]: Apple Shimla
+                        - 'group "Current price: ₹127." [ref=f9e792]':
+                          - generic [ref=f9e794]: ₹127
+                        - generic [ref=f9e797]:
+                          - img "Zepto" [ref=f9e803]
+                          - generic [ref=f9e804]: Zepto
+                        - generic [ref=f9e805]: Free 10 min delivery
+                  - listitem [ref=f9e807]:
+                    - 'button "Apple Jammu Kashmir 1 kg. Current price: ₹119. JioMart Grocery. Free delivery by Tue. Go to product viewer for this item." [ref=f9e811]':
+                      - generic [ref=f9e821] [cursor=pointer]:
+                        - generic [ref=f9e827]: Apple Jammu Kashmir 1 kg
+                        - 'group "Current price: ₹119." [ref=f9e828]':
+                          - generic [ref=f9e830]: ₹119
+                        - generic [ref=f9e833]:
+                          - img "JioMart Grocery" [ref=f9e839]
+                          - generic [ref=f9e840]: JioMart Grocery
+                        - generic [ref=f9e841]: Free delivery by Tue
+                  - listitem [ref=f9e843]:
+                    - 'button "Apple Mac Studio. Current price: ₹4,35,900. Apple & more. Free delivery. Go to product viewer for this item." [ref=f9e847]':
+                      - generic [ref=f9e857] [cursor=pointer]:
+                        - generic [ref=f9e863]: Apple Mac Studio
+                        - 'group "Current price: ₹4,35,900." [ref=f9e864]':
+                          - generic [ref=f9e866]: ₹4,35,900
+                        - generic [ref=f9e868]:
+                          - generic [ref=f9e869]:
+                            - img "Apple" [ref=f9e875]
+                            - generic [ref=f9e876]: Apple
+                          - generic [ref=f9e877]: "& more"
+                        - generic [ref=f9e878]: Free delivery
+                  - listitem [ref=f9e880]:
+                    - 'button "Apple Washington. 48% OFF. Current price: ₹45. Was ₹88. Zepto. Free 10 min delivery. Go to product viewer for this item." [ref=f9e884]':
+                      - generic [ref=f9e894] [cursor=pointer]:
+                        - generic [ref=f9e900]: Apple Washington
+                        - 'group "Current price: ₹45. Was ₹88." [ref=f9e901]':
+                          - generic [ref=f9e903]:
+                            - generic [ref=f9e904]: ₹45
+                            - generic [ref=f9e905]: ₹88
+                        - generic [ref=f9e907]:
+                          - img "Zepto" [ref=f9e913]
+                          - generic [ref=f9e914]: Zepto
+                        - generic [ref=f9e915]: Free 10 min delivery
+                  - listitem [ref=f9e917]:
+                    - 'button "Apple Shimla 500 g. Current price: ₹99. JioMart Grocery. Free delivery by Tue. Go to product viewer for this item." [ref=f9e921]':
+                      - generic [ref=f9e931] [cursor=pointer]:
+                        - generic [ref=f9e937]: Apple Shimla 500 g
+                        - 'group "Current price: ₹99." [ref=f9e938]':
+                          - generic [ref=f9e940]: ₹99
+                        - generic [ref=f9e943]:
+                          - img "JioMart Grocery" [ref=f9e949]
+                          - generic [ref=f9e950]: JioMart Grocery
+                        - generic [ref=f9e951]: Free delivery by Tue
+                  - listitem [ref=f9e953]:
+                    - 'button "Apple iPhone 17 Pro Max. Current price: ₹1,49,900. Reliance Digital & more. Free delivery by Mon. Go to product viewer for this item." [ref=f9e957]':
+                      - generic [ref=f9e967] [cursor=pointer]:
+                        - generic [ref=f9e973]: Apple iPhone 17 Pro Max
+                        - 'group "Current price: ₹1,49,900." [ref=f9e974]':
+                          - generic [ref=f9e976]: ₹1,49,900
+                        - generic [ref=f9e978]:
+                          - generic [ref=f9e979]:
+                            - img "Reliance Digital" [ref=f9e985]
+                            - generic [ref=f9e986]: Reliance Digital
+                          - generic [ref=f9e987]: "& more"
+                        - generic [ref=f9e988]: Free delivery by Mon
+                  - listitem [ref=f9e990]:
+                    - 'button "Apple Royal Gala Imported. Current price: ₹118. Zepto. Free 10 min delivery. Go to product viewer for this item." [ref=f9e994]':
+                      - generic [ref=f9e1004] [cursor=pointer]:
+                        - generic [ref=f9e1010]: Apple Royal Gala Imported
+                        - 'group "Current price: ₹118." [ref=f9e1011]':
+                          - generic [ref=f9e1013]: ₹118
+                        - generic [ref=f9e1016]:
+                          - img "Zepto" [ref=f9e1022]
+                          - generic [ref=f9e1023]: Zepto
+                        - generic [ref=f9e1024]: Free 10 min delivery
+                - button [aria-hidden] [ref=f9e1027] [cursor=pointer]
+              - generic [ref=f9e1042]:
+                - heading [level=3] [ref=f9e1043]:
+                  - button "Under ₹20,000 ." [expanded] [ref=f9e1044] [cursor=pointer]:
+                    - generic [ref=f9e1049]:
+                      - generic [ref=f9e1050]: Under ₹20,000
+                      - generic: .
+                - generic [ref=f9e1062]:
+                  - generic [ref=f9e1065]:
+                    - list "Under ₹20,000" [ref=f9e1066]:
+                      - listitem [ref=f9e1067]:
+                        - 'button "Apple Shimla 1 kg (Value Pack). Current price: ₹99. JioMart Grocery. Free delivery by Tue. Go to product viewer for this item." [ref=f9e1071]':
+                          - generic [ref=f9e1081] [cursor=pointer]:
+                            - generic [ref=f9e1087]: Apple Shimla 1 kg (Value Pack)
+                            - 'group "Current price: ₹99." [ref=f9e1088]':
+                              - generic [ref=f9e1090]: ₹99
+                            - generic [ref=f9e1093]:
+                              - img "JioMart Grocery" [ref=f9e1099]
+                              - generic [ref=f9e1100]: JioMart Grocery
+                            - generic [ref=f9e1101]: Free delivery by Tue
+                      - listitem [ref=f9e1103]:
+                        - 'button "Apple Shimla. Current price: ₹127. Zepto. Free 10 min delivery. Go to product viewer for this item." [ref=f9e1107]':
+                          - generic [ref=f9e1117] [cursor=pointer]:
+                            - generic [ref=f9e1123]: Apple Shimla
+                            - 'group "Current price: ₹127." [ref=f9e1124]':
+                              - generic [ref=f9e1126]: ₹127
+                            - generic [ref=f9e1129]:
+                              - img "Zepto" [ref=f9e1135]
+                              - generic [ref=f9e1136]: Zepto
+                            - generic [ref=f9e1137]: Free 10 min delivery
+                      - listitem [ref=f9e1139]:
+                        - 'button "Apple Jammu Kashmir 1 kg. Current price: ₹119. JioMart Grocery. Free delivery by Tue. Go to product viewer for this item." [ref=f9e1143]':
+                          - generic [ref=f9e1153] [cursor=pointer]:
+                            - generic [ref=f9e1159]: Apple Jammu Kashmir 1 kg
+                            - 'group "Current price: ₹119." [ref=f9e1160]':
+                              - generic [ref=f9e1162]: ₹119
+                            - generic [ref=f9e1165]:
+                              - img "JioMart Grocery" [ref=f9e1171]
+                              - generic [ref=f9e1172]: JioMart Grocery
+                            - generic [ref=f9e1173]: Free delivery by Tue
+                      - listitem [ref=f9e1175]:
+                        - 'button "Apple Washington. 48% OFF. Current price: ₹45. Was ₹88. Zepto. Free 10 min delivery. Go to product viewer for this item." [ref=f9e1179]':
+                          - generic [ref=f9e1189] [cursor=pointer]:
+                            - generic [ref=f9e1195]: Apple Washington
+                            - 'group "Current price: ₹45. Was ₹88." [ref=f9e1196]':
+                              - generic [ref=f9e1198]:
+                                - generic [ref=f9e1199]: ₹45
+                                - generic [ref=f9e1200]: ₹88
+                            - generic [ref=f9e1202]:
+                              - img "Zepto" [ref=f9e1208]
+                              - generic [ref=f9e1209]: Zepto
+                            - generic [ref=f9e1210]: Free 10 min delivery
+                      - listitem [ref=f9e1212]:
+                        - 'button "Apple Shimla 500 g. Current price: ₹99. JioMart Grocery. Free delivery by Tue. Go to product viewer for this item." [ref=f9e1216]':
+                          - generic [ref=f9e1226] [cursor=pointer]:
+                            - generic [ref=f9e1232]: Apple Shimla 500 g
+                            - 'group "Current price: ₹99." [ref=f9e1233]':
+                              - generic [ref=f9e1235]: ₹99
+                            - generic [ref=f9e1238]:
+                              - img "JioMart Grocery" [ref=f9e1244]
+                              - generic [ref=f9e1245]: JioMart Grocery
+                            - generic [ref=f9e1246]: Free delivery by Tue
+                    - link "See more" [ref=f9e1249] [cursor=pointer]:
+                      - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=apple+under+%E2%82%B920,000&shoprs=CAESDRILEQAAAABfoBJCGAEYBSoFYXBwbGVgA4ABAQ&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQkOQKKAF6BAh4EAk
+                  - button [aria-hidden] [ref=f9e1257] [cursor=pointer]
+              - heading [level=3] [ref=f9e1273]:
+                - button "₹20,000–₹60,000 ." [ref=f9e1274] [cursor=pointer]:
+                  - generic [ref=f9e1280]:
+                    - generic [ref=f9e1281]: ₹20,000–₹60,000
+                    - generic: .
+          - generic [ref=f9e1292]:
+            - heading "People also ask" [level=2] [ref=f9e1294]
+            - generic [ref=f9e1295]:
+              - button "Who is the CEO of the iPhone?" [ref=f9e1301] [cursor=pointer]
+              - button "Which iPhone is best between ₹30000 and ₹50,000?" [ref=f9e1315] [cursor=pointer]
+              - button "Is there any upcoming Apple sale?" [ref=f9e1329] [cursor=pointer]
+              - button "What is Apple's full name?" [ref=f9e1343] [cursor=pointer]
+          - generic [ref=f9e1354]:
+            - generic [ref=f9e1356]:
+              - heading "Top stories" [level=2] [ref=f9e1358]
+              - link "Sign in to customise" [ref=f9e1362] [cursor=pointer]:
+                - /url: https://accounts.google.com/ServiceLogin?ec=oo-seaport-srp-sp-11135&continue=https://www.google.com/search?q%3Dapple%26sca_esv%3D91241afbd92acca7%26sxsrf%3DAPpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235%26ptid%3D11135%26ptt%3D8%26fpts%3D1791005822548
+            - generic [ref=f9e1368]:
+              - heading [level=2] [ref=f9e1372]:
+                - link "Apple tightens macOS privacy controls over AI agent risks" [ref=f9e1373] [cursor=pointer]:
+                  - /url: https://www.google.com/search?q=apple&sca_esv=91241afbd92acca7&tbm=nws&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&story=GjsSOUFwcGxlIHRpZ2h0ZW5zIG1hY09TIHByaXZhY3kgY29udHJvbHMgb3ZlciBBSSBhZ2VudCByaXNrczIxCieb36CRhu-6p48BwbTwh4aixtdWmIeg7anQo-_2Abbz1siO8eqYpgEQ5MbsjRIYBXICEAE&fcs=AF4cvB7X3-ryyfwQ-3w0CbzhSo8_dnhGQw&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQjcEJegQIdhAD
+              - generic [ref=f9e1380]:
+                - 'link "ETV Bharat About this result Apple Plans Stricter Mac Privacy Controls Amid Growing AI Agent Risks: Everything To Know 17 minutes ago" [ref=f9e1383] [cursor=pointer]':
+                  - /url: /goto?url=CAESywEB6zswFYgdE4Np274OraYnSV5guoSX1rxcdHOvh05OpMzznrhVd-DMbXV0N8Vek9XJsYvaD1bDMY5sEdN0oj_1iSr4ArjedBdYG0rIrSwAr9g5tl9igJyRkP4O0kvhiUh8jEhuHrLliHI69mHMf8QWpBMeE_u-pBP4ShZTS0jz73NvSoysudxRjNo2JddMtVqElgwNdG-XKFWL-hRxf8ESYK5puMo-vfb-d7p2g4zVsgGbFWfm0S6gdnszjb4Vk3LbdQwWVIygyS4PSA
+                  - generic [ref=f9e1388]:
+                    - generic [ref=f9e1390]:
+                      - generic [ref=f9e1391]: ETV Bharat
+                      - button "About this result" [ref=f9e1398]
+                    - 'heading "Apple Plans Stricter Mac Privacy Controls Amid Growing AI Agent Risks: Everything To Know" [level=4] [ref=f9e1401]'
+                    - generic [ref=f9e1402]: 17 minutes ago
+                - generic [ref=f9e1404]:
+                  - link "Cryptopolitan About this result Apple tightens Mac AI data controls as agent permissions become a market test 54 minutes ago" [ref=f9e1407] [cursor=pointer]:
+                    - /url: /goto?url=CAESpwEB6zswFeRChmkXxNQHu79RRTCmCV88kQ4Bw-tRaaPylLqcLE2opZNSkI9MDwsMrz1mxyeOysJcQOfZdoVi6wOVy3eYLOCQAxPXZOWz0xY2GHQK7UAqeK7OfAHRIkS6l_AAlIKtJHJCw9HJspEE0peL-QlJBjDk7j89di-UEGPC2YGDgBDnZKFb3c8aHSrQ4mZGi99JKTH41uyokWjBuLjSrX2aNaSH_g
+                    - generic [ref=f9e1412]:
+                      - generic [ref=f9e1414]:
+                        - generic [ref=f9e1415]: Cryptopolitan
+                        - button "About this result" [ref=f9e1422]
+                      - heading "Apple tightens Mac AI data controls as agent permissions become a market test" [level=4] [ref=f9e1425]
+                      - generic: 54 minutes ago
+                  - link "The Economic Times About this result Apple says it will flag AI requests for Mac data after Meta's Muse draws complaints 42 minutes ago" [ref=f9e1430] [cursor=pointer]:
+                    - /url: /goto?url=CAES0wEB6zswFSusuOVt0AXsjh1Az5-fbbWSaIzwVyrcazAiK3dyR8RUlzUWnm9yCMoRhCyem1zuCDtun__hYOvVzPOo3Fp89F0sEqY7wms56hwlMfTxGYcdiJV-ynsI2wq_1W5rXwY8Rf9GQV4Ji00LBOE4wKd0pkmZpb1Ntodf4OXoidAcNpMngpCnBfVpuBg_VpRW6HrgGLEgl9RAqG4LOFcwBvE4lZuvFt-ZBEZQTpOxZvaRNNROwfIKsJlbFrEQBM3C7TwPFTMZUH787GgaKR86iCoj
+                    - generic [ref=f9e1435]:
+                      - generic [ref=f9e1437]:
+                        - generic [ref=f9e1438]: The Economic Times
+                        - button "About this result" [ref=f9e1445]
+                      - heading "Apple says it will flag AI requests for Mac data after Meta's Muse draws complaints" [level=4] [ref=f9e1448]
+                      - generic: 42 minutes ago
+            - generic [ref=f9e1450]:
+              - heading "Apple Pay launches in India with Axis Bank" [level=2] [ref=f9e1454]
+              - generic [ref=f9e1458]:
+                - link "MediaBrief About this result Axis Bank launches Apple Pay for Mastercard and Visa cards 16 minutes ago" [ref=f9e1461] [cursor=pointer]:
+                  - /url: /goto?url=CAEScQHrOzAVuvBlMkH4ozbZdrwbHm6LChJA6jL0XNL67ChXM5jFjMziZsQ-an8vEnSugMr5K5eysJJSge9MH-JStprzfyc6MoJiKbDKtn2sNGGE6XAU2vxyiKozSQkkC22hIR95PX-uG2fumJsl0ecb9E_y
+                  - generic [ref=f9e1466]:
+                    - generic [ref=f9e1468]:
+                      - generic [ref=f9e1469]: MediaBrief
+                      - button "About this result" [ref=f9e1476]
+                    - heading "Axis Bank launches Apple Pay for Mastercard and Visa cards" [level=4] [ref=f9e1479]
+                    - generic: 16 minutes ago
+                - link "The Ken About this result Apple’s new phones fold. Apple Pay still won’t 4 hours ago" [ref=f9e1484] [cursor=pointer]:
+                  - /url: /goto?url=CAESyAEB6zswFTql2fYaTQw1Zf2x3nKSqr2aQRzIsoqC7lwX8bC3ejWk-DVb4X_dke5Z7qzOmIl2XRMZKmNVq-oUBE2j8xZYRSZPlIxDOH2GUYHE9h_fc8LYhXxoVW-5qYTUb4GghgnqMH17n1xaM7CByCpfPokQjhl_wgyghrlq-4G_vLM9pvrMKCO3uqftzPf_JcLNXxg7cJBJT__1hjPBwyOnsQMd5-e4kcBbLm4PFXISmJy5GERdYgfg_y9-Qfsrgk0Xb4XIltVVgQ
+                  - generic [ref=f9e1489]:
+                    - generic [ref=f9e1491]:
+                      - generic [ref=f9e1492]: The Ken
+                      - button "About this result" [ref=f9e1499]
+                    - heading "Apple’s new phones fold. Apple Pay still won’t" [level=4] [ref=f9e1502]
+                    - generic: 4 hours ago
+            - generic [ref=f9e1504]:
+              - heading "Also in the news" [level=2] [ref=f9e1508]
+              - generic [ref=f9e1512]:
+                - 'link "NDTV Profit About this result Apple iPhone 18 Pro Max Users Hit With AT&T Glitch: What''s The Fix? 3 hours ago" [ref=f9e1515] [cursor=pointer]':
+                  - /url: /goto?url=CAESkwEB6zswFfrBXi1UemWYVAdU_AlYD-CxEA6OOi6rA7P9fK1czTOiobpb8HtHpU3ZdgHIpvvwC5Y-mcq3kJwGzckT46M2gORKuobh5a3x_MUUXH4f2ut3B3iokiEBs7F5kWeBhbOkSYxmjHTb_Z9sakvWUKaeL9DHUahzw5-UnucJZQtHbAUWENt5gTLkVKK7I4MTP2g
+                  - generic [ref=f9e1520]:
+                    - generic [ref=f9e1522]:
+                      - generic [ref=f9e1523]: NDTV Profit
+                      - button "About this result" [ref=f9e1530]
+                    - 'heading "Apple iPhone 18 Pro Max Users Hit With AT&T Glitch: What''s The Fix?" [level=4] [ref=f9e1533]'
+                    - generic: 3 hours ago
+                - link "HackerNoon About this result 299 Blog Posts To Learn About Apple 3 hours ago" [ref=f9e1538] [cursor=pointer]:
+                  - /url: /goto?url=CAESdQHrOzAVvkSEFEvT_o8CSxyf2zjbB0SBsNY6dhgLOtFSOs2_6yEmkZbJ4vUebjuMNb9ac3IOfnMiapwJkn392DRq21BDZjX1Sruh-e9szYz8OayTwZng17g7aSX_nb6p99haJOkbCHXu_YPIm3ix1PnrHhB2oQ
+                  - generic [ref=f9e1543]:
+                    - generic [ref=f9e1545]:
+                      - generic [ref=f9e1546]: HackerNoon
+                      - button "About this result" [ref=f9e1553]
+                    - heading "299 Blog Posts To Learn About Apple" [level=4] [ref=f9e1556]
+                    - generic: 3 hours ago
+            - link "More news" [ref=f9e1559] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=apple&tbm=nws&source=univ&tbo=u&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQt8YBKAJ6BAhyEAU
+              - separator [aria-hidden] [ref=f9e1560]
+          - generic [ref=f9e1569]:
+            - heading "Web results" [level=2] [ref=f9e1570]
+            - generic [ref=f9e1571]:
+              - generic [ref=f9e1574]:
+                - link "apple • Instagram photos and videos Instagram · apple 3.8Cr+ followers" [ref=f9e1576] [cursor=pointer]:
+                  - /url: /goto?url=CAESYQHrOzAV76Yz8qUkN-JMLCllBRHFGSZzZXz39zimcJ_UWgpYoVbgIbwqM-A9hNnKbaf_9GCHA7sbKG_2VDft6WGGtoq2eOnELMJtqD-rPApi5V9rM2fBM3O-1kCrZcfx_14
+                  - heading "apple • Instagram photos and videos" [level=3] [ref=f9e1577]
+                  - generic [ref=f9e1583]:
+                    - generic [ref=f9e1584]: Instagram · apple
+                    - generic [ref=f9e1586]: 3.8Cr+ followers
+                - button "About this result" [ref=f9e1592] [cursor=pointer]
+              - generic [ref=f9e1599]:
+                - emphasis [ref=f9e1600]: Foldable. Posable. Commissioned by Apple
+                - text: ". Shot on iPhone Duo. Capture stunning photos with a versatile camera system packed with delightful new features. # ..."
+          - generic [ref=f9e1604]:
+            - generic [ref=f9e1607]:
+              - link "Apple LinkedIn · Apple 1.8Cr+ followers" [ref=f9e1609] [cursor=pointer]:
+                - /url: /goto?url=CAESYQHrOzAVlzW39TRIGsIk4UQ-Ya8amMaJklPPcAm_c6MLpmme106SmaV5Ng61Vz_B8GnsDDVisq1r4xHWqO_w71Oey3CsjWcsYPMfWAPl0Vq5ucoPQ0-LKB7aHHxm83CjcKY
+                - heading "Apple" [level=3] [ref=f9e1610]
+                - generic [ref=f9e1616]:
+                  - generic [ref=f9e1617]: LinkedIn · Apple
+                  - generic [ref=f9e1619]: 1.8Cr+ followers
+              - button "About this result" [ref=f9e1625] [cursor=pointer]
+            - generic [ref=f9e1631]:
+              - generic [ref=f9e1632]:
+                - text: We're
+                - emphasis [ref=f9e1633]: a diverse collective of thinkers and doers
+                - text: ", continually reimagining what's possible to help us all do what we love in new ways."
+              - link "Read more" [ref=f9e1634] [cursor=pointer]:
+                - /url: /goto?url=CAESrAEB6zswFWHh-jPu9AWpD5Fz0Pwg5Z7lFNLy6FMXV7vmOx_kcEWy1s7Uu5_tC8ASljFckygXRSvvW2jABU6xHYx3eQlMHrHA0WadJQX6kcGJ-bDGOkAMBCJnLmGqviEL4uXd388TVyJ_NVftk7MK-hOuMm8B-ooNpL7jUxVtT6kXeV6PS1Bn-QLSsfOvKFQAsBfWenXpyZXbnobmmBww05gj-737HHnUZ5YGSwWG
+          - generic [ref=f9e1638]:
+            - generic [ref=f9e1641]:
+              - link "Apple YouTube · Apple 2.1Cr+ followers" [ref=f9e1643] [cursor=pointer]:
+                - /url: /goto?url=CAESWQHrOzAVl4_lqZwpSDVXeIreBqAGfPPQGyqy7wHy8rgFJchHXCLhOADYEq9jfJZ3PN8pI_jWsGeoyLA1LmfkzvtYAO7Wpfs0XXT5Rq0LRj2bqAvXltGFv1te
+                - heading "Apple" [level=3] [ref=f9e1644]
+                - generic [ref=f9e1650]:
+                  - generic [ref=f9e1651]: YouTube · Apple
+                  - generic [ref=f9e1653]: 2.1Cr+ followers
+              - button "About this result" [ref=f9e1659] [cursor=pointer]
+            - generic [ref=f9e1665]:
+              - generic [ref=f9e1666]:
+                - emphasis [ref=f9e1667]: Welcome to the official Apple YouTube channel
+                - text: . Here you'll find news about product launches, tutorials, and other great content. ...more
+              - link "Read more" [ref=f9e1668] [cursor=pointer]:
+                - /url: /goto?url=CAEStQEB6zswFcIyOJeqJP7bN7V7fUwlF3Roha7jJseFPsRrdsuFI_u0jXJOtW4gL8V0SEMn0ztcYF5Uvg2tW3CfbmHbD-MZUZpnK2tvX8KKukdlAL_MdN6DEiBVfRUrG5Wh9bC2YdF-EIp0odpT8gn5_azAH1PpUP5lzyZ4F_h8sk6tkaZZp8QrUKCqSL_6Qw2xS2XuuItsgW9wmvacWBbqqFRMV64m7QIq7IM0_ZtSEvO1E3owJurx
+        - generic [ref=f9e1670]:
+          - generic [ref=f9e1675]:
+            - heading "People also search for" [level=2] [ref=f9e1677]
+            - generic [ref=f9e1679]:
+              - generic [ref=f9e1680]:
+                - link "Apple (TR)" [ref=f9e1684] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Apple+(TR)&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ1QJ6BAhREAE
+                - link "Apple USA" [ref=f9e1698] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Apple+USA&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ1QJ6BAhfEAE
+                - link "Apple India" [ref=f9e1712] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Apple+India&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ1QJ6BAhdEAE
+                - link "Apple login" [ref=f9e1726] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Apple+login&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ1QJ6BAhbEAE
+              - generic [ref=f9e1737]:
+                - link "Apple logo" [ref=f9e1741] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Apple+logo&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ1QJ6BAhZEAE
+                - link "Apple ID" [ref=f9e1755] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Apple+ID&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ1QJ6BAhWEAE
+                - link "Apple 🍎" [ref=f9e1769] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Apple+%F0%9F%8D%8E&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ1QJ6BAhUEAE
+                - link "Apple Store" [ref=f9e1783] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=Apple+Store&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ1QJ6BAhSEAE
+          - navigation [ref=f9e1794]:
+            - heading "Page navigation" [level=1] [ref=f9e1795]
+            - text: "1"
+            - link "Page 2" [ref=f9e1798] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=10&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8tMDegQIThAE
+              - text: "2"
+            - link "Page 3" [ref=f9e1800] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=20&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8tMDegQIThAG
+              - text: "3"
+            - link "Page 4" [ref=f9e1802] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=30&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8tMDegQIThAI
+              - text: "4"
+            - link "Page 5" [ref=f9e1804] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=40&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8tMDegQIThAK
+              - text: "5"
+            - link "Page 6" [ref=f9e1806] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=50&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8tMDegQIThAM
+              - text: "6"
+            - link "Page 7" [ref=f9e1808] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=60&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8tMDegQIThAO
+              - text: "7"
+            - link "Page 8" [ref=f9e1810] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=70&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8tMDegQIThAQ
+              - text: "8"
+            - link "Page 9" [ref=f9e1812] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=80&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8tMDegQIThAS
+              - text: "9"
+            - link "Page 10" [ref=f9e1814] [cursor=pointer]:
+              - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=90&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8tMDegQIThAU
+              - text: "10"
+            - heading [level=2] [ref=f9e1816]:
+              - link "Next" [ref=f9e1817] [cursor=pointer]:
+                - /url: /search?q=apple&sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&ei=fpTAaob6DY-eseMPkZvcgAc&start=10&sa=N&sstk=AS6-VmLWTtPueC20LMy8Gz5EgP7wmsSVMdl227fQ4dd1Y76usQKz2-naldd787jm9-LaTNw0vBAOM2hVRnAOqa21aQEDCFO2InnRsQ&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQ8NMDegQIThAW
+        - navigation
+      - complementary [ref=f9e1820]:
+        - heading "Complementary results" [level=2] [ref=f9e1821]
+        - generic [ref=f9e1822]:
+          - generic [ref=f9e1829]:
+            - button "Thumbnail image for Apple" [ref=f9e1833] [cursor=pointer]
+            - generic [ref=f9e1836]:
+              - heading "Apple" [level=2] [ref=f9e1839]
+              - generic [ref=f9e1840]:
+                - link [ref=f9e1844] [cursor=pointer]:
+                  - /url: https://www.google.com/storepages?q=odoo.com&c=IN
+                  - generic [ref=f9e1845]:
+                    - img "Rated 4.9 out of 5," [ref=f9e1846]: "4.9"
+                    - generic "22Shop reviews" [ref=f9e1850]: (22)
+                - button [ref=f9e1857] [cursor=pointer]:
+                  - img "More options for Apple" [ref=f9e1858]
+          - group "Featured results" [ref=f9e1865]:
+            - generic [ref=f9e1867]:
+              - list [ref=f9e1870]:
+                - listitem [ref=f9e1871]:
+                  - generic [ref=f9e1872]:
+                    - generic:
+                      - button "Image of Apple":
+                        - img "Image of Apple" [ref=f9e1876] [cursor=pointer]
+                - listitem [ref=f9e1877]:
+                  - generic [ref=f9e1878]:
+                    - generic:
+                      - button "Image of Apple":
+                        - img "Image of Apple" [ref=f9e1882] [cursor=pointer]
+                - listitem [ref=f9e1883]:
+                  - button [ref=f9e1887] [cursor=pointer]:
+                    - img "Image of Apple at Work - Apple (IN)" [ref=f9e1890]
+                - listitem [ref=f9e1891]:
+                  - link "More images" [ref=f9e1894] [cursor=pointer]:
+                    - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnsA5aHe-GS7TRkLdm1KJU0loJ329Q:1791005822235&q=apple&udm=2&source=univ&fir=Py0jRBa59iP98M%252CAAAAAAAAAAABAM%252C_%253B1b32rEx0fDQSUM%252CAAAAAAAAAAABAM%252C_&usg=AI4_-kRPMvfOmVZ9uhiPJ2fhJu8-TQl4Vg&sa=X&ved=2ahUKEwiGsczOkJ2XAxUPT2wGHZENF3AQnN8JegQIKBAD
+              - generic [ref=f9e1899] [cursor=pointer]:
+                - heading "Description" [level=3] [ref=f9e1900]
+                - generic [ref=f9e1901]:
+                  - button "Apple Inc. is an American multinational technology company headquartered in Cupertino, California, in Silicon Valley, and known for consumer electronics, software and online services." [ref=f9e1902]
+                  - link "Wikipedia" [ref=f9e1908]:
+                    - /url: /goto?url=CAESYwHrOzAViyG35Zk_6XVS7iJwNibTBYc0rU7tqGG45dUIqRPkGhH6AdvXoWNAgscBh2RaEE6iYMfDF_Y4O__mJNfZ1alXzI77Bi5IgN3WNiYK3NzdTumlDfXaMEtb_bAzrDaCHQ
+    - contentinfo [ref=f9e1909]:
+      - heading "Footer links" [level=1] [ref=f9e1910]
+      - generic [ref=f9e1914]:
+        - generic [ref=f9e1916]:
+          - text: India
+          - generic [ref=f9e1918]:
+            - button "560023, Bengaluru, Karnataka - From your IP address" [ref=f9e1920] [cursor=pointer]:
+              - generic [ref=f9e1921]: 560023, Bengaluru, Karnataka
+              - generic [ref=f9e1923]:
+                - text: "-"
+                - generic [ref=f9e1924]: From your IP address
+            - text: "-"
+            - button "Update location" [ref=f9e1926] [cursor=pointer]
+        - generic [ref=f9e1929]:
+          - link "Help" [ref=f9e1930] [cursor=pointer]:
+            - /url: https://support.google.com/websearch/?p=ws_results_help&hl=en-IN&fg=1
+          - link "Send feedback" [ref=f9e1931] [cursor=pointer]:
+            - /url: "#"
+          - link "Privacy" [ref=f9e1932] [cursor=pointer]:
+            - /url: https://policies.google.com/privacy?hl=en-IN&fg=1
+          - link "Terms" [ref=f9e1933] [cursor=pointer]:
+            - /url: https://policies.google.com/terms?hl=en-IN&fg=1

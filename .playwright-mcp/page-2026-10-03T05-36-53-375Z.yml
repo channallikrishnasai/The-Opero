@@ -1,0 +1,395 @@
+- generic [active] [ref=e1]:
+  - generic:
+    - generic:
+      - link "Skip to main content" [ref=e2] [cursor=pointer]
+      - link "Accessibility help" [ref=e3] [cursor=pointer]:
+        - /url: https://support.google.com/websearch/answer/181196?hl=en-IN
+  - generic [ref=e8]:
+    - search [ref=e9]:
+      - generic [ref=e11]:
+        - link "Go to Google Home" [ref=e13] [cursor=pointer]:
+          - /url: https://www.google.com/webhp?hl=en&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQPHoECAYQBA
+        - generic [ref=e22]:
+          - combobox "Search" [ref=e24]: Motorola GTEs Motorola GTEs
+          - generic [ref=e25]:
+            - button "Clear" [ref=e29] [cursor=pointer]
+            - generic [ref=e34]:
+              - button "Search by voice" [ref=e37] [cursor=pointer]
+              - button "Search by image" [ref=e42] [cursor=pointer]
+    - generic [ref=e45]:
+      - button "Settings" [ref=e47] [cursor=pointer]
+      - button "Share" [ref=e52] [cursor=pointer]
+      - generic [ref=e58]:
+        - button "Google apps" [ref=e60] [cursor=pointer]
+        - link "Sign in" [ref=e65] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/search%3Fq%3DMotorola%2BGTEs&ec=futura_srp_og_si_72236_p
+  - generic [ref=e68]:
+    - navigation [ref=e74]:
+      - generic [ref=e80]:
+        - list [ref=e81]:
+          - listitem [ref=e82]:
+            - link "AI Mode" [ref=e85] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&udm=50&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7dhBbwX11m2q66FDF3KZmlyVOLuxi9yOzUs02paaWekXzbemj15AiWXbdWMOuZThSKjsP5PztXJTYALzsK4vYXhj-W53Q&vsint=&aep=1&ntc=1&cs=0&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ2J8OegQIFhAD
+          - listitem [ref=e89]:
+            - link "All" [disabled] [ref=e90]
+          - listitem [ref=e93]:
+            - link "Shopping" [ref=e94] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&udm=28&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7dhBbwX11m2q66FDF3KZmlyVOLuxi9yOzUs02paaWekXzbemj15AiWXbdWMOuZThSKjsP5PztXJTYALzsK4vYXhj-W53Q&q=Motorola+GATEs&ved=1t:220175&ictx=111
+          - listitem [ref=e97]:
+            - link "Images" [ref=e98] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&udm=imgs&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7dhBbwX11m2q66FDF3KZmlyVOLuxi9yOzUs02paaWekXzbemj15AiWXbdWMOuZThSKjsP5PztXJTYALzsK4vYXhj-W53Q&q=Motorola+GATEs&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQtKgLegQIHBAB
+          - listitem [ref=e101]:
+            - link "News" [ref=e102] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&q=Motorola+GATEs&tbm=nws&source=lnms&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7dhBbwX11m2q66FDF3KZmlyVOLuxi9yOzUs02paaWekXzbemj15AiWXbdWMOuZThSKjsP5PztXJTYALzsK4vYXhj-W53Q&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ0pQJegQIGRAB
+          - listitem [ref=e105]:
+            - link "Videos" [ref=e106] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&udm=vids&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7dhBbwX11m2q66FDF3KZmlyVOLuxi9yOzUs02paaWekXzbemj15AiWXbdWMOuZThSKjsP5PztXJTYALzsK4vYXhj-W53Q&q=Motorola+GATEs&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQtKgLegQIGBAB
+          - listitem [ref=e109]:
+            - link "Short videos" [ref=e110] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&udm=39&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jmGsLLhV9MC9EWyWlfU-dFSaPFLJh1uvA1YJHXOcaWY4rtNToiNMt1__dnUvVImP7dhBbwX11m2q66FDF3KZmlyVOLuxi9yOzUs02paaWekXzbemj15AiWXbdWMOuZThSKjsP5PztXJTYALzsK4vYXhj-W53Q&q=Motorola+GATEs&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQs6gLegQIGhAB
+          - listitem [ref=e113]:
+            - button [ref=e114] [cursor=pointer]:
+              - generic "More filters" [ref=e115]: More
+        - button "Tools" [ref=e122] [cursor=pointer]
+    - heading "Search Results" [level=1] [ref=e129]
+    - generic [ref=e134]:
+      - generic [ref=e135]:
+        - heading [level=2] [ref=e140]:
+          - text: These are results for
+          - button "Motorola GATEs" [ref=e141] [cursor=pointer]:
+            - text: Motorola
+            - generic [ref=e142]: GATEs
+          - generic [ref=e143]:
+            - text: Search instead for
+            - button "Motorola GTEs" [ref=e144] [cursor=pointer]
+        - generic [ref=e159]:
+          - generic [ref=e183]:
+            - heading [level=2] [ref=e189]:
+              - strong [ref=e190]: AI Overview
+            - generic [ref=e196]:
+              - text: Depending on the context of your query,
+              - strong [ref=e197]: "\"Motorola GATEs\""
+              - text: typically refers to
+              - mark [ref=e198]: one of three distinct technologies from different arms of the Motorola brand
+              - text: ":"
+          - button "Show more AI Overview" [ref=e210]:
+            - generic [ref=e211] [cursor=pointer]: Show more
+      - main [ref=e218]:
+        - generic [ref=e222]:
+          - generic [ref=e226]:
+            - heading "Web results" [level=2] [ref=e227]
+            - generic [ref=e228]:
+              - generic [ref=e231]:
+                - link "Meet the Motorola Edge Family | Moto Edge Fusion Phones Motorola IN https://www.motorola.in › motorola-edge-family" [ref=e233] [cursor=pointer]:
+                  - /url: /goto?url=CAESqAEB6zswFZwW2nU7_FgkLQtIE1u76VkfBmSB1x846k2c8rwNgznRinKJubikMpTLU6kIJ9IsPNs0k0LQOfUl-veMPnr2NxMCHk6FgQY-vxDNMdFIRn8F6RIpG6Hs1_WzpJtbTGWUlx7o5TCOZb2mcmPwqJb9SFE0HD9ha3WlQmIM206GS2UuQHWpQmU08bxRWpvTfrYJnoOEhLsoDDk7emEXXfBEI9VRC_Y
+                  - heading "Meet the Motorola Edge Family | Moto Edge Fusion Phones" [level=3] [ref=e234]
+                  - generic [ref=e243]:
+                    - generic [ref=e244]: Motorola IN
+                    - generic [ref=e246]: https://www.motorola.in › motorola-edge-family
+                - button "About this result" [ref=e252] [cursor=pointer]
+              - generic [ref=e258]:
+                - generic [ref=e259]:
+                  - emphasis [ref=e260]: HDR10 screen
+                  - text: ", for the most immersive experience, ultra-powerful 5G performance, extraordinary camera system and award-winning sound. Meet motorola edge family."
+                - link "Read more" [ref=e261] [cursor=pointer]:
+                  - /url: /goto?url=CAESiAIB6zswFbMSdcXVayClUxT48BIucT4ptwwvRxrzBNCEozjLtVRJWbNXt_CP8PAN6Vqc_AxcBOIWx8nPb4dOLsM1l27U-EoVvM4vG9wcfIXp68B7KJ00TwBZ1Md8aU_OnkdobACikGlrRFGzZD-P8aXuwPKsO9g_w_ddimmiz-IsMC8FII5CYpk6MtdCS59iDCWLvjURpbytRev_LTqGqwha1UexrniRUI_kDJlvQLqWTHf7LzA7ONh_xWhKa6Jv_ejCnQVyxNewGNT50dctVLpBZkj10Ue2kS4pvpXf-cDDQCUnLMdZWYBtsV6HUM3VAA5bOpT3gb1sr4t-Zce3QoABHyYm6XfqPOk
+              - link [aria-hidden] [ref=e264] [cursor=pointer]:
+                - /url: /goto?url=CAESqAEB6zswFZwW2nU7_FgkLQtIE1u76VkfBmSB1x846k2c8rwNgznRinKJubikMpTLU6kIJ9IsPNs0k0LQOfUl-veMPnr2NxMCHk6FgQY-vxDNMdFIRn8F6RIpG6Hs1_WzpJtbTGWUlx7o5TCOZb2mcmPwqJb9SFE0HD9ha3WlQmIM206GS2UuQHWpQmU08bxRWpvTfrYJnoOEhLsoDDk7emEXXfBEI9VRC_Y
+              - generic [ref=e267]: ₹54,999.00
+          - generic [ref=e274]:
+            - generic [ref=e277]:
+              - link "Gate Access Control Systems for Commercial Properties Motorola Solutions https://www.motorolasolutions.com › en_us › blog › gat..." [ref=e279] [cursor=pointer]:
+                - /url: /goto?url=CAESewHrOzAVMBkuwEi3uMwSk6RN5vXj8STOzHfCjhn8nHUo6nxwBFaFnOkGx_uNGziLaqtCJsqOKB9jlOKtCgJe3Doi8vlpoMoeObq7_7guD9M7VBBZXGdIPUlGaYwovicRayIrQfPkzsBbOCtos5sVwWNnwwT4pVBowTpeLA
+                - heading "Gate Access Control Systems for Commercial Properties" [level=3] [ref=e280]
+                - generic [ref=e286]:
+                  - generic [ref=e287]: Motorola Solutions
+                  - generic [ref=e289]: https://www.motorolasolutions.com › en_us › blog › gat...
+              - button "About this result" [ref=e295] [cursor=pointer]
+            - generic [ref=e301]:
+              - generic [ref=e302]:
+                - text: Ready to strengthen your perimeter security?
+                - emphasis [ref=e303]: Explore Motorola Solutions' access control solutions
+                - text: to learn how integrated access control and video security ...
+              - link "Read more" [ref=e304] [cursor=pointer]:
+                - /url: /goto?url=CAES5QEB6zswFQ_7yaq--3FMc-KjDE95DJ6OBumwy9G6fn_q6askikUgTszDAqv-SU5pPLdWBLtEUzYhj6Y8kbmSeE5LvECEVUc52Mf4szVEfK-CAMFUWynLw34VkH4vjnbWQK0_tg0loivtjO_8vTUvLqBaoxroHeouGXMlaeVKC3HpQAA3X7Tw8CK6IJP1XqDPN6hQg0wHNzM0fq_4AxpJOWvK9fBBtFxiEVHPQAX3kxnXy5LnDm8gzrV7hDCxMNqgoE7rBTi39iD--yL7Vy_9i1rF1ZVF8cTSx5lsLALil0kV5JMb2vP1
+          - generic [ref=e308]:
+            - heading "Images" [level=2] [ref=e312]
+            - generic [ref=e316]:
+              - generic [ref=e320] [cursor=pointer]:
+                - 'link "Casotec The Golden Awadh Gate Design 2D Printed Premium Metal Back Cover Compatible with Motorola Moto G52 4G / Moto G82 5G : Amazon.in: Electronics Amazon.in" [ref=e321]':
+                  - /url: /goto?url=CAESigEB6zswFbFLqAInA1foCJY2F73SsLlQuh56Jv-pPGfDi3RktL--5-6bjq4cyYfJFc3ZNzNyTSvrlUBzMP3ExXNQCJHi_OYfbOOpVDErbA3H9S2Mz82fuirjdh8d1HUxE7C6Bx1p_oNr14K9oVHHxHXr8wfL9ZKMu_2eQ7dkx3tABfZ6Qit_pg-S8Vc
+                - button [ref=e323]:
+                  - 'img "Casotec The Golden Awadh Gate Design 2D Printed Premium Metal Back Cover Compatible with Motorola Moto G52 4G / Moto G82 5G : Amazon.in: Electronics" [ref=e325]'
+                - generic [ref=e327]:
+                  - generic [ref=e329]: "Casotec The Golden Awadh Gate Design 2D Printed Premium Metal Back Cover Compatible with Motorola Moto G52 4G / Moto G82 5G : Amazon.in: Electronics"
+                  - generic [ref=e330]:
+                    - generic [ref=e332]: Amazon.in
+                    - button "About this result" [ref=e342]
+              - generic [ref=e350] [cursor=pointer]:
+                - 'link "Casotec The Golden Awadh Gate Design Printed Silicon Soft TPU Back Case Cover Compatible with Motorola Edge 70 Max 5G : Amazon.in: Electronics Amazon.in" [ref=e351]':
+                  - /url: /goto?url=CAESigEB6zswFaV9RP6kGQYfKXMBRYsaVsrKtTVOCkVcWhEA1L1CRw9ALS3cv6I9f28TN23R_sNdLb-Wfw6_X_yWolltSJj9_1VeUP7JD1EPtb7olqDuyaJlM6UnDZ52YA4ak9tKCAYy8MEcfRKBKaK6Q_hxcMGihCYrdNwNxpgXx5zNHfHqNTgsLovUB6M
+                - button [ref=e353]:
+                  - 'img "Casotec The Golden Awadh Gate Design Printed Silicon Soft TPU Back Case Cover Compatible with Motorola Edge 70 Max 5G : Amazon.in: Electronics" [ref=e355]'
+                - generic [ref=e357]:
+                  - generic [ref=e359]: "Casotec The Golden Awadh Gate Design Printed Silicon Soft TPU Back Case Cover Compatible with Motorola Edge 70 Max 5G : Amazon.in: Electronics"
+                  - generic [ref=e360]:
+                    - generic [ref=e362]: Amazon.in
+                    - button "About this result" [ref=e372]
+              - generic [ref=e380] [cursor=pointer]:
+                - 'link "Casotec The Golden Awadh Gate Design Premium 2D Printed Metal Back Cover Compatible with Motorola Moto Edge 70 Fusion 5G : Amazon.in: Electronics Amazon.in" [ref=e381]':
+                  - /url: /goto?url=CAESigEB6zswFXhcIrRzQVT1Ae9Yu7BQBiZQQdN5yYRAYSXDM7_5yhLvurboKrEBZeI44fNWX2Y0EOzPNiilvH8GUtkGggzm1zgUbQcNUNjkvdW1cju2kxAtBWHQX3YQWVNMVqNxe2r_D-tHq-jWYJAuL_BrNJhPPe9WHZfY32SR-42Tu9XvLXejvJgQNqA
+                - button [ref=e383]:
+                  - 'img "Casotec The Golden Awadh Gate Design Premium 2D Printed Metal Back Cover Compatible with Motorola Moto Edge 70 Fusion 5G : Amazon.in: Electronics" [ref=e385]'
+                - generic [ref=e387]:
+                  - generic [ref=e389]: "Casotec The Golden Awadh Gate Design Premium 2D Printed Metal Back Cover Compatible with Motorola Moto Edge 70 Fusion 5G : Amazon.in: Electronics"
+                  - generic [ref=e390]:
+                    - generic [ref=e392]: Amazon.in
+                    - button "About this result" [ref=e402]
+              - generic [ref=e410] [cursor=pointer]:
+                - link "Premium 50MP Flagship Camera Phone with Advanced Dolby Vision | motorola signature | motorola India Motorola IN" [ref=e411]:
+                  - /url: /goto?url=CAEStAEB6zswFQQbE-2js_vhKnyAG5x-kxlme408p4QARZy461UAbyTxddBCLeu8JW9j-_41515TlwPSN8RhgRbSxuIFT97yHTMbB0Jxk7JZiZuMTLjG66u5VjQEdaTuoUMC7CCDKOZRGu0Ql1tqHgo-oMk8cdd5Ymgz9glAm2uOC9MK-oBygJeXZ0Ne_PaHdRgqEk0TpeE5XuKWwvoTNFFblQVRkoYH4guCchzs1izgmw1pOWYq4NU
+                - button [ref=e413]:
+                  - img "Premium 50MP Flagship Camera Phone with Advanced Dolby Vision | motorola signature | motorola India" [ref=e415]
+                - generic [ref=e417]:
+                  - generic [ref=e419]: Premium 50MP Flagship Camera Phone with Advanced Dolby Vision | motorola signature | motorola India
+                  - generic [ref=e420]:
+                    - generic [ref=e422]: Motorola IN
+                    - button "About this result" [ref=e432]
+              - generic [ref=e440] [cursor=pointer]:
+                - 'link "Casotec The Golden Awadh Gate Design 2D Printed Premium Metal Back Cover Compatible with Motorola Moto G34 5G / G45 5G : Amazon.in: Electronics Amazon.in" [ref=e441]':
+                  - /url: /goto?url=CAESigEB6zswFaz3un9djmh06dpLqf4DmDyRw37f2hqZPK5gMzPgL5vJnOvibw-X9rzE6Lc9RDDaDScKD2Ra6cV9j0Xac2yMRPTfsOpFN1Qw7PA8Mbl0X8Znx5QbEQZKdEmgZ3SvV6zJBUJ5NrzXtL5XRbebsJp-5M_BAIVN9PcFwy-aaHuFcOQZseJF0ys
+                - button [ref=e443]:
+                  - 'img "Casotec The Golden Awadh Gate Design 2D Printed Premium Metal Back Cover Compatible with Motorola Moto G34 5G / G45 5G : Amazon.in: Electronics" [ref=e445]'
+                - generic [ref=e447]:
+                  - generic [ref=e449]: "Casotec The Golden Awadh Gate Design 2D Printed Premium Metal Back Cover Compatible with Motorola Moto G34 5G / G45 5G : Amazon.in: Electronics"
+                  - generic [ref=e450]:
+                    - generic [ref=e452]: Amazon.in
+                    - button "About this result" [ref=e462]
+              - generic [ref=e470] [cursor=pointer]:
+                - link "MOTO-GATE MX Store – MXSTORE" [ref=e471]:
+                  - /url: /goto?url=CAESpQEB6zswFfNggGfGslYDbuAGfYld1jAF812kTm6fvrrTLVW4Lmkd5UbiTgpWknKKSoYSXCFUlWB8dyAUnNe-xSbWamLcFFqraHx96ctcGy3CzY9NqELv8FKdp4kLEvaoAqbv0lqeH2RtVvWmsaSXBcl0auASCsvf1ByamwoElJ-e_n5LLP7pAJm8mGa3lsgOHgRgSW0YCnv31xyLp4GhqWpUnVrXMNU
+                - button [ref=e473]:
+                  - img "MOTO-GATE" [ref=e475]
+                - generic [ref=e477]:
+                  - generic [ref=e479]: MOTO-GATE
+                  - generic [ref=e480]:
+                    - generic [ref=e482]: MX Store – MXSTORE
+                    - button "About this result" [ref=e492]
+              - generic [ref=e500] [cursor=pointer]:
+                - link "Casotec Golden Hour at India Gate Design Premium 2D Printed ... Amazon.in" [ref=e501]:
+                  - /url: /goto?url=CAESigEB6zswFWG5h1g3oJkL2O8CIMmGjgnLCvDijFj5oeSRQPlDl-hNdrnRa0__mUVV6FwF58fAvawRNuNFwGv6gULwASo_QsPIedRVmikOOUb6VpqZrqF2_lOxjFdjnflTozI1KiaCszioOENIU3NwRjnK7bS-FgHUBqTwKQ-7JF5DYcpLnMx6uvUCg7Q
+                - button [ref=e503]:
+                  - img "Casotec Golden Hour at India Gate Design Premium 2D Printed ..." [ref=e505]
+                - generic [ref=e507]:
+                  - generic [ref=e509]: Casotec Golden Hour at India Gate Design Premium 2D Printed ...
+                  - generic [ref=e510]:
+                    - generic [ref=e512]: Amazon.in
+                    - button "About this result" [ref=e522]
+              - generic [ref=e530] [cursor=pointer]:
+                - link "moto g max Motorola IN" [ref=e531]:
+                  - /url: /goto?url=CAESrAEB6zswFVOU99bFfciXwXCMQtce5bHq5rmgoUvzrBVkt09o4BaQKphWisNlp3eBJughaBNh7l_CBii00ATKaC3pJwsednSM6YUl5gOER3pb8beoaYrJevsSLhhF9wEJpkqroFiY-tCNLOEOM0W1xNZGvouj4nNAfmw82919WFC2uSAf1vT0d-vzETIjdHWsPZHLIVsCdmKYk3GGNmCZgMGIf5sXDMvL6yo6KK4X
+                - button [ref=e533]:
+                  - img "moto g max" [ref=e535]
+                - generic [ref=e537]:
+                  - generic [ref=e539]: moto g max
+                  - generic [ref=e540]:
+                    - generic [ref=e542]: Motorola IN
+                    - button "About this result" [ref=e552]
+            - button "Show more images" [ref=e558] [cursor=pointer]:
+              - separator [aria-hidden] [ref=e559]
+          - generic [ref=e568]:
+            - heading "Web results" [level=2] [ref=e569]
+            - generic [ref=e570]:
+              - generic [ref=e573]:
+                - 'link "Motorola IN: Latest Premium 5G & Flip Android Flagship ... Motorola IN https://www.motorola.in" [ref=e575] [cursor=pointer]':
+                  - /url: /goto?url=CAESlAEB6zswFTAwkSliUv6uUPWmQcYaGCB6PW8EeCCH9EsETqCUNPAePyLAIQT5euPyFIKiHx2_ynKEo0B7isr56A7IdOjdbala6-gyAfZKde_4mQRWbf6d14HAnIHbdFopplS891wwb82JgUTfBElf1tpJ5U4ofxlcAFeckdCdBbpS2mxa8LiwbuOrgmqOnrDvucphciuZ
+                  - 'heading "Motorola IN: Latest Premium 5G & Flip Android Flagship ..." [level=3] [ref=e576]'
+                  - generic [ref=e585]:
+                    - generic [ref=e586]: Motorola IN
+                    - generic [ref=e588]: https://www.motorola.in
+                - button "About this result" [ref=e594] [cursor=pointer]
+              - generic [ref=e600]:
+                - generic [ref=e601]:
+                  - emphasis [ref=e602]: motorola razr fold
+                  - text: · ₹1,79,999.00 · 49 ; motorola edge 70 max · ₹89,999.00 · 54 ; motorola signature · ₹74,999.00 · 59 ; motorola edge 70 pro plus · ₹84,999.00 · 47 ...
+                - link "Read more" [ref=e603] [cursor=pointer]:
+                  - /url: /goto?url=CAESiAQB6zswFbsX_dGylq6uORoHLLkmdlzlZb9TpngBHRa5AwUfNUUjJXkyvMmnsnVwpmpnvF5MYNVA0TWUzzA0uSb1JPPVkqxX2cSlfoZN5VzbHYBsyKrn97nL3_dd8fQlpLVlC21B5WSlj1EMD8RhO-4YfNlDtNxdxceMJH_2f-g6X1nZBr8nhJIumZspwTgAZuYmiirDbGIZr28ZtTgn6tNOysaIn47hnpEwOMR4fJhgZ_VfRjW5d3cC6tvI4GHW6julipx70U_H25RdaX8Y99zS88OTSU2VcyzyRnJYBGdKMOSr9UsionH-2xDBxkrljt0UpgWJ0H01oVqtgWk9KmByynlY-aXaQB_D3HsDPizkYx7SzF8RvuuAqu3V_osFiqo3I7YFtDpODt13_w7kkd8tLWFIbaxwb4A3sEjFqk-nXf715fP68YYeLeVOgdTlJ5gS2eD-7UiIz1e7_Jw1CivqrQvLmF6Lr_z_Ue7At3HFta7CFLL4bJr9nQgIJs1uiyLV0wCFN2bqdrH2K6uXyQFWUZWpL1soZIJuJtlwbkOW4kHfqikBDjYXaufvsPa_buyqNr0xzD0ZyZ3M7sETcMaZFelyPtk7qOPAO6l8IIXU0MT1NL2SVGaNzIZIn7U1eILJz7yvXJJYOQ23usZ7GUX_QYXCcNyG-kAgZ91W3h-mz607zykHqKol
+              - link [aria-hidden] [ref=e606] [cursor=pointer]:
+                - /url: /goto?url=CAESlAEB6zswFTAwkSliUv6uUPWmQcYaGCB6PW8EeCCH9EsETqCUNPAePyLAIQT5euPyFIKiHx2_ynKEo0B7isr56A7IdOjdbala6-gyAfZKde_4mQRWbf6d14HAnIHbdFopplS891wwb82JgUTfBElf1tpJ5U4ofxlcAFeckdCdBbpS2mxa8LiwbuOrgmqOnrDvucphciuZ
+              - generic [ref=e610]:
+                - generic [ref=e612]:
+                  - img "Rated 3.6 out of 5," [ref=e614]: "3.6"
+                  - generic [ref=e618]:
+                    - text: store rating (
+                    - link "39 user reviews" [ref=e619] [cursor=pointer]:
+                      - /url: https://www.google.com/m/storepages?q=motorola.in&c=IN&hl=en-IN
+                      - text: "39"
+                    - text: )
+                - text: ·
+                - generic [ref=e620]: Free delivery
+          - generic [ref=e625]:
+            - generic [ref=e628]:
+              - link "MC1001P Motorola | Gates and Inverters - DigiKey DigiKey https://www.digikey.in › detail › rochester-electronics-llc" [ref=e630] [cursor=pointer]:
+                - /url: /goto?url=CAESjwEB6zswFY6p-qqn7zlgxdsp9qHlApMZeqDwYz29igANMMexwDdQkb8yU774JaHLG5MX4YkjljrJkGSAQmVbjqEeLoti4DeF1iuO3OFNyKlOkOCj5X2rYayBP1RDSCSp8UqeoZO_RyKU6G-AFSqfyFqlPzcorZciZCbFEqNHFfUqURwV6tWPQbEhYdeooTJg4A
+                - heading "MC1001P Motorola | Gates and Inverters - DigiKey" [level=3] [ref=e631]
+                - generic [ref=e637]:
+                  - generic [ref=e638]: DigiKey
+                  - generic [ref=e640]: https://www.digikey.in › detail › rochester-electronics-llc
+              - button "About this result" [ref=e646] [cursor=pointer]
+            - generic [ref=e653]:
+              - text: Buy now, ships today.
+              - emphasis [ref=e654]: MC1001P - NOR/OR Gate Configurable 1 Circuit 6 Input 14-PDIP
+              - text: from Motorola. View datasheets, pricing and availability from DigiKey now ...
+            - link [aria-hidden] [ref=e657] [cursor=pointer]:
+              - /url: /goto?url=CAESjwEB6zswFY6p-qqn7zlgxdsp9qHlApMZeqDwYz29igANMMexwDdQkb8yU774JaHLG5MX4YkjljrJkGSAQmVbjqEeLoti4DeF1iuO3OFNyKlOkOCj5X2rYayBP1RDSCSp8UqeoZO_RyKU6G-AFSqfyFqlPzcorZciZCbFEqNHFfUqURwV6tWPQbEhYdeooTJg4A
+          - generic [ref=e664]:
+            - generic [ref=e667]:
+              - link "MC14072B Datasheet - SOP Gates | Motorola Semiconductor Datasheet4U https://datasheet4u.com › Motorola Semiconductor" [ref=e669] [cursor=pointer]:
+                - /url: /goto?url=CAESdgHrOzAVFewn35YoCqO3J2NwkyK1lZykRvECnPtn8laIjI71CDOIYdUS83hIMLtYXC_RL4_ggvx0FuYt38CcHOCH79SR9GMYmgT9_3EkBIqyZ38VtOqxe5plzAga_EfQ0UknrTiUFMnKNAX8_wwOeDTqWCNVAsY
+                - heading "MC14072B Datasheet - SOP Gates | Motorola Semiconductor" [level=3] [ref=e670]
+                - generic [ref=e676]:
+                  - generic [ref=e677]: Datasheet4U
+                  - generic [ref=e679]: https://datasheet4u.com › Motorola Semiconductor
+              - button "About this result" [ref=e685] [cursor=pointer]
+            - generic [ref=e692]:
+              - text: MC14072B is B-Suffix Series CMOS
+              - emphasis [ref=e693]: Gates
+              - text: manufactured by
+              - emphasis [ref=e694]: Motorola
+              - text: "Semiconductor. Package: SOP, Min Voltage: 3V, Max Voltage: 18V, Terminals: 14, Circuits: 2, ..."
+          - generic [ref=e699]:
+            - heading "People also ask" [level=2] [ref=e701]
+            - generic [ref=e702]:
+              - button "Is Motorola a China company?" [ref=e708] [cursor=pointer]
+              - button "Is the Motorola Edge available in India?" [ref=e722] [cursor=pointer]
+              - button "What are Motorola's weaknesses?" [ref=e736] [cursor=pointer]
+              - button "What are motorola gestures?" [ref=e750] [cursor=pointer]
+          - generic [ref=e761]:
+            - heading "Web results" [level=2] [ref=e762]
+            - generic [ref=e763]:
+              - generic [ref=e766]:
+                - 'link "MC-Edge: Unifying Mission-Critical Communications Callmc https://callmc.com › News" [ref=e768] [cursor=pointer]':
+                  - /url: /goto?url=CAESbgHrOzAV8ElY2W-kJo0ChmdbjsdFi3DZo2THP462AiZEJnbyiNtzDkly3n8lS3hf9jenrmZps-grcwfjmuTVxrMEwH3j4t28L7HEQHhIiDBJpiEoiGEbpKHSTCXb8p75Fr0_CBU8hIikELbUfYGD
+                  - 'heading "MC-Edge: Unifying Mission-Critical Communications" [level=3] [ref=e769]'
+                  - generic [ref=e775]:
+                    - generic [ref=e776]: Callmc
+                    - generic [ref=e778]: https://callmc.com › News
+                - button "About this result" [ref=e784] [cursor=pointer]
+              - generic [ref=e790]:
+                - generic [ref=e791]: 10 Nov 2025 —
+                - generic [ref=e792]:
+                  - emphasis [ref=e793]: MC-Edge Intelligent IoT Gateway
+                  - text: ": A Motorola Solutions industrial-grade gateway designed for SCADA, IoT, and mass notification systems."
+                - link "Read more" [ref=e794] [cursor=pointer]:
+                  - /url: /goto?url=CAESngEB6zswFYvWuXsLR32BhSua7pnOWj4jKtvtDEzkz5bgQjE6kVfQqVZUMZ1GkHC52Jn7AkZ5YphPPaug4IJWNpmK2UrXdAetSGjnJXD1XLJh24RJop-ADLV_4qT3nnuRDlnESWSF2lrHC9_q53nRYRxRKXcSNWfD6fR0BgRnUp3zoSABRcJyPTxIsQGl3z-aCym4skFJY3wQP291bRf6JA
+          - generic [ref=e799]:
+            - generic [ref=e802]:
+              - link "Tablets Motorola IN https://www.motorola.in › tablet" [ref=e804] [cursor=pointer]:
+                - /url: /goto?url=CAESmgEB6zswFT8P5gvwROL77fm6_2FJUWH5beIJp4qGsr6cAsewwrpVB-NvhCY-_oXL6yhmH4qzuDvmkEksTbgV4K08yD_OUUe1p0pADjG3tQuIlECChIzPOtFlcehFPNxApDpCwYokpoGF5O0tk_5L00iHRLzqCXLWVwZNEr0ixzhXC5Xc8KRZpvaxegsA2T6s9ovxp5ZzM2zmacnD
+                - heading "Tablets" [level=3] [ref=e805]
+                - generic [ref=e814]:
+                  - generic [ref=e815]: Motorola IN
+                  - generic [ref=e817]: https://www.motorola.in › tablet
+              - button "About this result" [ref=e823] [cursor=pointer]
+            - generic [ref=e829]:
+              - generic [ref=e830]:
+                - emphasis [ref=e831]: PANTONE Malibu Blue
+                - text: ". Storage: 4/128GB. 4/128GB. 6/128 GB. 8/128 GB. MRP ₹35,000.00 (Inclusive of all taxes). ₹22,999.00. Shop Now. Compare · moto pad 60 neo."
+              - link "Read more" [ref=e832] [cursor=pointer]:
+                - /url: /goto?url=CAESzgEB6zswFY_DFnR79thvfKUcVqr9iuidUAmX3w_q3ecZlOqQBiVqc30PlIUMei3WTHO56QyMKVIOxTsH_mSgNkXLCEcuhP1g-ntcjSHUIMLzzsg_tDsbpHUrs3gc7fga0shUJXksPcMwYpWPj25O6FqQQDGi42rmTYO3qZ5BLwwI0rbPs9ZlpKd3bhWbdKHD0RFKdxZVtKYM4k4yTRzYeUnqAUxYdda9O4xRhEvfimWPXm9LOspM4pPJ2X5xdCsbT9Zdj6gPlwh5drmUoc0Seg
+            - generic [ref=e833]: Free delivery
+          - generic [ref=e840]:
+            - generic [ref=e843]:
+              - link "All Accessories Motorola IN https://www.motorola.in › motorola-all-accessories" [ref=e845] [cursor=pointer]:
+                - /url: /goto?url=CAESrAEB6zswFRaw6hOdQKgsFt5iunwFNmskvvcoVJ2NCWCnp4zFUNU4D-niDHDR1UzE1wJz6wTaMKfBMC5I_nBsquP-5rjbYc_H__rqVAb2rJ4uGQ8ZDrVUUv8fLX35nomcf8ZINrCOQJiqKZzpSOfS37NTFDdYkWmfdaMeTo8VY9bBRwji6J17HEC6qzk06PQ2evaOWhTYf3nOONhhKjiaS-kZWGLcKYc2UTMgtHrB
+                - heading "All Accessories" [level=3] [ref=e846]
+                - generic [ref=e855]:
+                  - generic [ref=e856]: Motorola IN
+                  - generic [ref=e858]: https://www.motorola.in › motorola-all-accessories
+              - button "About this result" [ref=e864] [cursor=pointer]
+            - generic [ref=e870]:
+              - generic [ref=e871]:
+                - text: ...
+                - emphasis [ref=e872]: moto snap wireless charger
+                - text: ". Shop Now. - 75%. moto snap wireless charger. Color: PANTONE Nimbus Cloud. MRP ₹7,999.00 (Inclusive of all taxes)₹1,999.00. Compare."
+              - link "Read more" [ref=e873] [cursor=pointer]:
+                - /url: /goto?url=CAESyAEB6zswFdRQheqMMEdsWLCH7KguSBRQ-nEQP29gh1PBsvBSSi-rIE2rq89OLd-i1m5iI41S5XBQt9XK3hv3LKHlxqQUYVHlgtFIRAmsyqGx5GwJ6BV1AgtxDCOzddwwBQJQXbQSsxReRq0eWtsXpMpCJViFlTPLWxWrC3RHn8QaJZ-EPzMc3EocgaNBDBaDD2U2AUeCpLWbiRT1rmS-tWcS_Dbmaz7LnFShtmhGHvxWhQ7zqxpxxfZWugsiz1dIf7JFQScOEHf2-A
+            - generic [ref=e874]: Free delivery
+        - generic [ref=e878]:
+          - generic [ref=e883]:
+            - heading "People also search for" [level=2] [ref=e885]
+            - generic [ref=e887]:
+              - generic [ref=e888]:
+                - link "Motorola gates india" [ref=e892] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&q=Motorola+gates+india&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ1QJ6BAgyEAE
+                - link "Motorola Edge 60 Ultra" [ref=e906] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&q=Motorola+Edge+60+Ultra&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ1QJ6BAhOEAE
+                - link "Motorola Edge Series list" [ref=e920] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&q=Motorola+Edge+Series+list&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ1QJ6BAhNEAE
+                - link "Motorola Edge 80 Fusion Price" [ref=e934] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&q=Motorola+Edge+80+Fusion+Price&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ1QJ6BAhFEAE
+              - generic [ref=e945]:
+                - link "Motorola Edge series latest phone" [ref=e949] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&q=Motorola+Edge+series+latest+phone&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ1QJ6BAhAEAE
+                - link "Motorola Edge 5G" [ref=e963] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&q=Motorola+Edge+5G&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ1QJ6BAg8EAE
+                - link "Motorola Edge 10" [ref=e977] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&q=Motorola+Edge+10&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ1QJ6BAg6EAE
+                - link "Motorola Edge 90" [ref=e991] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&q=Motorola+Edge+90&sa=X&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ1QJ6BAg5EAE
+          - navigation [ref=e1002]:
+            - heading "Page navigation" [level=1] [ref=e1003]
+            - text: "1"
+            - link "Page 2" [ref=e1006] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=10&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8tMDegQIUhAE
+              - text: "2"
+            - link "Page 3" [ref=e1008] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=20&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8tMDegQIUhAG
+              - text: "3"
+            - link "Page 4" [ref=e1010] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=30&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8tMDegQIUhAI
+              - text: "4"
+            - link "Page 5" [ref=e1012] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=40&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8tMDegQIUhAK
+              - text: "5"
+            - link "Page 6" [ref=e1014] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=50&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8tMDegQIUhAM
+              - text: "6"
+            - link "Page 7" [ref=e1016] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=60&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8tMDegQIUhAO
+              - text: "7"
+            - link "Page 8" [ref=e1018] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=70&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8tMDegQIUhAQ
+              - text: "8"
+            - link "Page 9" [ref=e1020] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=80&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8tMDegQIUhAS
+              - text: "9"
+            - link "Page 10" [ref=e1022] [cursor=pointer]:
+              - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=90&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8tMDegQIUhAU
+              - text: "10"
+            - heading [level=2] [ref=e1024]:
+              - link "Next" [ref=e1025] [cursor=pointer]:
+                - /url: /search?q=Motorola+GATEs&sca_esv=91241afbd92acca7&sxsrf=APpeQntr0T2tJnKiQjysuXnk1RO05LIaFA:1791005802957&ei=apTAaqrtOYGbseMPhZfZmAU&start=10&sa=N&sstk=AS6-VmIVHs9CwTfoEvb0iEIImFzxfnxf-670rlFxaI_Dhgn0NpLoKA2jf6nb35aJaSfYf1b3k-_LxlmlvpkwTUeFRDOcF_IrdkAuDw&ved=2ahUKEwiqyrPFkJ2XAxWBTWwGHYVLFlMQ8NMDegQIUhAW
+        - navigation
+    - contentinfo [ref=e1028]:
+      - heading "Footer links" [level=1] [ref=e1029]
+      - generic [ref=e1033]:
+        - generic [ref=e1035]:
+          - text: India
+          - generic [ref=e1037]:
+            - button "560023, Bengaluru, Karnataka - From your IP address" [ref=e1039] [cursor=pointer]:
+              - generic [ref=e1040]: 560023, Bengaluru, Karnataka
+              - generic [ref=e1042]:
+                - text: "-"
+                - generic [ref=e1043]: From your IP address
+            - text: "-"
+            - button "Update location" [ref=e1045] [cursor=pointer]
+        - generic [ref=e1048]:
+          - link "Help" [ref=e1049] [cursor=pointer]:
+            - /url: https://support.google.com/websearch/?p=ws_results_help&hl=en-IN&fg=1
+          - link "Send feedback" [ref=e1050] [cursor=pointer]:
+            - /url: "#"
+          - link "Privacy" [ref=e1051] [cursor=pointer]:
+            - /url: https://policies.google.com/privacy?hl=en-IN&fg=1
+          - link "Terms" [ref=e1052] [cursor=pointer]:
+            - /url: https://policies.google.com/terms?hl=en-IN&fg=1

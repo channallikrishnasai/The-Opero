@@ -1,0 +1,824 @@
+- generic [active] [ref=f2e1]:
+  - generic:
+    - generic:
+      - link "Skip to main content" [ref=f2e2] [cursor=pointer]
+      - link "Accessibility help" [ref=f2e3] [cursor=pointer]:
+        - /url: https://support.google.com/websearch/answer/181196?hl=en-IN
+  - generic [ref=f2e8]:
+    - search [ref=f2e9]:
+      - generic [ref=f2e11]:
+        - link "Go to Google Home" [ref=f2e13] [cursor=pointer]:
+          - /url: https://www.google.com/webhp?hl=en&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQPHoECAYQBA
+        - generic [ref=f2e22]:
+          - combobox "Search" [ref=f2e24]: phones phones
+          - generic [ref=f2e25]:
+            - button "Clear" [ref=f2e29] [cursor=pointer]
+            - generic [ref=f2e34]:
+              - button "Search by voice" [ref=f2e37] [cursor=pointer]
+              - button "Search by image" [ref=f2e42] [cursor=pointer]
+    - generic [ref=f2e45]:
+      - button "Settings" [ref=f2e47] [cursor=pointer]
+      - button "Share" [ref=f2e52] [cursor=pointer]
+      - generic [ref=f2e58]:
+        - button "Google apps" [ref=f2e60] [cursor=pointer]
+        - link "Sign in" [ref=f2e65] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/search%3Fq%3Dphones&ec=futura_srp_og_si_72236_p
+  - generic [ref=f2e68]:
+    - navigation [ref=f2e74]:
+      - generic [ref=f2e80]:
+        - list [ref=f2e81]:
+          - listitem [ref=f2e82]:
+            - link "AI Mode" [ref=f2e85] [cursor=pointer]:
+              - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&udm=50&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jkCMzF6tiD-p-0w1wJ8QXOpatx0Vkldwpt1Xs0WJvV6MRD10e-SCpfFx_EoMm5N6UoqlqxHWtQZgad-oYNeaOH4POwcIl1YjwoSQRYdkUKBli78qT0LM-zXBINXcSYlrK9-c1JsHI4gEfhl1Rub2XMR2TrBUg&vsint=&aep=1&ntc=1&cs=0&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ2J8OegQIExAD
+          - listitem [ref=f2e89]:
+            - link "All" [disabled] [ref=f2e90]
+          - listitem [ref=f2e93]:
+            - link "Shopping" [ref=f2e94] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&udm=28&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jkCMzF6tiD-p-0w1wJ8QXOpatx0Vkldwpt1Xs0WJvV6MRD10e-SCpfFx_EoMm5N6UoqlqxHWtQZgad-oYNeaOH4POwcIl1YjwoSQRYdkUKBli78qT0LM-zXBINXcSYlrK9-c1JsHI4gEfhl1Rub2XMR2TrBUg&q=phones&ved=1t:220175&ictx=111
+          - listitem [ref=f2e97]:
+            - link "Images" [ref=f2e98] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&udm=imgs&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jkCMzF6tiD-p-0w1wJ8QXOpatx0Vkldwpt1Xs0WJvV6MRD10e-SCpfFx_EoMm5N6UoqlqxHWtQZgad-oYNeaOH4POwcIl1YjwoSQRYdkUKBli78qT0LM-zXBINXcSYlrK9-c1JsHI4gEfhl1Rub2XMR2TrBUg&q=phones&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQtKgLegQIGRAB
+          - listitem [ref=f2e101]:
+            - link "News" [ref=f2e102] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=phones&tbm=nws&source=lnms&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jkCMzF6tiD-p-0w1wJ8QXOpatx0Vkldwpt1Xs0WJvV6MRD10e-SCpfFx_EoMm5N6UoqlqxHWtQZgad-oYNeaOH4POwcIl1YjwoSQRYdkUKBli78qT0LM-zXBINXcSYlrK9-c1JsHI4gEfhl1Rub2XMR2TrBUg&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ0pQJegQIFxAB
+          - listitem [ref=f2e105]:
+            - link "Short videos" [ref=f2e106] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&udm=39&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jkCMzF6tiD-p-0w1wJ8QXOpatx0Vkldwpt1Xs0WJvV6MRD10e-SCpfFx_EoMm5N6UoqlqxHWtQZgad-oYNeaOH4POwcIl1YjwoSQRYdkUKBli78qT0LM-zXBINXcSYlrK9-c1JsHI4gEfhl1Rub2XMR2TrBUg&q=phones&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQs6gLegQIGhAB
+          - listitem [ref=f2e109]:
+            - link "Videos" [ref=f2e110] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&udm=vids&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cqCQj_06QnZs315LoFmPf5bBLHMJ0vMQmTbuI72DM7jkCMzF6tiD-p-0w1wJ8QXOpatx0Vkldwpt1Xs0WJvV6MRD10e-SCpfFx_EoMm5N6UoqlqxHWtQZgad-oYNeaOH4POwcIl1YjwoSQRYdkUKBli78qT0LM-zXBINXcSYlrK9-c1JsHI4gEfhl1Rub2XMR2TrBUg&q=phones&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQtKgLegQIFhAB
+          - listitem [ref=f2e113]:
+            - button [ref=f2e114] [cursor=pointer]:
+              - generic "More filters" [ref=f2e115]: More
+        - button "Tools" [ref=f2e122] [cursor=pointer]
+    - heading "Search Results" [level=1] [ref=f2e129]
+    - main [ref=f2e135]:
+      - generic [ref=f2e141]:
+        - heading "Bengaluru, Karnataka 560023" [level=2] [ref=f2e142]
+        - generic [ref=f2e151]:
+          - text: ∙
+          - button "Choose area" [ref=f2e152] [cursor=pointer]
+        - button "How location is used" [ref=f2e155] [cursor=pointer]
+      - generic [ref=f2e162]:
+        - generic [ref=f2e166]:
+          - heading "Web results" [level=2] [ref=f2e167]
+          - generic [ref=f2e168]:
+            - generic [ref=f2e171]:
+              - link "Mobile Phones Online at Best Prices in India Flipkart https://www.flipkart.com › mobile-phones-store" [ref=f2e173] [cursor=pointer]:
+                - /url: /goto?url=CAESZwHrOzAVR3PAHylZtM6IbpRvE4G6te3ixKnjlpK6t6hMgzOmaAi3w1qrICAawGLyh4m5_QOxsGwpD31dTzbIS0vQv8RocO8BRr1dlVvZYdYnp3GUP_U-D3MO8mnqs5QDM4IB5JyCiu8
+                - heading "Mobile Phones Online at Best Prices in India" [level=3] [ref=f2e174]
+                - generic [ref=f2e180]:
+                  - generic [ref=f2e181]: Flipkart
+                  - generic [ref=f2e183]: https://www.flipkart.com › mobile-phones-store
+              - button "About this result" [ref=f2e189] [cursor=pointer]
+            - link "phones images from www.flipkart.com" [ref=f2e196] [cursor=pointer]:
+              - /url: /goto?url=CAESZwHrOzAVR3PAHylZtM6IbpRvE4G6te3ixKnjlpK6t6hMgzOmaAi3w1qrICAawGLyh4m5_QOxsGwpD31dTzbIS0vQv8RocO8BRr1dlVvZYdYnp3GUP_U-D3MO8mnqs5QDM4IB5JyCiu8
+            - generic [ref=f2e207]:
+              - text: Buy mobile phones at best prices.
+              - emphasis [ref=f2e208]: Flipkart is the right platform for you to look for a mobile phone
+              - text: that fits your budget, technical and design requirements ...
+        - generic [ref=f2e217]:
+          - generic [ref=f2e225]:
+            - generic [ref=f2e227]:
+              - heading "Popular products" [level=2] [ref=f2e228]
+              - button "About this result" [ref=f2e233] [cursor=pointer]
+            - generic [ref=f2e241]:
+              - list [ref=f2e245]:
+                - listitem [ref=f2e246]:
+                  - 'button "Nothing Phone Pro 5G. Low price. Current price: ₹46,899. Usually ₹49,499. Amazon.in & more. Free delivery. Rated 5.0 out of 5. 1 reviews. Go to product viewer for this item." [ref=f2e250]':
+                    - generic [ref=f2e260] [cursor=pointer]:
+                      - img "Low price." [ref=f2e263]:
+                        - generic [ref=f2e264]: LOW PRICE
+                      - generic [ref=f2e269]: Nothing Phone Pro 5G
+                      - 'group "Current price: ₹46,899. Usually ₹49,499." [ref=f2e270]':
+                        - generic [ref=f2e272]:
+                          - generic [ref=f2e273]: ₹46,899
+                          - generic [ref=f2e274]: Usually ₹49,499
+                      - generic [ref=f2e275]:
+                        - generic [ref=f2e276]:
+                          - img "Amazon.in" [ref=f2e282]
+                          - generic [ref=f2e283]: Amazon.in
+                        - generic [ref=f2e284]: "& more"
+                      - img "Rated 5.0 out of 5. 1 reviews." [ref=f2e285]:
+                        - img "Rated 5.0 out of 5, 1 user review" [ref=f2e286]: 5.0(1)
+                - listitem [ref=f2e290]:
+                  - 'button "Motorola Edge 60 Fusion 5g. Current price: ₹21,990. amazon.in & more. Rated 4.7 out of 5. 105 reviews. Go to product viewer for this item." [ref=f2e294]':
+                    - generic [ref=f2e304] [cursor=pointer]:
+                      - generic [ref=f2e310]: Motorola Edge 60 Fusion 5g
+                      - 'group "Current price: ₹21,990." [ref=f2e311]':
+                        - generic [ref=f2e313]: ₹21,990
+                      - generic [ref=f2e315]:
+                        - generic [ref=f2e316]:
+                          - img "amazon.in" [ref=f2e322]
+                          - generic [ref=f2e323]: amazon.in
+                        - generic [ref=f2e324]: "& more"
+                      - img "Rated 4.7 out of 5. 105 reviews." [ref=f2e325]:
+                        - img "Rated 4.7 out of 5, 105 user reviews" [ref=f2e326]: 4.7(105)
+                - listitem [ref=f2e330]:
+                  - 'button "Samsung Galaxy M17 5G. Current price: ₹19,999. Nuevo Gadgets & more. Free delivery by Fri. Rated 4.2 out of 5. 24 reviews. Go to product viewer for this item." [ref=f2e334]':
+                    - generic [ref=f2e344] [cursor=pointer]:
+                      - generic [ref=f2e350]: Samsung Galaxy M17 5G
+                      - 'group "Current price: ₹19,999." [ref=f2e351]':
+                        - generic [ref=f2e353]: ₹19,999
+                      - generic [ref=f2e355]:
+                        - generic [ref=f2e356]:
+                          - img "Nuevo Gadgets" [ref=f2e362]
+                          - generic [ref=f2e363]: Nuevo Gadgets
+                        - generic [ref=f2e364]: "& more"
+                      - img "Rated 4.2 out of 5. 24 reviews." [ref=f2e365]:
+                        - img "Rated 4.2 out of 5, 24 user reviews" [ref=f2e366]: 4.2(24)
+                - listitem [ref=f2e370]:
+                  - 'button "Redmi 13 5G. Current price: ₹15,499. Mi.com. Free delivery. Go to product viewer for this item." [ref=f2e374]':
+                    - generic [ref=f2e384] [cursor=pointer]:
+                      - generic [ref=f2e390]: Redmi 13 5G
+                      - 'group "Current price: ₹15,499." [ref=f2e391]':
+                        - generic [ref=f2e393]: ₹15,499
+                      - generic [ref=f2e396]:
+                        - img "Mi.com" [ref=f2e402]
+                        - generic [ref=f2e403]: Mi.com
+                - listitem [ref=f2e404]:
+                  - 'button "Samsung Galaxy S25 5G (Silver Shadow, 12GB RAM, 128GB Storage) | Snapdragon 8 Elite for Galaxy Processor | 50MP Triple Camera | 6.2-inch Dynamic. Current price: ₹62,900. Amazon.in. Free delivery. Go to product viewer for this item." [ref=f2e408]':
+                    - generic [ref=f2e418] [cursor=pointer]:
+                      - generic [ref=f2e424]: Samsung Galaxy S25 5G (Silver Shadow, 12GB RAM, 128GB Storage) | Snapdragon 8 Elite for Galaxy Processor | 50MP Triple Camera | 6.2-inch Dynamic
+                      - 'group "Current price: ₹62,900." [ref=f2e425]':
+                        - generic [ref=f2e427]: ₹62,900
+                      - generic [ref=f2e430]:
+                        - img "Amazon.in" [ref=f2e436]
+                        - generic [ref=f2e437]: Amazon.in
+                - listitem [ref=f2e438]:
+                  - 'button "Samsung A36 5G. Low price. Current price: ₹27,295. Usually ₹28,999. Amazon.in & more. Free delivery. Rated 3.6 out of 5. 173 reviews. Go to product viewer for this item." [ref=f2e442]':
+                    - generic [ref=f2e452] [cursor=pointer]:
+                      - img "Low price." [ref=f2e455]:
+                        - generic [ref=f2e456]: LOW PRICE
+                      - generic [ref=f2e461]: Samsung A36 5G
+                      - 'group "Current price: ₹27,295. Usually ₹28,999." [ref=f2e462]':
+                        - generic [ref=f2e464]:
+                          - generic [ref=f2e465]: ₹27,295
+                          - generic [ref=f2e466]: Usually ₹28,999
+                      - generic [ref=f2e467]:
+                        - generic [ref=f2e468]:
+                          - img "Amazon.in" [ref=f2e474]
+                          - generic [ref=f2e475]: Amazon.in
+                        - generic [ref=f2e476]: "& more"
+                      - img "Rated 3.6 out of 5. 173 reviews." [ref=f2e477]:
+                        - img "Rated 3.6 out of 5, 173 user reviews" [ref=f2e478]: 3.6(173)
+                - listitem [ref=f2e482]:
+                  - 'button "Tecno Pop X 5g (ripple Green, 128 Gb, 6500 Mah). Current price: ₹14,999. Amazon.in & more. Free delivery. Go to product viewer for this item." [ref=f2e486]':
+                    - generic [ref=f2e496] [cursor=pointer]:
+                      - generic [ref=f2e502]: Tecno Pop X 5g (ripple Green, 128 Gb, 6500 Mah)
+                      - 'group "Current price: ₹14,999." [ref=f2e503]':
+                        - generic [ref=f2e505]: ₹14,999
+                      - generic [ref=f2e507]:
+                        - generic [ref=f2e508]:
+                          - img "Amazon.in" [ref=f2e514]
+                          - generic [ref=f2e515]: Amazon.in
+                        - generic [ref=f2e516]: "& more"
+                - listitem [ref=f2e517]:
+                  - 'button "motorola Edge 70 pro plus 12+256GB. Current price: ₹47,999. Moment Online Shopping & more. Free delivery. Go to product viewer for this item." [ref=f2e521]':
+                    - generic [ref=f2e531] [cursor=pointer]:
+                      - generic [ref=f2e537]: motorola Edge 70 pro plus 12+256GB
+                      - 'group "Current price: ₹47,999." [ref=f2e538]':
+                        - generic [ref=f2e540]: ₹47,999
+                      - generic [ref=f2e542]:
+                        - generic [ref=f2e543]:
+                          - img "Moment Online Shopping" [ref=f2e549]
+                          - generic [ref=f2e550]: Moment Online Shopping
+                        - generic [ref=f2e551]: "& more"
+                - listitem [ref=f2e552]:
+                  - 'button "OnePlus Nord 6 5G. Current price: ₹46,999. Amazon.in & more. Free delivery. Rated 4.2 out of 5. 12 reviews. Go to product viewer for this item." [ref=f2e556]':
+                    - generic [ref=f2e566] [cursor=pointer]:
+                      - generic [ref=f2e572]: OnePlus Nord 6 5G
+                      - 'group "Current price: ₹46,999." [ref=f2e573]':
+                        - generic [ref=f2e575]: ₹46,999
+                      - generic [ref=f2e577]:
+                        - generic [ref=f2e578]:
+                          - img "Amazon.in" [ref=f2e584]
+                          - generic [ref=f2e585]: Amazon.in
+                        - generic [ref=f2e586]: "& more"
+                      - img "Rated 4.2 out of 5. 12 reviews." [ref=f2e587]:
+                        - img "Rated 4.2 out of 5, 12 user reviews" [ref=f2e588]: 4.2(12)
+                - listitem [ref=f2e592]:
+                  - 'button "Lava Bold N2 5G. Current price: ₹12,998. Amazon.in & more. Free delivery. Go to product viewer for this item." [ref=f2e596]':
+                    - generic [ref=f2e606] [cursor=pointer]:
+                      - generic [ref=f2e612]: Lava Bold N2 5G
+                      - 'group "Current price: ₹12,998." [ref=f2e613]':
+                        - generic [ref=f2e615]: ₹12,998
+                      - generic [ref=f2e617]:
+                        - generic [ref=f2e618]:
+                          - img "Amazon.in" [ref=f2e624]
+                          - generic [ref=f2e625]: Amazon.in
+                        - generic [ref=f2e626]: "& more"
+              - button [aria-hidden] [ref=f2e628] [cursor=pointer]
+          - generic [ref=f2e643]:
+            - heading [level=3] [ref=f2e644]:
+              - button "Under ₹20,000 ." [expanded] [ref=f2e645] [cursor=pointer]:
+                - generic [ref=f2e650]:
+                  - generic [ref=f2e651]: Under ₹20,000
+                  - generic: .
+            - generic [ref=f2e663]:
+              - generic [ref=f2e666]:
+                - list "Under ₹20,000" [ref=f2e667]:
+                  - listitem [ref=f2e668]:
+                    - 'button "Tecno Pop X 5g (ripple Green, 128 Gb, 6500 Mah). Current price: ₹14,999. Amazon.in & more. Free delivery. Go to product viewer for this item." [ref=f2e672]':
+                      - generic [ref=f2e682] [cursor=pointer]:
+                        - generic [ref=f2e688]: Tecno Pop X 5g (ripple Green, 128 Gb, 6500 Mah)
+                        - 'group "Current price: ₹14,999." [ref=f2e689]':
+                          - generic [ref=f2e691]: ₹14,999
+                        - generic [ref=f2e693]:
+                          - generic [ref=f2e694]:
+                            - img "Amazon.in" [ref=f2e700]
+                            - generic [ref=f2e701]: Amazon.in
+                          - generic [ref=f2e702]: "& more"
+                  - listitem [ref=f2e703]:
+                    - 'button "Samsung Galaxy M17 5G. Current price: ₹19,999. Nuevo Gadgets & more. Free delivery by Fri. Rated 4.2 out of 5. 24 reviews. Go to product viewer for this item." [ref=f2e707]':
+                      - generic [ref=f2e717] [cursor=pointer]:
+                        - generic [ref=f2e723]: Samsung Galaxy M17 5G
+                        - 'group "Current price: ₹19,999." [ref=f2e724]':
+                          - generic [ref=f2e726]: ₹19,999
+                        - generic [ref=f2e728]:
+                          - generic [ref=f2e729]:
+                            - img "Nuevo Gadgets" [ref=f2e735]
+                            - generic [ref=f2e736]: Nuevo Gadgets
+                          - generic [ref=f2e737]: "& more"
+                        - img "Rated 4.2 out of 5. 24 reviews." [ref=f2e738]:
+                          - img "Rated 4.2 out of 5, 24 user reviews" [ref=f2e739]: 4.2(24)
+                  - listitem [ref=f2e743]:
+                    - 'button "Redmi 13 5G. Current price: ₹15,499. Mi.com. Free delivery. Go to product viewer for this item." [ref=f2e747]':
+                      - generic [ref=f2e757] [cursor=pointer]:
+                        - generic [ref=f2e763]: Redmi 13 5G
+                        - 'group "Current price: ₹15,499." [ref=f2e764]':
+                          - generic [ref=f2e766]: ₹15,499
+                        - generic [ref=f2e769]:
+                          - img "Mi.com" [ref=f2e775]
+                          - generic [ref=f2e776]: Mi.com
+                  - listitem [ref=f2e777]:
+                    - 'button "Lava Bold N2 5G. Current price: ₹12,998. Amazon.in & more. Free delivery. Go to product viewer for this item." [ref=f2e781]':
+                      - generic [ref=f2e791] [cursor=pointer]:
+                        - generic [ref=f2e797]: Lava Bold N2 5G
+                        - 'group "Current price: ₹12,998." [ref=f2e798]':
+                          - generic [ref=f2e800]: ₹12,998
+                        - generic [ref=f2e802]:
+                          - generic [ref=f2e803]:
+                            - img "Amazon.in" [ref=f2e809]
+                            - generic [ref=f2e810]: Amazon.in
+                          - generic [ref=f2e811]: "& more"
+                  - listitem [ref=f2e812]:
+                    - 'button "Samsung Galaxy M07 MediaTek Helio G99. Current price: ₹11,199. LowestRate Shopping. Free delivery. Rated 5.0 out of 5. 2 reviews. Go to product viewer for this item." [ref=f2e816]':
+                      - generic [ref=f2e826] [cursor=pointer]:
+                        - generic [ref=f2e832]: Samsung Galaxy M07 MediaTek Helio G99
+                        - 'group "Current price: ₹11,199." [ref=f2e833]':
+                          - generic [ref=f2e835]: ₹11,199
+                        - generic [ref=f2e837]:
+                          - generic [ref=f2e838]:
+                            - img "LowestRate Shopping" [ref=f2e844]
+                            - generic [ref=f2e845]: LowestRate Shopping
+                          - generic [ref=f2e846]: "& more"
+                        - img "Rated 5.0 out of 5. 2 reviews." [ref=f2e847]:
+                          - img "Rated 5.0 out of 5, 2 user reviews" [ref=f2e848]: 5.0(2)
+                - link "See more" [ref=f2e853] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=phones+under+%E2%82%B920,000&shoprs=CAESDRILEQAAAABfoBJCGAEYBSoGcGhvbmVzYAOAAQE&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQkOQKKAF6BAggEAk
+              - button [aria-hidden] [ref=f2e861] [cursor=pointer]
+          - heading [level=3] [ref=f2e877]:
+            - button "₹20,000–₹40,000 ." [ref=f2e878] [cursor=pointer]:
+              - generic [ref=f2e884]:
+                - generic [ref=f2e885]: ₹20,000–₹40,000
+                - generic: .
+          - heading [level=3] [ref=f2e903]:
+            - button "₹40,000–₹80,000 ." [ref=f2e904] [cursor=pointer]:
+              - generic [ref=f2e910]:
+                - generic [ref=f2e911]: ₹40,000–₹80,000
+                - generic: .
+          - heading [level=3] [ref=f2e929]:
+            - button "Over ₹80,000 ." [ref=f2e930] [cursor=pointer]:
+              - generic [ref=f2e936]:
+                - generic [ref=f2e937]: Over ₹80,000
+                - generic: .
+        - generic [ref=f2e952]:
+          - generic [ref=f2e973]:
+            - heading [level=2] [ref=f2e978]:
+              - strong [ref=f2e979]: AI Overview
+            - generic [ref=f2e983]:
+              - generic [ref=f2e984]:
+                - button [ref=f2e987]:
+                  - img "10 most influential mobile phones | Mobile phones | The Guardian" [ref=f2e988]
+                - text: Mobile phones are
+                - mark [ref=f2e989]: portable electronic devices used for making calls, sending messages, accessing the internet, and running digital applications
+                - text: .
+              - heading "Choosing an Operating System" [level=3] [ref=f2e990]
+              - list [ref=f2e991]:
+                - listitem [ref=f2e993]:
+                  - generic [ref=f2e994]:
+                    - strong [ref=f2e995]: "Android:"
+                    - text: An open system used by brands like Samsung, Realme, and Xiaomi, offering wide customisation and diverse price points.
+                  - generic [ref=f2e999]:
+                    - link "myG" [ref=f2e1000] [cursor=pointer]:
+                      - /url: /goto?url=CAESXAHrOzAVh5-V89-JpVraJCiCkMU6su1Rcx4YzIIw9O_ibk2xHAmBD_-8Rw7HYQmHfA2fWb_MbTwuLqdMxivQ1i0_YUYhYcbUCWWnYwDvWgby92ErJE7u8oYNcmbO
+                    - button "myG – related results" [ref=f2e1001] [cursor=pointer]:
+                      - generic [ref=f2e1002]: myG
+                - listitem [ref=f2e1010]:
+                  - generic [ref=f2e1011]:
+                    - strong [ref=f2e1012]: "iOS:"
+                    - text: Apple’s exclusive operating system used on iPhones, known for smooth performance, long-term software support, and strong security.
+                  - generic [ref=f2e1016]:
+                    - link [ref=f2e1017] [cursor=pointer]:
+                      - /url: /goto?url=CAESXAHrOzAVh5-V89-JpVraJCiCkMU6su1Rcx4YzIIw9O_ibk2xHAmBD_-8Rw7HYQmHfA2fWb_MbTwuLqdMxivQ1i0_YUYhYcbUCWWnYwDvWgby92ErJE7u8oYNcmbO
+                    - button [ref=f2e1018] [cursor=pointer]:
+                      - generic [ref=f2e1019]: myG
+              - heading [level=3] [ref=f2e1027]: Popular Choices in India
+              - list [aria-hidden] [ref=f2e1028]:
+                - listitem [ref=f2e1030]:
+                  - generic [ref=f2e1031]:
+                    - strong [ref=f2e1032]: "Budget & Mid-Range:"
+                    - generic [ref=f2e1033]:
+                      - text: Models like the
+                      - link [ref=f2e1038] [cursor=pointer]:
+                        - /url: /search?ibp=oshop&prds=pvt:hg,pvo:48,mid:576462568264423857,imageDocid:13155928307160106122,gpcid:15850698131814766860,headlineOfferDocid:8125603900848470158,catalogid:12661022119453727606,productDocid:10248490924701444667,rds:PC_6853547794971194620%7CPROD_PC_6853547794971194620&q=product&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQxa4PegYIAggZEBw
+                        - text: Samsung Galaxy A17 5G
+                      - text: (around ₹20,499)
+                    - generic [ref=f2e1039]:
+                      - text: or
+                      - link [ref=f2e1044] [cursor=pointer]:
+                        - /url: /search?ibp=oshop&prds=pvt:hg,pvo:48,imageDocid:17020874710267473679,gpcid:16027837237183240717,headlineOfferDocid:16224697448757742811,catalogid:4920549521828473897,productDocid:4567845132909495026,rds:PC_2305992375325855651%7CPROD_PC_2305992375325855651&q=product&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQxa4PegYIAggZEB4
+                        - text: Realme 16T 5G
+                      - text: (around ₹29,999)
+                    - text: offer reliable batteries and 5G support.
+                  - button [ref=f2e1049] [cursor=pointer]
+                - listitem [ref=f2e1055]:
+                  - generic [ref=f2e1056]:
+                    - strong [ref=f2e1057]: "Flagship & Premium:"
+                    - generic [ref=f2e1058]:
+                      - generic [ref=f2e1059]:
+                        - text: High-end choices like the Samsung Galaxy S series or
+                        - link [ref=f2e1064] [cursor=pointer]:
+                          - /url: /search?ibp=oshop&prds=pvt:hg,pvo:48,mid:576462912860898572,imageDocid:5735750649722647620,gpcid:9949615099229513887,headlineOfferDocid:2252002033713731368,catalogid:16755083352304726467,productDocid:7331497523451133659,rds:PC_6285855430991265102%7CPROD_PC_6285855430991265102&q=product&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQxa4PegYIAggcEAE
+                          - text: Apple iPhone Pro Max
+                        - text: deliver advanced multi-core processors, superior camera zoom, and premium build quality
+                      - text: .
+                  - generic [ref=f2e1069]:
+                    - link [ref=f2e1070] [cursor=pointer]:
+                      - /url: /goto?url=CAESZwHrOzAVT_IHy1hB0UJhvYjammMNDTuXzIQSww6eQAubMwhJKLgKy8YfB6WKzub5K2Dd8KftxvsguF0fBolKIM_cNGkxAmUHEQ1Rt8PbKiwIbzmg277Syj7Z2wt1adrqJnrqorCsmbk
+                    - button [ref=f2e1071] [cursor=pointer]:
+                      - generic [ref=f2e1073]:
+                        - generic [ref=f2e1074]: Flipkart
+                        - generic [ref=f2e1075]: "+1"
+                - listitem [ref=f2e1082]:
+                  - generic [ref=f2e1083]:
+                    - text: You can explore a wide variety of models and deals through the
+                    - link [ref=f2e1085] [cursor=pointer]:
+                      - /url: /goto?url=CAESeAHrOzAVMfU2blRxIKJuzNR-jb4DuTXz2swBFYdrG6JvP4qpwoPiw-RsTk8tLNBsUJfJSv4gPq9K3oQ5z-8_hMDapJIl18GQ6V69YZjDxC3YK3zTkGZkany2JRiAzGiEnFte6ZHft9PBARHY7SzWxQg8a39mEFFG5Q
+                      - text: Amazon Mobile Store
+                    - text: or browse latest flagship specifications on the
+                    - link [ref=f2e1087] [cursor=pointer]:
+                      - /url: /goto?url=CAESZwHrOzAVT_IHy1hB0UJhvYjammMNDTuXzIQSww6eQAubMwhJKLgKy8YfB6WKzub5K2Dd8KftxvsguF0fBolKIM_cNGkxAmUHEQ1Rt8PbKiwIbzmg277Syj7Z2wt1adrqJnrqorCsmbk
+                      - text: Flipkart Mobile Store
+                    - text: .
+              - generic [ref=f2e1092]:
+                - list [ref=f2e1093]:
+                  - listitem [ref=f2e1094]:
+                    - generic [ref=f2e1095]:
+                      - link [ref=f2e1096] [cursor=pointer]:
+                        - /url: /goto?url=CAESZwHrOzAVT_IHy1hB0UJhvYjammMNDTuXzIQSww6eQAubMwhJKLgKy8YfB6WKzub5K2Dd8KftxvsguF0fBolKIM_cNGkxAmUHEQ1Rt8PbKiwIbzmg277Syj7Z2wt1adrqJnrqorCsmbk
+                      - generic [ref=f2e1097]:
+                        - generic [ref=f2e1098]:
+                          - generic [ref=f2e1101]: Flipkart
+                          - button [ref=f2e1105] [cursor=pointer]
+                        - generic [ref=f2e1111]:
+                          - generic [aria-hidden] [ref=f2e1112]: Mobile Phones Online at Best Prices in India - Flipkart
+                          - generic [ref=f2e1113]: Stay powered all day with iPhone 17 Pro Max. It offers up to 37 hours of video playback and MagSafe wireless charging. Comes with ...
+                  - listitem [ref=f2e1116]:
+                    - generic [ref=f2e1117]:
+                      - link [ref=f2e1118] [cursor=pointer]:
+                        - /url: /goto?url=CAESeAHrOzAVMfU2blRxIKJuzNR-jb4DuTXz2swBFYdrG6JvP4qpwoPiw-RsTk8tLNBsUJfJSv4gPq9K3oQ5z-8_hMDapJIl18GQ6V69YZjDxC3YK3zTkGZkany2JRiAzGiEnFte6ZHft9PBARHY7SzWxQg8a39mEFFG5Q
+                      - generic [ref=f2e1119]:
+                        - generic [ref=f2e1120]:
+                          - generic [ref=f2e1123]: Amazon.in
+                          - button [ref=f2e1127] [cursor=pointer]
+                        - generic [ref=f2e1133]:
+                          - generic [aria-hidden] [ref=f2e1134]: Buy Mobile Phones Online at Best Prices - Amazon.in
+                          - generic [ref=f2e1135]: Samsung OnePlus iQOO Xiaomi realme Apple LAVA Tecno Vivo OPPO itel Others Samsung Galaxy S25 Ultra 5G Samsung Galaxy A56 5G Samsun...
+                  - listitem [ref=f2e1138]:
+                    - generic [ref=f2e1139]:
+                      - link [ref=f2e1140] [cursor=pointer]:
+                        - /url: /goto?url=CAESXAHrOzAVh5-V89-JpVraJCiCkMU6su1Rcx4YzIIw9O_ibk2xHAmBD_-8Rw7HYQmHfA2fWb_MbTwuLqdMxivQ1i0_YUYhYcbUCWWnYwDvWgby92ErJE7u8oYNcmbO
+                      - generic [ref=f2e1141]:
+                        - generic [ref=f2e1142]:
+                          - generic [ref=f2e1145]: myG
+                          - button [ref=f2e1149] [cursor=pointer]
+                        - generic [ref=f2e1155]:
+                          - generic [aria-hidden] [ref=f2e1156]: Buy Mobile & Smartphones | Online mobile shopping
+                          - generic [ref=f2e1157]: Buy Mobile Phones Online at Best Prices from myG The mobile phone has also changed from being a bulky, rugged device with difficul...
+                  - listitem [ref=f2e1160]:
+                    - generic [ref=f2e1161]:
+                      - link [ref=f2e1162] [cursor=pointer]:
+                        - /url: https://www.google.com/search?q=product&prds=pvt:hg,productid:10248490924701444667,catalogid:12661022119453727606,gpcid:15850698131814766860,mid:576462568264423857&ibp=oshop
+                      - generic [ref=f2e1163]:
+                        - generic [ref=f2e1164]:
+                          - generic [ref=f2e1167]: Google
+                          - button [ref=f2e1171] [cursor=pointer]
+                        - generic [ref=f2e1177]:
+                          - generic [aria-hidden] [ref=f2e1178]: Samsung Galaxy A17 5G
+                          - generic [ref=f2e1179]: Enrich your everyday life with a personal AI assistant that’s easy to use, understands what you say, and supports your needs. Long...
+                  - listitem [ref=f2e1182]:
+                    - generic [ref=f2e1183]:
+                      - link [ref=f2e1184] [cursor=pointer]:
+                        - /url: https://www.google.com/search?q=product&prds=pvt:hg,productid:4567845132909495026,catalogid:4920549521828473897,gpcid:16027837237183240717&ibp=oshop
+                      - generic [ref=f2e1185]:
+                        - generic [ref=f2e1186]:
+                          - generic [ref=f2e1189]: Google
+                          - button [ref=f2e1193] [cursor=pointer]
+                        - generic [ref=f2e1199]:
+                          - generic [aria-hidden] [ref=f2e1200]: Realme 16T 5G
+                          - generic [ref=f2e1201]: The Realme 16T 5G in Starlight Red delivers improved performance with 8GB RAM and 128GB storage. It ensures smoother multitasking,
+                - button [aria-hidden] [ref=f2e1204] [cursor=pointer]
+            - generic [ref=f2e1212]:
+              - generic [ref=f2e1213]:
+                - status [ref=f2e1214]
+                - button [ref=f2e1216] [cursor=pointer]
+              - button [ref=f2e1226] [cursor=pointer]
+              - generic [ref=f2e1232]:
+                - button [ref=f2e1234] [cursor=pointer]
+                - button [ref=f2e1239] [cursor=pointer]
+              - button [ref=f2e1246] [cursor=pointer]
+          - button "Show more AI Overview" [ref=f2e1254]:
+            - generic [ref=f2e1255] [cursor=pointer]: Show more
+        - generic [ref=f2e1265]:
+          - heading "Web results" [level=2] [ref=f2e1266]
+          - generic [ref=f2e1267]:
+            - generic [ref=f2e1270]:
+              - link "Buy Mobile Phones Online at Best Prices Amazon.in https://www.amazon.in › mobile-phones" [ref=f2e1272] [cursor=pointer]:
+                - /url: /goto?url=CAESeAHrOzAVw5DNyVCEbwSlyftvslP08RrCDAbAOXqFZ8B-1cBUUqDc-LzLGE6tU6SVKjlbvCEUCegUgGHT_7f83wG7KqioElCmb30TvlJtHnIYAK3TVajv3qPSblg3J4WjhmUym_LWb6d9TFnU9JkLVEfdMa672zXIJQ
+                - heading "Buy Mobile Phones Online at Best Prices" [level=3] [ref=f2e1273]
+                - generic [ref=f2e1279]:
+                  - generic [ref=f2e1280]: Amazon.in
+                  - generic [ref=f2e1282]: https://www.amazon.in › mobile-phones
+              - button "About this result" [ref=f2e1288] [cursor=pointer]
+            - generic [ref=f2e1293]: Shop the widest range of smartphones during Amazon Great Indian Summer Sale 2026. Up to 40% off on Samsung, Apple, OnePlus, Xiaomi, iQOO, realme, OPPO, ...
+        - generic [ref=f2e1299]:
+          - generic [ref=f2e1302]:
+            - link "Buy Latest Mobile Phones at Best Prices in India Reliance Digital https://www.reliancedigital.in › sections › mobiles" [ref=f2e1304] [cursor=pointer]:
+              - /url: /goto?url=CAESagHrOzAV0HC3vC7bNltIK-ZvksgUjef6DGzzQubPg5ml74_fK8BwA--fK5uMuSZrLjd6adcgqTiUGjH3VGd1cE_gDxCf36mF8B9idW-qARCXaSEiZzZoitBxqr-4SDDlx-ZSel8P6sfEPow
+              - heading "Buy Latest Mobile Phones at Best Prices in India" [level=3] [ref=f2e1305]
+              - generic [ref=f2e1311]:
+                - generic [ref=f2e1312]: Reliance Digital
+                - generic [ref=f2e1314]: https://www.reliancedigital.in › sections › mobiles
+            - button "About this result" [ref=f2e1320] [cursor=pointer]
+          - generic [ref=f2e1327]:
+            - text: Buy the latest mobile phones online at Reliance Digital.
+            - emphasis [ref=f2e1328]: Explore new launch mobiles
+            - text: ", compare prices, and buy top models from Apple, Samsung, OnePlus, ..."
+          - generic [ref=f2e1332]:
+            - generic [ref=f2e1333]: Shop nearby (
+            - button "950.0 m" [ref=f2e1334]
+            - generic [ref=f2e1336]: )
+        - generic [ref=f2e1350]:
+          - generic [ref=f2e1352]:
+            - heading "Deals" [level=2] [ref=f2e1353]
+            - button "About this result" [ref=f2e1358] [cursor=pointer]
+          - list [ref=f2e1365]:
+            - listitem [ref=f2e1367]:
+              - generic [ref=f2e1374] [cursor=pointer]:
+                - generic [ref=f2e1380]:
+                  - img [ref=f2e1383]:
+                    - generic [ref=f2e1384]: LOW PRICE
+                  - generic [ref=f2e1389]: Nothing Phone Pro 5G
+                  - group [ref=f2e1390]:
+                    - generic [ref=f2e1392]:
+                      - generic [ref=f2e1393]: ₹46,899
+                      - generic [ref=f2e1394]: Usually ₹49,499
+                  - generic [ref=f2e1395]:
+                    - generic [ref=f2e1396]: Amazon.in
+                    - generic [ref=f2e1404]: "& more"
+                  - img [ref=f2e1405]:
+                    - img [ref=f2e1406]: 5.0(1)
+                - 'button "Nothing Phone Pro 5G. Low price. Current price: ₹46,899. Usually ₹49,499. Amazon.in & more. Free delivery. Rated 5.0 out of 5. 1 reviews. Go to product viewer for this item." [ref=f2e1410]'
+            - listitem [ref=f2e1412]:
+              - generic [ref=f2e1419] [cursor=pointer]:
+                - generic [ref=f2e1425]:
+                  - img [ref=f2e1428]:
+                    - generic [ref=f2e1429]: LOW PRICE
+                  - generic [ref=f2e1434]: Samsung A36 5G
+                  - group [ref=f2e1435]:
+                    - generic [ref=f2e1437]:
+                      - generic [ref=f2e1438]: ₹27,295
+                      - generic [ref=f2e1439]: Usually ₹28,999
+                  - generic [ref=f2e1440]:
+                    - generic [ref=f2e1441]: Amazon.in
+                    - generic [ref=f2e1449]: "& more"
+                  - img [ref=f2e1450]:
+                    - img [ref=f2e1451]: 3.6(173)
+                - 'button "Samsung A36 5G. Low price. Current price: ₹27,295. Usually ₹28,999. Amazon.in & more. Free delivery. Rated 3.6 out of 5. 173 reviews. Go to product viewer for this item." [ref=f2e1455]'
+            - listitem [ref=f2e1457]:
+              - generic [ref=f2e1464] [cursor=pointer]:
+                - generic [ref=f2e1470]:
+                  - img [ref=f2e1473]:
+                    - generic [ref=f2e1474]: LOW PRICE
+                  - generic [ref=f2e1479]: Infinix Note 60 Pro
+                  - group [ref=f2e1480]:
+                    - generic [ref=f2e1482]:
+                      - generic [ref=f2e1483]: ₹33,790
+                      - generic [ref=f2e1484]: Usually ₹35,999
+                  - generic [ref=f2e1485]:
+                    - generic [ref=f2e1486]: Amazon.in
+                    - generic [ref=f2e1494]: "& more"
+                - 'button "Infinix Note 60 Pro. Low price. Current price: ₹33,790. Usually ₹35,999. Amazon.in & more. Free delivery. Go to product viewer for this item." [ref=f2e1495]'
+            - listitem [ref=f2e1497]:
+              - generic [ref=f2e1504] [cursor=pointer]:
+                - generic [ref=f2e1510]:
+                  - img [ref=f2e1513]:
+                    - generic [ref=f2e1514]: LOW PRICE
+                  - generic [ref=f2e1519]: Nothing Phone
+                  - group [ref=f2e1520]:
+                    - generic [ref=f2e1522]:
+                      - generic [ref=f2e1523]: ₹31,800
+                      - generic [ref=f2e1524]: Usually ₹34,999
+                  - generic [ref=f2e1525]:
+                    - generic [ref=f2e1526]: Amazon.in
+                    - generic [ref=f2e1534]: "& more"
+                - 'button "Nothing Phone. Low price. Current price: ₹31,800. Usually ₹34,999. Amazon.in & more. Free delivery. Go to product viewer for this item." [ref=f2e1535]'
+            - listitem [ref=f2e1537]:
+              - generic [ref=f2e1544] [cursor=pointer]:
+                - generic [ref=f2e1550]:
+                  - img [ref=f2e1553]:
+                    - generic [ref=f2e1554]: LOW PRICE
+                  - generic [ref=f2e1559]: Apple iPhone 13
+                  - group [ref=f2e1560]:
+                    - generic [ref=f2e1562]:
+                      - generic [ref=f2e1563]: ₹24,272
+                      - generic [ref=f2e1564]: Usually ₹37,356
+                  - generic [ref=f2e1565]:
+                    - generic [ref=f2e1566]: ubuy.co.in
+                    - generic [ref=f2e1574]: "& more"
+                  - img [ref=f2e1575]:
+                    - img [ref=f2e1576]: 4.4(277)
+                - 'button "Apple iPhone 13. Low price. Current price: ₹24,272. Usually ₹37,356. ubuy.co.in. Rated 4.4 out of 5. 277 reviews. Go to product viewer for this item." [ref=f2e1580]'
+            - listitem [ref=f2e1582]:
+              - generic [ref=f2e1589] [cursor=pointer]:
+                - generic [ref=f2e1595]:
+                  - img [ref=f2e1598]:
+                    - generic [ref=f2e1599]: LOW PRICE
+                  - generic [ref=f2e1604]: Tecno Pop X 5g (midnight Blue, 128 Gb, 6500 Mah)
+                  - group [ref=f2e1605]:
+                    - generic [ref=f2e1607]:
+                      - generic [ref=f2e1608]: ₹16,999
+                      - generic [ref=f2e1609]: Usually ₹17,999
+                  - generic [ref=f2e1610]:
+                    - generic [ref=f2e1611]: amazon.in
+                    - generic [ref=f2e1619]: "& more"
+                - 'button "Tecno Pop X 5g (midnight Blue, 128 Gb, 6500 Mah). Low price. Current price: ₹16,999. Usually ₹17,999. amazon.in. Go to product viewer for this item." [ref=f2e1620]'
+            - listitem [ref=f2e1622]:
+              - generic [ref=f2e1629] [cursor=pointer]:
+                - generic [ref=f2e1635]:
+                  - img [ref=f2e1638]:
+                    - generic [ref=f2e1639]: LOW PRICE
+                  - generic [ref=f2e1644]: Samsung Galaxy Z Flip8 5G
+                  - group [ref=f2e1645]:
+                    - generic [ref=f2e1647]:
+                      - generic [ref=f2e1648]: ₹1,14,999
+                      - generic [ref=f2e1649]: Usually ₹1,24,999
+                  - generic [ref=f2e1650]:
+                    - generic [ref=f2e1651]: Amazon.in
+                    - generic [ref=f2e1659]: "& more"
+                  - img [ref=f2e1660]:
+                    - img [ref=f2e1661]: 4.9(8.6K)
+                - 'button "Samsung Galaxy Z Flip8 5G. Low price. Current price: ₹1,14,999. Usually ₹1,24,999. Amazon.in & more. Free delivery. Rated 4.9 out of 5. 8.6K reviews. Go to product viewer for this item." [ref=f2e1665]'
+            - listitem [ref=f2e1667]:
+              - generic [ref=f2e1674] [cursor=pointer]:
+                - generic [ref=f2e1680]:
+                  - img [ref=f2e1683]:
+                    - generic [ref=f2e1684]: LOW PRICE
+                  - generic [ref=f2e1689]: Samsung Galaxy S25 Ultra 5G
+                  - group [ref=f2e1690]:
+                    - generic [ref=f2e1692]:
+                      - generic [ref=f2e1693]: ₹1,14,999
+                      - generic [ref=f2e1694]: Usually ₹1,29,999
+                  - generic [ref=f2e1695]:
+                    - generic [ref=f2e1696]: Amazon.in
+                    - generic [ref=f2e1704]: "& more"
+                  - img [ref=f2e1705]:
+                    - img [ref=f2e1706]: 4.7(1.7L)
+                - 'button "Samsung Galaxy S25 Ultra 5G. Low price. Current price: ₹1,14,999. Usually ₹1,29,999. Amazon.in & more. Free delivery. Rated 4.7 out of 5. 1.7L reviews. Go to product viewer for this item." [ref=f2e1710]'
+            - listitem [ref=f2e1712]:
+              - generic [ref=f2e1719] [cursor=pointer]:
+                - generic [ref=f2e1725]:
+                  - img [ref=f2e1728]:
+                    - generic [ref=f2e1729]: LOW PRICE
+                  - generic [ref=f2e1734]: Samsung Galaxy S24 Ultra 5g
+                  - group [ref=f2e1735]:
+                    - generic [ref=f2e1737]:
+                      - generic [ref=f2e1738]: ₹1,04,999
+                      - generic [ref=f2e1739]: Usually ₹1,19,999
+                  - generic [ref=f2e1740]: amazon.in
+                  - img [ref=f2e1749]:
+                    - img [ref=f2e1750]: 4.7(82K)
+                - 'button "Samsung Galaxy S24 Ultra 5g. Low price. Current price: ₹1,04,999. Usually ₹1,19,999. amazon.in. Rated 4.7 out of 5. 82K reviews. Go to product viewer for this item." [ref=f2e1754]'
+            - listitem [ref=f2e1756]:
+              - generic [ref=f2e1763] [cursor=pointer]:
+                - generic [ref=f2e1769]:
+                  - img [ref=f2e1772]:
+                    - generic [ref=f2e1773]: LOW PRICE
+                  - generic [ref=f2e1778]: Apple iPhone 15
+                  - group [ref=f2e1779]:
+                    - generic [ref=f2e1781]:
+                      - generic [ref=f2e1782]: ₹52,472
+                      - generic [ref=f2e1783]: Usually ₹56,900
+                  - generic [ref=f2e1784]:
+                    - generic [ref=f2e1785]: FoneZone.com
+                    - generic [ref=f2e1793]: "& more"
+                  - img [ref=f2e1794]:
+                    - img [ref=f2e1795]: 4.6(30K)
+                - 'button "Apple iPhone 15. Low price. Current price: ₹52,472. Usually ₹56,900. FoneZone.com & more. Rated 4.6 out of 5. 30K reviews. Go to product viewer for this item." [ref=f2e1799]'
+        - generic [ref=f2e1803]:
+          - heading "Web results" [level=2] [ref=f2e1804]
+          - generic [ref=f2e1805]:
+            - generic [ref=f2e1808]:
+              - link "Mobile Phones in India (2026) | Prices, Reviews, Specs & ... 91Mobiles https://www.91mobiles.com › mobile-phones" [ref=f2e1810] [cursor=pointer]:
+                - /url: /goto?url=CAESYgHrOzAVqL-bSWbxtvp-Bnyc4jPP6WKKuaqHTRB2bFlQbQB8O_XdqR5lQfZFs2AB2PSOkvdQ8GjGsypph5_yusZj2P59OhQmxsu4yXA6G2W282KFbs7yoJHgXx8h-LF4tnxB
+                - heading "Mobile Phones in India (2026) | Prices, Reviews, Specs & ..." [level=3] [ref=f2e1811]
+                - generic [ref=f2e1817]:
+                  - generic [ref=f2e1818]: 91Mobiles
+                  - generic [ref=f2e1820]: https://www.91mobiles.com › mobile-phones
+              - button "About this result" [ref=f2e1826] [cursor=pointer]
+            - link "phones images from www.91mobiles.com" [ref=f2e1833] [cursor=pointer]:
+              - /url: /goto?url=CAESYgHrOzAVqL-bSWbxtvp-Bnyc4jPP6WKKuaqHTRB2bFlQbQB8O_XdqR5lQfZFs2AB2PSOkvdQ8GjGsypph5_yusZj2P59OhQmxsu4yXA6G2W282KFbs7yoJHgXx8h-LF4tnxB
+            - generic [ref=f2e1849]:
+              - emphasis [ref=f2e1850]: Explore the latest mobile phones in India
+              - text: from top brands with updated prices, full specifications, expert reviews, comparisons, latest news, deals, ...
+        - generic [ref=f2e1855]:
+          - generic [ref=f2e1858]:
+            - 'link "Best Phones for Long-Term Use in India: Apple iPhone 17 ... Gadgets 360 https://www.gadgets360.com › ... › Mobiles Features" [ref=f2e1860] [cursor=pointer]':
+              - /url: /goto?url=CAESswEB6zswFf9Xpt2IryLJ1LLEe2gO9ND5hAWXuZE0TIwqGCKS5ORo9i9AVDUB1-bTaHai9DwbnGdfbv5Ngfu54OCGpiwPLA13DkWDrJBWQS0y-rPF8UTZjlIlapinJjXRcboOodlRcf0q6QK9ZBsvz810ssLyRussrtIBha-AH4OmI5NK-QPLtc2y6gOAjjy24LN-HSvh3468QWbLFdaq-OUn7MO6zuZUikJYdk0m_eSzDDEolw
+              - 'heading "Best Phones for Long-Term Use in India: Apple iPhone 17 ..." [level=3] [ref=f2e1861]'
+              - generic [ref=f2e1867]:
+                - generic [ref=f2e1868]: Gadgets 360
+                - generic [ref=f2e1870]: https://www.gadgets360.com › ... › Mobiles Features
+            - button "About this result" [ref=f2e1876] [cursor=pointer]
+          - generic [ref=f2e1882]:
+            - generic [ref=f2e1883]: 22 hours ago —
+            - generic [ref=f2e1884]:
+              - text: "Best Phones for Long-Term Use in India:"
+              - emphasis [ref=f2e1885]: Apple iPhone 17
+              - text: ", Google Pixel 10a and More ; Cover Display: 6.5-inch, 1,080 x 2,342 pixels, OLED, 120Hz ..."
+            - link "Read more" [ref=f2e1886] [cursor=pointer]:
+              - /url: /goto?url=CAESoQIB6zswFbD5GWtQaMciA264ScCun-1CP1tR84Y2J4ZNa_Mphcz66G16M15h1RovYUa9tgcqAMQp1vvRffzIGE7aV-zSK-vl2zmt-X5LbOUO4lRMMcRcUzTo7Pm232G2sXp0i1LJCQv9_IDEG70Zpu7wbv9uRqkMnYp86DB-tgjqt72C9NqMGpJHoPZKP3jxXnwmIzYgISH-mHX4mFMVGDEhtbguga2D0BIktVZfqhZnY5Wv4xO8DiedS3qPOFfo_ztiZWNFCW-DT-NOQr6Qt6qpz9w7H0jewWwsK_tstbgohBDLVSc7P3BcmFs86F4dg4WqLQBW1UbOQ6T_y6AIPVkw8vm1xjsxB9ivOZGKUy3mrlrMQHZ9GvPaNychyWhEIDVm
+        - generic [ref=f2e1891]:
+          - generic [ref=f2e1894]:
+            - 'link "Buy Mobile Phones Online: Latest Xiaomi Smartphones Xiaomi https://www.mi.com › phone" [ref=f2e1896] [cursor=pointer]':
+              - /url: /goto?url=CAESmAEB6zswFWJ_ZcywVxUTLX6tgFc272XWQCKzxezZTGezlqIEM69qO6HPezMPoy7dZ65IlZzngWMbTXFd7rBb_4CM6UaGq3ZaeK9gsvp1g_MuKlKjSnILoTNeJyBZxz6Pg7b2h7G1LGv3l0IoyLeISU0AlEHrf7ZePtIsEHFrlSC2zKpxkgom7txZGe_r1FqXbCigqhEka6O6SA
+              - 'heading "Buy Mobile Phones Online: Latest Xiaomi Smartphones" [level=3] [ref=f2e1897]'
+              - generic [ref=f2e1903]:
+                - generic [ref=f2e1904]: Xiaomi
+                - generic [ref=f2e1906]: https://www.mi.com › phone
+            - button "About this result" [ref=f2e1912] [cursor=pointer]
+          - generic [ref=f2e1919]:
+            - emphasis [ref=f2e1920]: Explore the latest Xiaomi & Redmi smartphone models
+            - text: . Compare prices, features, and specifications to find the best value-packed mobile.
+          - generic [ref=f2e1922]:
+            - generic [ref=f2e1924]:
+              - img "Rated 4.4 out of 5," [ref=f2e1926]: "4.4"
+              - generic [ref=f2e1930]:
+                - text: store rating (
+                - link "135 user reviews" [ref=f2e1931] [cursor=pointer]:
+                  - /url: https://www.google.com/m/storepages?q=mi.com&c=IN&hl=en-IN
+                  - text: "135"
+                - text: )
+            - text: ·
+            - generic [ref=f2e1932]: Free delivery
+            - text: ·
+            - generic [ref=f2e1933]: 14-day returns
+        - generic [ref=f2e1938]:
+          - heading "People also ask" [level=2] [ref=f2e1940]
+          - generic [ref=f2e1941]:
+            - button "Which is the top 10 best phones?" [ref=f2e1947] [cursor=pointer]
+            - button "What are the top 5 phones right now?" [ref=f2e1961] [cursor=pointer]
+            - button "Which phone is the cheapest phone?" [ref=f2e1975] [cursor=pointer]
+            - button "What is the best phone under Rs. 30,000?" [ref=f2e1989] [cursor=pointer]
+        - generic [ref=f2e2000]:
+          - heading "Web results" [level=2] [ref=f2e2001]
+          - generic [ref=f2e2002]:
+            - generic [ref=f2e2005]:
+              - link "Best Mobile Phones in India Cashify https://www.cashify.in › best-mobile-phones-in-india" [ref=f2e2007] [cursor=pointer]:
+                - /url: /goto?url=CAESbQHrOzAVxEeItiTkrjoZ1yD8ZxeJEl0IK0l_hpcozEr12fs6MeIBImCKXUpEcL5mDR5bwKzfUB7NpivICMU9jNpAnGuWewfVQ0s1dRZmM_USTdEt96xpnQM2sFibr9vv9WCwprqjASpPCjO3gmw
+                - heading "Best Mobile Phones in India" [level=3] [ref=f2e2008]
+                - generic [ref=f2e2014]:
+                  - generic [ref=f2e2015]: Cashify
+                  - generic [ref=f2e2017]: https://www.cashify.in › best-mobile-phones-in-india
+              - button "About this result" [ref=f2e2023] [cursor=pointer]
+            - generic [ref=f2e2030]:
+              - emphasis [ref=f2e2031]: Get to know about the Best Mobile Phones
+              - text: "- prices, specs, reviews before buying your new Mobile Phones. Also unlock the best exchange value of ..."
+            - link [aria-hidden] [ref=f2e2034] [cursor=pointer]:
+              - /url: /goto?url=CAESbQHrOzAVxEeItiTkrjoZ1yD8ZxeJEl0IK0l_hpcozEr12fs6MeIBImCKXUpEcL5mDR5bwKzfUB7NpivICMU9jNpAnGuWewfVQ0s1dRZmM_USTdEt96xpnQM2sFibr9vv9WCwprqjASpPCjO3gmw
+            - generic [ref=f2e2037]: ₹22,999.00
+        - generic [ref=f2e2044]:
+          - generic [ref=f2e2047]:
+            - link "Explore New Samsung Galaxy Mobiles Online Samsung https://www.samsung.com › Home › Mobile" [ref=f2e2049] [cursor=pointer]:
+              - /url: /goto?url=CAESowEB6zswFeTKhQOwITK8icIVUAn-hzHVGqJ4a9cRGHzC1eX-e1JpCgJ8c1jZs580yR9_98IskijGtHnGBFKAmwj5yz6dDtZ_hKk06E0NmsaXZP-REhllA1Tky9aBxvZljSbqNVO22mSnUv9qlSjjOYtSvuwdmvpfwfy5sE0KPXUb5kr1BWSp0Ed2zCtgGxSszcE_osIEoEYMk4EBwhqP2sff952h
+              - heading "Explore New Samsung Galaxy Mobiles Online" [level=3] [ref=f2e2050]
+              - generic [ref=f2e2056]:
+                - generic [ref=f2e2057]: Samsung
+                - generic [ref=f2e2059]: https://www.samsung.com › Home › Mobile
+            - button "About this result" [ref=f2e2065] [cursor=pointer]
+          - generic [ref=f2e2072]:
+            - text: Looking for a Samsung Mobile?
+            - emphasis [ref=f2e2073]: Explore mobile phones
+            - text: "& the one within your budget. Find features and specifications and view complete range of Galaxy mobile ..."
+          - generic [ref=f2e2075]:
+            - generic [ref=f2e2076]: Free delivery
+            - text: ·
+            - generic [ref=f2e2077]: 15-day returns
+        - generic [ref=f2e2082]:
+          - generic [ref=f2e2085]:
+            - link "Mobile phone Wikipedia https://en.wikipedia.org › wiki › Mobile_phone" [ref=f2e2087] [cursor=pointer]:
+              - /url: /goto?url=CAESZQHrOzAVzmfohuXvoXCsxyroVXDeeMClGt4VTFjMz5Z9WqDxVIfj6MDd91FHbOQ7CIVSwgkp8YwX_w5E1Bu2hhO-5EczqUwxqGuJpJeNzb3yXk-R8Vgm9fZ9UwB6-vo4E24GDuME
+              - heading "Mobile phone" [level=3] [ref=f2e2088]
+              - generic [ref=f2e2094]:
+                - generic [ref=f2e2095]: Wikipedia
+                - generic [ref=f2e2097]: https://en.wikipedia.org › wiki › Mobile_phone
+            - button "About this result" [ref=f2e2103] [cursor=pointer]
+          - generic [ref=f2e2109]:
+            - generic [ref=f2e2110]:
+              - text: A mobile phone or cell phone is a
+              - emphasis [ref=f2e2111]: portable wireless telephone
+              - text: that allows users to make and receive calls over a radio frequency link while moving within a ...
+            - link "Read more" [ref=f2e2112] [cursor=pointer]:
+              - /url: /goto?url=CAESxwEB6zswFTnS-MmwSbIX_GS_4Z1hiaRswKcVTXcQavQ-m1SqgFYz0v1ZzmvtGyeMBdfOBWAFaCis83f47dt_vHkdTfJ7cINiyXsc_-BwcyGQ04_qLMAICYqU3-Pvxhjc6yo0z62nzcDCoH25dTS2j4M24vUD4-FkrMs5VyrQh9nMxMOjJBE3vxuKX4oXgt5StozE2w4XcSBPzomwXqQz9n6epsw-Ek4lNXcjH1QsQyGDoTGbP-FHbt3wuMdbZyW7t3s9oaNAfLEZ
+          - link [aria-hidden] [ref=f2e2115] [cursor=pointer]:
+            - /url: /goto?url=CAESZQHrOzAVzmfohuXvoXCsxyroVXDeeMClGt4VTFjMz5Z9WqDxVIfj6MDd91FHbOQ7CIVSwgkp8YwX_w5E1Bu2hhO-5EczqUwxqGuJpJeNzb3yXk-R8Vgm9fZ9UwB6-vo4E24GDuME
+      - generic [ref=f2e2119]:
+        - generic [ref=f2e2124]:
+          - heading "People also search for" [level=2] [ref=f2e2126]
+          - generic [ref=f2e2128]:
+            - generic [ref=f2e2129]:
+              - link "5G mobile phones" [ref=f2e2133] [cursor=pointer]:
+                - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=5G+mobile+phones&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ1QJ6BQiDARAB
+              - link "New mobile phones" [ref=f2e2147] [cursor=pointer]:
+                - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=New+mobile+phones&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ1QJ6BQiNARAB
+              - link "Latest mobile phones under 20000" [ref=f2e2161] [cursor=pointer]:
+                - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=Latest+mobile+phones+under+20000&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ1QJ6BQiLARAB
+              - link "Best mobile phone under 20000" [ref=f2e2175] [cursor=pointer]:
+                - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=Best+mobile+phone+under+20000&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ1QJ6BQiMARAB
+            - generic [ref=f2e2186]:
+              - link "Mobile price in India 5000 to 10000" [ref=f2e2190] [cursor=pointer]:
+                - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=Mobile+price+in+India+5000+to+10000&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ1QJ6BQiIARAB
+              - link "Latest mobile phones under 15000" [ref=f2e2204] [cursor=pointer]:
+                - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=Latest+mobile+phones+under+15000&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ1QJ6BQiGARAB
+              - link "Latest mobile Phones under 30000" [ref=f2e2218] [cursor=pointer]:
+                - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=Latest+mobile+Phones+under+30000&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ1QJ6BQiFARAB
+              - link "New mobile Phones with price" [ref=f2e2232] [cursor=pointer]:
+                - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&q=New+mobile+Phones+with+price&sa=X&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ1QJ6BQiEARAB
+        - navigation [ref=f2e2243]:
+          - heading "Page navigation" [level=1] [ref=f2e2244]
+          - text: "1"
+          - link "Page 2" [ref=f2e2247] [cursor=pointer]:
+            - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=10&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8tMDegQIdRAE
+            - text: "2"
+          - link "Page 3" [ref=f2e2249] [cursor=pointer]:
+            - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=20&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8tMDegQIdRAG
+            - text: "3"
+          - link "Page 4" [ref=f2e2251] [cursor=pointer]:
+            - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=30&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8tMDegQIdRAI
+            - text: "4"
+          - link "Page 5" [ref=f2e2253] [cursor=pointer]:
+            - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=40&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8tMDegQIdRAK
+            - text: "5"
+          - link "Page 6" [ref=f2e2255] [cursor=pointer]:
+            - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=50&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8tMDegQIdRAM
+            - text: "6"
+          - link "Page 7" [ref=f2e2257] [cursor=pointer]:
+            - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=60&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8tMDegQIdRAO
+            - text: "7"
+          - link "Page 8" [ref=f2e2259] [cursor=pointer]:
+            - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=70&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8tMDegQIdRAQ
+            - text: "8"
+          - link "Page 9" [ref=f2e2261] [cursor=pointer]:
+            - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=80&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8tMDegQIdRAS
+            - text: "9"
+          - link "Page 10" [ref=f2e2263] [cursor=pointer]:
+            - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=90&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8tMDegQIdRAU
+            - text: "10"
+          - heading [level=2] [ref=f2e2265]:
+            - link "Next" [ref=f2e2266] [cursor=pointer]:
+              - /url: /search?q=phones&sca_esv=91241afbd92acca7&sxsrf=APpeQns7OgbEXML7EkvV_zhBo7fXX4aU9Q:1791005807193&ei=b5TAavq0C8-RseMP2sfhsAo&start=10&sa=N&sstk=AS6-VmKUeYHy5iv60IBwsSit-MwiyTKLRYZcLLF-6wSAQA4Yttafdf26dF64V37XrU8LxUr0T6JgdlHRl2F6hsO7yDr96VFQRIEuCA&ved=2ahUKEwi6qLbHkJ2XAxXPSGwGHdpjGKYQ8NMDegQIdRAW
+      - navigation
+    - contentinfo [ref=f2e2269]:
+      - heading "Footer links" [level=1] [ref=f2e2270]
+      - generic [ref=f2e2274]:
+        - generic [ref=f2e2276]:
+          - text: India
+          - generic [ref=f2e2278]:
+            - button "560023, Bengaluru, Karnataka - From your IP address" [ref=f2e2280] [cursor=pointer]:
+              - generic [ref=f2e2281]: 560023, Bengaluru, Karnataka
+              - generic [ref=f2e2283]:
+                - text: "-"
+                - generic [ref=f2e2284]: From your IP address
+            - text: "-"
+            - button "Update location" [ref=f2e2286] [cursor=pointer]
+        - generic [ref=f2e2289]:
+          - link "Help" [ref=f2e2290] [cursor=pointer]:
+            - /url: https://support.google.com/websearch/?p=ws_results_help&hl=en-IN&fg=1
+          - link "Send feedback" [ref=f2e2291] [cursor=pointer]:
+            - /url: "#"
+          - link "Privacy" [ref=f2e2292] [cursor=pointer]:
+            - /url: https://policies.google.com/privacy?hl=en-IN&fg=1
+          - link "Terms" [ref=f2e2293] [cursor=pointer]:
+            - /url: https://policies.google.com/terms?hl=en-IN&fg=1

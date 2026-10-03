@@ -1,0 +1,408 @@
+- generic [active] [ref=f6e1]:
+  - generic:
+    - generic:
+      - link "Skip to main content" [ref=f6e2] [cursor=pointer]
+      - link "Accessibility help" [ref=f6e3] [cursor=pointer]:
+        - /url: https://support.google.com/websearch/answer/181196?hl=en-IN
+  - generic [ref=f6e8]:
+    - search [ref=f6e9]:
+      - generic [ref=f6e11]:
+        - link "Go to Google Home" [ref=f6e13] [cursor=pointer]:
+          - /url: https://www.google.com/webhp?hl=en&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20QPHoECAYQBA
+        - generic [ref=f6e22]:
+          - combobox "Search" [ref=f6e24]: motorola gts motorola gts
+          - generic [ref=f6e25]:
+            - button "Clear" [ref=f6e29] [cursor=pointer]
+            - generic [ref=f6e34]:
+              - button "Search by voice" [ref=f6e37] [cursor=pointer]
+              - button "Search by image" [ref=f6e42] [cursor=pointer]
+    - generic [ref=f6e45]:
+      - button "Settings" [ref=f6e47] [cursor=pointer]
+      - button "Share" [ref=f6e52] [cursor=pointer]
+      - generic [ref=f6e58]:
+        - button "Google apps" [ref=f6e60] [cursor=pointer]
+        - link "Sign in" [ref=f6e65] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/search%3Fq%3Dmotorola%2Bgts&ec=futura_srp_og_si_72236_p
+  - generic [ref=f6e68]:
+    - navigation [ref=f6e74]:
+      - generic [ref=f6e80]:
+        - list [ref=f6e81]:
+          - listitem [ref=f6e82]:
+            - link "AI Mode" [ref=f6e85] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&udm=50&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYS0UkvKdZAJprgUu75aBO7-5vrlVc7yEsfLdhPSHeGAC4mVZZ2xR8mJ5TUsP5rDwqLE7NkQuiherFy-fJQHI30hJkbtevvKPn26_Yuc50GQQtxdHI3gHiuwDML4ljoVMiSJr8p6v0r-MWI2ZhKV5_guxHSjJw&vsint=&aep=1&ntc=1&cs=0&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q2J8OegQIExAD
+          - listitem [ref=f6e89]:
+            - link "All" [disabled] [ref=f6e90]
+          - listitem [ref=f6e93]:
+            - link "Images" [ref=f6e94] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&udm=imgs&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYS0UkvKdZAJprgUu75aBO7-5vrlVc7yEsfLdhPSHeGAC4mVZZ2xR8mJ5TUsP5rDwqLE7NkQuiherFy-fJQHI30hJkbtevvKPn26_Yuc50GQQtxdHI3gHiuwDML4ljoVMiSJr8p6v0r-MWI2ZhKV5_guxHSjJw&q=motorola+gts&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20QtKgLegQIGRAB
+          - listitem [ref=f6e97]:
+            - link "Shopping" [ref=f6e98] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&udm=28&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYS0UkvKdZAJprgUu75aBO7-5vrlVc7yEsfLdhPSHeGAC4mVZZ2xR8mJ5TUsP5rDwqLE7NkQuiherFy-fJQHI30hJkbtevvKPn26_Yuc50GQQtxdHI3gHiuwDML4ljoVMiSJr8p6v0r-MWI2ZhKV5_guxHSjJw&q=motorola+gts&ved=1t:220175&ictx=111
+          - listitem [ref=f6e101]:
+            - link "News" [ref=f6e102] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=motorola+gts&tbm=nws&source=lnms&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYS0UkvKdZAJprgUu75aBO7-5vrlVc7yEsfLdhPSHeGAC4mVZZ2xR8mJ5TUsP5rDwqLE7NkQuiherFy-fJQHI30hJkbtevvKPn26_Yuc50GQQtxdHI3gHiuwDML4ljoVMiSJr8p6v0r-MWI2ZhKV5_guxHSjJw&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q0pQJegQIGhAB
+          - listitem [ref=f6e105]:
+            - link "Videos" [ref=f6e106] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&udm=vids&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYS0UkvKdZAJprgUu75aBO7-5vrlVc7yEsfLdhPSHeGAC4mVZZ2xR8mJ5TUsP5rDwqLE7NkQuiherFy-fJQHI30hJkbtevvKPn26_Yuc50GQQtxdHI3gHiuwDML4ljoVMiSJr8p6v0r-MWI2ZhKV5_guxHSjJw&q=motorola+gts&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20QtKgLegQIFhAB
+          - listitem [ref=f6e109]:
+            - link "Short videos" [ref=f6e110] [cursor=pointer]:
+              - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&udm=39&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYS0UkvKdZAJprgUu75aBO7-5vrlVc7yEsfLdhPSHeGAC4mVZZ2xR8mJ5TUsP5rDwqLE7NkQuiherFy-fJQHI30hJkbtevvKPn26_Yuc50GQQtxdHI3gHiuwDML4ljoVMiSJr8p6v0r-MWI2ZhKV5_guxHSjJw&q=motorola+gts&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Qs6gLegQIFxAB
+          - listitem [ref=f6e113]:
+            - button [ref=f6e114] [cursor=pointer]:
+              - generic "More filters" [ref=f6e115]: More
+        - button "Tools" [ref=f6e122] [cursor=pointer]
+    - heading "Search Results" [level=1] [ref=f6e129]
+    - generic [ref=f6e134]:
+      - generic [ref=f6e153]:
+        - heading "Searching Thinking a little longer" [level=2] [ref=f6e157]:
+          - generic [ref=f6e158]:
+            - generic [ref=f6e159]: Searching
+            - generic [ref=f6e169]: Thinking a little longer
+        - progressbar "Generating" [ref=f6e172]
+      - main [ref=f6e223]:
+        - generic [ref=f6e227]:
+          - generic [ref=f6e231]:
+            - heading "Web results" [level=2] [ref=f6e232]
+            - generic [ref=f6e233]:
+              - generic [ref=f6e236]:
+                - link "Explore Moto G Phones Including the Moto G Stylus Motorola IN https://www.motorola.in › moto-g-family" [ref=f6e238] [cursor=pointer]:
+                  - /url: /goto?url=CAESoQEB6zswFcTEI5wZWFVAvX74vAxvSxOiJ4Mtx38aG8LCuSli731C85cvIRWPPRM7GUgtqDyg6UumyFxWsUQR2UMp0y2w523fzRlch08eWP9fWMgv_BKWCqwFCWNsID_WO0CUKZLAn7yEM2b5Jh6jb_1wGQjj38MTgqIdeTnj4QJR04ZjGrfcW3iR20KbRfzvEn_C481lAkp08p272rt0kt2KUA
+                  - heading "Explore Moto G Phones Including the Moto G Stylus" [level=3] [ref=f6e239]
+                  - generic [ref=f6e248]:
+                    - generic [ref=f6e249]: Motorola IN
+                    - generic [ref=f6e251]: https://www.motorola.in › moto-g-family
+                - button "About this result" [ref=f6e257] [cursor=pointer]
+              - generic [ref=f6e264]:
+                - text: Discover the
+                - emphasis [ref=f6e265]: moto g family
+                - text: ", including the moto g stylus phone built for everyday performance."
+              - generic [ref=f6e267]:
+                - text: "Missing: gts ‎| Show results with:"
+                - link "gts" [ref=f6e268] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=motorola+%22gts%22&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q5t4CegQIHRAB
+          - generic [ref=f6e273]:
+            - generic [ref=f6e276]:
+              - link "moto g family - compare phones Motorola IN https://www.motorola.in › smartphones › moto-g-family" [ref=f6e278] [cursor=pointer]:
+                - /url: /goto?url=CAESrQEB6zswFZbemKVXcCaE7WBrEuEUk8J2yxns8NYHIpu8-FNs2SFkhNDDR0HdvE72P8jtYBC0G_1lFTh63cU-8tp5KuJFbv4SeIhsbkE2MailAVRl0zbbK09P5BHLVN-VG2-Bob8yAWH2Gej7exIJ87c9crRrz9Pl5vlh5yBDOCFma6EWTEKwVB55iId6y5ANc3GT8nVNLOf3KbeTIVqJB1gQiUG7faWRXkEY10e_EA
+                - heading "moto g family - compare phones" [level=3] [ref=f6e279]
+                - generic [ref=f6e288]:
+                  - generic [ref=f6e289]: Motorola IN
+                  - generic [ref=f6e291]: https://www.motorola.in › smartphones › moto-g-family
+              - button "About this result" [ref=f6e297] [cursor=pointer]
+            - generic [ref=f6e304]:
+              - text: If you want a smartphone designed for what matters to you, go check out the new
+              - emphasis [ref=f6e305]: moto g7 family
+              - text: .
+            - link [aria-hidden] [ref=f6e308] [cursor=pointer]:
+              - /url: /goto?url=CAESrQEB6zswFZbemKVXcCaE7WBrEuEUk8J2yxns8NYHIpu8-FNs2SFkhNDDR0HdvE72P8jtYBC0G_1lFTh63cU-8tp5KuJFbv4SeIhsbkE2MailAVRl0zbbK09P5BHLVN-VG2-Bob8yAWH2Gej7exIJ87c9crRrz9Pl5vlh5yBDOCFma6EWTEKwVB55iId6y5ANc3GT8nVNLOf3KbeTIVqJB1gQiUG7faWRXkEY10e_EA
+            - generic [ref=f6e312]:
+              - generic [ref=f6e314]:
+                - img "Rated 3.6 out of 5," [ref=f6e316]: "3.6"
+                - generic [ref=f6e320]:
+                  - text: store rating (
+                  - link "39 user reviews" [ref=f6e321] [cursor=pointer]:
+                    - /url: https://www.google.com/m/storepages?q=motorola.in&c=IN&hl=en-IN
+                    - text: "39"
+                  - text: )
+              - text: ·
+              - generic [ref=f6e322]: Free delivery
+          - generic [ref=f6e326]:
+            - heading "Images" [level=2] [ref=f6e330]
+            - generic [ref=f6e334]:
+              - generic [ref=f6e338] [cursor=pointer]:
+                - link "CELULAR MOTOROLA G13 - 64GB El Urbano de San Carlos" [ref=f6e339]:
+                  - /url: /goto?url=CAEShAEB6zswFT8P2LACe_IxFdp-NzQMKL2QtLXGOEu4gUBEM_vlS6gBxMY_FAz4W7DQabv2nwTIrGffJTRtb_kWGOd6vtJBh9gdDHSOxJqAq-2jzhseNBQnL_unrtcSAFjyIab_yJYFothpvMbFjttnmnhY0HmnN7Q3Frrptsd8QkBJb9LafDc
+                - button [ref=f6e341]:
+                  - img "CELULAR MOTOROLA G13 - 64GB" [ref=f6e343]
+                - generic [ref=f6e345]:
+                  - generic [ref=f6e347]: CELULAR MOTOROLA G13 - 64GB
+                  - generic [ref=f6e348]:
+                    - generic [ref=f6e350]: El Urbano de San Carlos
+                    - button "About this result" [ref=f6e360]
+              - generic [ref=f6e368] [cursor=pointer]:
+                - link "moto g37 Motorola IN" [ref=f6e369]:
+                  - /url: /goto?url=CAESqgEB6zswFd9m7dmZ7D8d2Z3vOkgeR9-AHVf46NV6Rt4L3Rn5Pbmx6dsvnv53cqEVYy1fbVlUAwgDEQ9uNa2o7HMKbbJMsa1I97OI-GrdoWirMOaS5E1FEFAxxgSYJ-KVX39eBgl5IHErIBe4OP6yLWxTR4GQ05O4WK9fSNmY8WeB4jwa5OHPzezsI-6LKXtRIB4J674okjDh6AgK02STXDq_Ox4JfH36eehgVA
+                - button [ref=f6e371]:
+                  - img "moto g37" [ref=f6e373]
+                - generic [ref=f6e375]:
+                  - generic [ref=f6e377]: moto g37
+                  - generic [ref=f6e378]:
+                    - generic [ref=f6e380]: Motorola IN
+                    - button "About this result" [ref=f6e390]
+              - generic [ref=f6e398] [cursor=pointer]:
+                - link "Spiral Cable Protector GTS for Motorola Moto G10 Power ... Amazon.in" [ref=f6e399]:
+                  - /url: /goto?url=CAESgAEB6zswFWxw_9XeXABT9PZoktb9fPmxm76DQgDbQMlajWduPzk0X-ExUup-YCl3dZsodqZKMLx3no0OIQ4i_LjA2jeKR17kXIJvO_ovhMj_kpq_KdXM0mV982i1R8Fye_swnEMmytdn_RVrUk4wI-YiCcHVWAPXpVjny5e3F-drsQ
+                - button [ref=f6e401]:
+                  - img "Spiral Cable Protector GTS for Motorola Moto G10 Power ..." [ref=f6e403]
+                - generic [ref=f6e405]:
+                  - generic [ref=f6e407]: Spiral Cable Protector GTS for Motorola Moto G10 Power ...
+                  - generic [ref=f6e408]:
+                    - generic [ref=f6e410]: Amazon.in
+                    - button "About this result" [ref=f6e420]
+              - generic [ref=f6e428] [cursor=pointer]:
+                - link "moto g max Motorola IN" [ref=f6e429]:
+                  - /url: /goto?url=CAESrAEB6zswFWGtR9TBJZDBNQrz095PO15gzNC25FHiexxgX-XmwezLHRc6CEwIgSz_io9cLFwLBGkoBDx3EDDVVxQ5twOTFEb1UbA0GrIdG4UvTujGjf-Cuu6oxGEKyoW-lvs_y_ojI7yVbFqXboO_SNIxByHXTME6rGEURTIDLq5ZKkhhgcLsgwM2n2ZY5kKdBogNAOzcJzFwicNMUsq_sdKb4b68D71mhbb20mJH
+                - button [ref=f6e431]:
+                  - img "moto g max" [ref=f6e433]
+                - generic [ref=f6e435]:
+                  - generic [ref=f6e437]: moto g max
+                  - generic [ref=f6e438]:
+                    - generic [ref=f6e440]: Motorola IN
+                    - button "About this result" [ref=f6e450]
+              - generic [ref=f6e458] [cursor=pointer]:
+                - link "moto g85 5G Motorola IN" [ref=f6e459]:
+                  - /url: /goto?url=CAESrQEB6zswFVfyfh-nQ4D3XMlyroJn8Be_HewEm4tZ1DcMCoX-nrpI3zP3OeEhK-bSoqCsvohP_dBF_kIzk63GrDHo8Z08eJS3550uhgeFkw0B7vUUfWBeF11nf6ukdRwjH3qx_v9qDMhXMFxj7ZyIAIs1jYf_mUS-A4UXuyAKVgRqCDcAnVLNC_hthuXowlBp6fbMCX19nwThQj13i9F5tegAfnQSoWYkUzjKNSkeDQ
+                - button [ref=f6e461]:
+                  - img "moto g85 5G" [ref=f6e463]
+                - generic [ref=f6e465]:
+                  - generic [ref=f6e467]: moto g85 5G
+                  - generic [ref=f6e468]:
+                    - generic [ref=f6e470]: Motorola IN
+                    - button "About this result" [ref=f6e480]
+              - generic [ref=f6e488] [cursor=pointer]:
+                - link "moto g57 power 5G Motorola IN" [ref=f6e489]:
+                  - /url: /goto?url=CAESswEB6zswFUC58_-tjbe381jpQpQx8dea5gpc5id_rOtkItVBovEd3VoBPt5F-BGeNa6JLGrUADzvtVWms2fl_KaXvXNbVut58kbmXAPe2zdXiM9bgBpqQdo2saVwZAg3DrFLg8pe_DQoEREscb9HX_P4yGknrMTeJ_iZCOWD991rF1UL-0BMSpe6pCh35kZafqlrY-IVdGtMWD_P-SaKkMBPpzHm1aNcynFdHT5YP_TZEV7GRA
+                - button [ref=f6e491]:
+                  - img "moto g57 power 5G" [ref=f6e493]
+                - generic [ref=f6e495]:
+                  - generic [ref=f6e497]: moto g57 power 5G
+                  - generic [ref=f6e498]:
+                    - generic [ref=f6e500]: Motorola IN
+                    - button "About this result" [ref=f6e510]
+              - generic [ref=f6e518] [cursor=pointer]:
+                - link "Top moto g AI Camera Phones with 7000mAh Battery | moto g06 power | motorola India Motorola IN" [ref=f6e519]:
+                  - /url: /goto?url=CAESsAEB6zswFfvDA3_yQltV4tTKU2V37UGgikngAK_U8TLLBfZl0PB5ksQP_QN9wTnllwBvZzsM9N469rpxCXmKiEC0vSdGJNKT6ZNQLU6z0ZTAGntpEv5W4nTfjKIv8066ul2t-pi0TVjJpc6z85JweWE4R8G4OUv1GYsCPxFxciESfL84zh_19NZhtBxggPGv-55ocJA0P3sG6HKH903THqWj4Bpq0ANZxJYl1qdSTd24UA
+                - button [ref=f6e521]:
+                  - img "Top moto g AI Camera Phones with 7000mAh Battery | moto g06 power | motorola India" [ref=f6e523]
+                - generic [ref=f6e525]:
+                  - generic [ref=f6e527]: Top moto g AI Camera Phones with 7000mAh Battery | moto g06 power | motorola India
+                  - generic [ref=f6e528]:
+                    - generic [ref=f6e530]: Motorola IN
+                    - button "About this result" [ref=f6e540]
+              - generic [ref=f6e548] [cursor=pointer]:
+                - link "Get Moto G Power with 120Hz FHD+ Display and AI Camera ... Motorola" [ref=f6e549]:
+                  - /url: /goto?url=CAEShwEB6zswFUwHOwA7dBA0zcfuQN5X24xKQCaYy99HwYuoFerZeU2kA9lp-rEs7_mSNcQUt5I_4Fufc94QcbJShO1iM3YMNNre7z6AtgLa9gEc8Q7bLe_8cacsBIZSKnVc432UpsZF1XZ3kCEbj37W-uvfvjOtmNb8i8UuJ8N4N6PPNz695ApBvb4
+                - button [ref=f6e551]:
+                  - img "Get Moto G Power with 120Hz FHD+ Display and AI Camera ..." [ref=f6e553]
+                - generic [ref=f6e555]:
+                  - generic [ref=f6e557]: Get Moto G Power with 120Hz FHD+ Display and AI Camera ...
+                  - generic [ref=f6e558]:
+                    - generic [ref=f6e560]: Motorola
+                    - button "About this result" [ref=f6e570]
+            - button "Show more images" [ref=f6e576] [cursor=pointer]:
+              - separator [aria-hidden] [ref=f6e577]
+          - generic [ref=f6e586]:
+            - heading "Web results" [level=2] [ref=f6e587]
+            - generic [ref=f6e588]:
+              - generic [ref=f6e591]:
+                - link "Motorola Moto G Fast - Price in India, Specifications & ... Cashify https://www.cashify.in › ... › Motorola Mobile Phones" [ref=f6e593] [cursor=pointer]:
+                  - /url: /goto?url=CAESdQHrOzAV1xZk0OR8o8GUBWhsIQQcOBTJeD07uUIbTSdw0et82ypnXyewkYvXxuDYXtYcdScUxsE0aMBpZpjIqOGD80B4nSksSvdnUU6-iAIX_Eq8UMXuxot9GT2_x7uAHVFkwtYLZSkNrSsYmsxRl93-SR8a1Q
+                  - heading "Motorola Moto G Fast - Price in India, Specifications & ..." [level=3] [ref=f6e594]
+                  - generic [ref=f6e600]:
+                    - generic [ref=f6e601]: Cashify
+                    - generic [ref=f6e603]: https://www.cashify.in › ... › Motorola Mobile Phones
+                - button "About this result" [ref=f6e609] [cursor=pointer]
+              - generic [ref=f6e615]:
+                - generic [ref=f6e616]:
+                  - emphasis [ref=f6e617]: Motorola Moto G Fast
+                  - text: is a mid-range phone with Snapdragon 665 SoC with 3/32GB storage and exceptional battery life. · Motorola introduced its Moto G Fast on June ...
+                - link "Read more" [ref=f6e618] [cursor=pointer]:
+                  - /url: /goto?url=CAES4gEB6zswFeyH_m2-gFQqdOV67u9LBVWeJSwSR8vTYRJcLKbHo9lOxAHGXNVwPehfWIKbYvjvqtwaGe5sdDfph-nxFy025YwUaxqATkRhKnj_mCWPGVMp-buJ5u0fWursSTbfx6eVipimqfEdfQSp8SDKNjnjS-Lr64gV0EOWOqa5OFAxMliePfdLuGxT4LnF6Fw9j_WlWcJJAQni20r7PKVCvJ63ghZOXgRopdqInWSe_DW6WGbiFF_qc5RCCbO9h_oQdBPY8dXNctWTm3-_NSr7lN6Ij9uhrIkWcKmujPdaTW8t
+              - link [aria-hidden] [ref=f6e621] [cursor=pointer]:
+                - /url: /goto?url=CAESdQHrOzAV1xZk0OR8o8GUBWhsIQQcOBTJeD07uUIbTSdw0et82ypnXyewkYvXxuDYXtYcdScUxsE0aMBpZpjIqOGD80B4nSksSvdnUU6-iAIX_Eq8UMXuxot9GT2_x7uAHVFkwtYLZSkNrSsYmsxRl93-SR8a1Q
+              - img "Rated 3.0 out of 5, (5) user reviews" [ref=f6e628]: 3.0(5)
+          - generic [ref=f6e639]:
+            - generic [ref=f6e640]:
+              - generic [ref=f6e641]:
+                - generic [ref=f6e645]:
+                  - link "Motorola Moto G Fast - Complete Review! YouTube · Kevin Breeze 71.1K+ views · 6 years ago" [ref=f6e647] [cursor=pointer]:
+                    - /url: /goto?url=CAESgAEB6zswFd5cf7BOdRLVyptjAKbenjZfDzgDZiseG5RF7mYhkHxIXphTlMc3Bo6iUeXtQzsO-nxFssTQE5szS7u2QQoYanBV2vGtcBvds48XZLX2aJsAiPLIBuKumFUQlNl-DWQd2fbP-J4leIAyaP4_swyg5DL-we91trx7RUPJ7Q
+                    - heading "Motorola Moto G Fast - Complete Review!" [level=3] [ref=f6e648]
+                    - generic [ref=f6e654]:
+                      - generic [ref=f6e655]: YouTube · Kevin Breeze
+                      - generic [ref=f6e657]: 71.1K+ views · 6 years ago
+                  - button "About this result" [ref=f6e663] [cursor=pointer]
+                - generic [ref=f6e668]: Here's my review of the Moto G Fast. Link to product - https://amzn.to/3iui55Y Follow me on Instagram ...
+              - button "Motorola Moto G Fast - Complete Review! by Kevin Breeze on YouTube. Play on Google. 11:43" [ref=f6e671] [cursor=pointer]:
+                - generic [ref=f6e672]: 11:43
+            - button "10 key moments in this video" [ref=f6e689] [cursor=pointer]
+            - generic [ref=f6e700]:
+              - text: "Missing: gts ‎| Show results with:"
+              - link "gts" [ref=f6e701] [cursor=pointer]:
+                - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=motorola+%22gts%22&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q5t4CegQIKBAm
+          - generic [ref=f6e706]:
+            - generic [ref=f6e709]:
+              - link "Top moto g AI Camera Phones with 7000mAh Battery Motorola IN https://www.motorola.in › smartphones-moto-g06-power" [ref=f6e711] [cursor=pointer]:
+                - /url: /goto?url=CAESsAEB6zswFXb9pMQLWyA13eKIrjpcEDh_UCXg6_q5JqSZyWDTHcCU9Ra2SsJG0U2-UBgwe_OTzlEVS-s8prJlFtlY4smimAuedYXsR34jXO155RKbCRoo4vKb-N7BN4SjJhzDJfW-ePJiHEw4fUg7NQp3TGAVp7Up1jbw8cnt7-jpNaLIO2vTZ52YL-rzXCImc3fbRh-aWSd3VcwwU2HYA_k6gRPFBAUsw5RPC4ga92xhxg
+                - heading "Top moto g AI Camera Phones with 7000mAh Battery" [level=3] [ref=f6e712]
+                - generic [ref=f6e721]:
+                  - generic [ref=f6e722]: Motorola IN
+                  - generic [ref=f6e724]: https://www.motorola.in › smartphones-moto-g06-power
+              - button "About this result" [ref=f6e730] [cursor=pointer]
+            - generic [ref=f6e737]:
+              - text: Shop
+              - emphasis [ref=f6e738]: moto g06 power
+              - text: for the best AI camera phone featuring 50 MP Quad Pixel clarity and a large 6.88-inch+ HD display now.
+            - generic [ref=f6e740]:
+              - generic [ref=f6e741]: ₹15,249.00
+              - text: ·
+              - generic [ref=f6e742]: In stock
+              - text: ·
+              - generic [ref=f6e747]:
+                - img "Rated 4.9 out of 5," [ref=f6e748]: "4.9"
+                - text: (
+                - link "69 user reviews" [ref=f6e752] [cursor=pointer]:
+                  - /url: https://www.google.com/search?q=moto+g06+power+4+%2B+64+GB+PANTONE+Tendril&ibp=oshop&prds=catalogid:5412585053640039114,headlineOfferDocid:15117333374517092428,rds:PC_3475841073272927512%7CPROD_PC_3475841073272927512,pvo:21,query:moto+g06+power+4+%2B+64+GB+PANTONE+Tendril,pvt:hg&hl=en-IN&gl=in&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Qrd8PegQIRxAG&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469
+                  - text: "69"
+                - text: )
+              - text: ·
+              - generic [ref=f6e753]: Free delivery
+          - generic [ref=f6e758]:
+            - generic [ref=f6e761]:
+              - link "Motorola - Amman Jordan GTS - Amman Jordan https://gts.jo › motorola" [ref=f6e763] [cursor=pointer]:
+                - /url: /goto?url=CAESVQHrOzAVlRKASq2hhSJ1pAE_8EK7b9EIqt0kvx24FX8V7EyF5VDtb-wunxQ2wjWEAe1b8QfXjBJ1wJIIWCdVHUr-Asay5cOKub-Pn7NziVMwThSnM1s
+                - heading "Motorola - Amman Jordan" [level=3] [ref=f6e764]
+                - generic [ref=f6e770]:
+                  - generic [ref=f6e771]: GTS - Amman Jordan
+                  - generic [ref=f6e773]: https://gts.jo › motorola
+              - button "About this result" [ref=f6e779] [cursor=pointer]
+            - generic [ref=f6e785]:
+              - generic [ref=f6e786]:
+                - emphasis [ref=f6e787]: Motorola
+                - text: . There are no products to list. Product Filters. Price. JOD – JOD. Stock Status. 5 Out Of Stock. 7 In Stock. 8 Online Order Only. 9 Coming Soon.
+              - link "Read more" [ref=f6e788] [cursor=pointer]:
+                - /url: /goto?url=CAESdQHrOzAVscFZhLzAAmRxE_RTsT6oigdRQbw7AS6PLRnS_Cw40hlfQIvX3-tGi4QwfYXyZWK5b0rmoEEKyq1pXWIknVVjRjQR7n2wFGhjn_saoYjHJgB7bAhThxkrN_WCKVoSzLAU4wXc_rX32jKo_2gqLLWYdQ
+          - generic [ref=f6e793]:
+            - generic [ref=f6e796]:
+              - link "Moto Watch vs Amazfit GTS Price, Color, Size, OS Gadgets 360 https://www.gadgets360.com › compare-moto-watch-1..." [ref=f6e798] [cursor=pointer]:
+                - /url: /goto?url=CAEShAEB6zswFRBY_NYl15dyURhoItJbQwK2qHOULt98E-r_yut7ERqLeHfBOAVaNSVedFC_EMrADIymaHf7h-YblDgO1LUrPEN3uWgf649qi2I75as2YKpJlENkKsddwdHxFXiSjW4v1D16CKyLo6S3yQolvJgE5W3eQlprz5EBUa-RpE7nZ-E
+                - heading "Moto Watch vs Amazfit GTS Price, Color, Size, OS" [level=3] [ref=f6e799]
+                - generic [ref=f6e805]:
+                  - generic [ref=f6e806]: Gadgets 360
+                  - generic [ref=f6e808]: https://www.gadgets360.com › compare-moto-watch-1...
+              - button "About this result" [ref=f6e814] [cursor=pointer]
+            - generic [ref=f6e820]:
+              - generic [ref=f6e821]:
+                - text: Motorola, Amazfit. Model.
+                - emphasis [ref=f6e822]: Moto Watch, GTS
+                - text: . Release date. January 6, 2026, October 11, 2019. Dial Colour. Matte Black, Matte Silver, Pantone Volcanic Ash, ...
+              - link "Read more" [ref=f6e823] [cursor=pointer]:
+                - /url: /goto?url=CAESxAEB6zswFcHulgARfzFW_1UisY0ISNrNY1JgjbrHcB58a99EXfixofZG2CRWF_OK1h5TSuegvjjHb0t6lsYHdHxDkTXtzIJIUAG3mmEO2htb8fHQfvQREYgWOWAJ6yAomVFmAUFCCAA-qXYRFcGKz25IuEQuuviQ2phEzc-eI8xz2FXZgP6jiwiowJuIAPPLfgBrQGLOEzxdeAnComdGmimvHNE6dGJcYVOH1Db9xJxx6D6YlnCqfFJ9oQgsTJ13wL5BuyGN
+          - generic [ref=f6e828]:
+            - heading "People also ask" [level=2] [ref=f6e830]
+            - generic [ref=f6e831]:
+              - button "Which Moto G series is best?" [ref=f6e837] [cursor=pointer]
+              - button "Why is the Moto G so cheap?" [ref=f6e851] [cursor=pointer]
+              - button "Which Motorola phone has a 7000 mAh battery?" [ref=f6e865] [cursor=pointer]
+              - button "Is the Moto G Power available in India?" [ref=f6e879] [cursor=pointer]
+          - generic [ref=f6e890]:
+            - heading "Web results" [level=2] [ref=f6e891]
+            - generic [ref=f6e892]:
+              - generic [ref=f6e895]:
+                - link "Motorola Moto G Fast (2020) Review PCMag https://www.pcmag.com › Reviews › Mobile Phones" [ref=f6e897] [cursor=pointer]:
+                  - /url: /goto?url=CAESbQHrOzAVOmajSH-gBxvDyQqgnrCRUzBUn-oxCRRljpZ6E-43xovNYdZKV-Sut2gGPNAghy77edKc1B-W8YQFSdnJIoXTHaKd4qSg7iFkSIgS8p4soPmij7-mLzuxsfPS5LTHpJ03kL0K25Ai91g
+                  - heading "Motorola Moto G Fast (2020) Review" [level=3] [ref=f6e898]
+                  - generic [ref=f6e904]:
+                    - generic [ref=f6e905]: PCMag
+                    - generic [ref=f6e907]: https://www.pcmag.com › Reviews › Mobile Phones
+                - button "About this result" [ref=f6e913] [cursor=pointer]
+              - generic [ref=f6e919]:
+                - generic [ref=f6e920]: 11 Jun 2020 —
+                - generic [ref=f6e921]:
+                  - text: The Moto G Fast is stuck in the middle. For $199.99,
+                  - emphasis [ref=f6e922]: Motorola's latest affordable phone
+                  - text: offers excellent performance, good battery life, and a ...
+                - link "Read more" [ref=f6e923] [cursor=pointer]:
+                  - /url: /goto?url=CAESswEB6zswFauO9AEVEkwJrfiWvV_aDGrKasRFy7TQ8DjSKv-qK87sYXyHMPOGI3sRB-AhjgkdH4TpOSSGXRblj7O72PHxQZOrIcCn0nuQElT_X0-SH_kEm6NG1gUGuKU-rA3zQd1cARqvHLSa_AMpk2peqTkbeeeib1q_jrjlVkvk0eIXDfrSgSdwHlx3DVu0ooJbpZMdPhcw707Wcm5RnBrlOBRa6i5IFOIuD4ayMjVhwhKGPw
+              - generic [ref=f6e925]:
+                - text: "Pros and cons:"
+                - generic [ref=f6e926]:
+                  - generic [ref=f6e927]: Excellent performance for the price
+                  - generic [ref=f6e928]: ⋅ Mediocre camera quality
+                  - generic [ref=f6e929]:
+                    - text: ⋅
+                    - link "View full list" [ref=f6e930] [cursor=pointer]:
+                      - /url: /goto?url=CAESbQHrOzAVOmajSH-gBxvDyQqgnrCRUzBUn-oxCRRljpZ6E-43xovNYdZKV-Sut2gGPNAghy77edKc1B-W8YQFSdnJIoXTHaKd4qSg7iFkSIgS8p4soPmij7-mLzuxsfPS5LTHpJ03kL0K25Ai91g
+              - generic [ref=f6e933]:
+                - generic [ref=f6e934]:
+                  - img "Rated 3.5 out of 5," [ref=f6e935]: "3.5"
+                  - text: ·
+                - text: Review by Steven Winkelman
+        - generic [ref=f6e940]:
+          - generic [ref=f6e945]:
+            - heading "People also search for" [level=2] [ref=f6e947]
+            - generic [ref=f6e949]:
+              - generic [ref=f6e950]:
+                - link "Motorola gts price" [ref=f6e954] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=Motorola+gts+price&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q1QJ6BAgmEAE
+                - link "Motorola gts price in india" [ref=f6e968] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=Motorola+gts+price+in+india&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q1QJ6BAg3EAE
+                - link "Motorola gts review" [ref=f6e982] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=Motorola+gts+review&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q1QJ6BAg0EAE
+                - link "Moto G series 5G List" [ref=f6e996] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=Moto+G+series+5G+List&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q1QJ6BAgyEAE
+              - generic [ref=f6e1007]:
+                - link "Motorola latest g series" [ref=f6e1011] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=Motorola+latest+g+series&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q1QJ6BAgvEAE
+                - link "Motorola G series best phone" [ref=f6e1025] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=Motorola+G+series+best+phone&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q1QJ6BAgtEAE
+                - link "Motorola all G series phone List" [ref=f6e1039] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=Motorola+all+G+series+phone+List&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q1QJ6BAgrEAE
+                - link "Moto G Mobile" [ref=f6e1053] [cursor=pointer]:
+                  - /url: /search?sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&q=Moto+G+Mobile&sa=X&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q1QJ6BAgnEAE
+          - navigation [ref=f6e1064]:
+            - heading "Page navigation" [level=1] [ref=f6e1065]
+            - text: "1"
+            - link "Page 2" [ref=f6e1068] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=10&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8tMDegQIVBAE
+              - text: "2"
+            - link "Page 3" [ref=f6e1070] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=20&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8tMDegQIVBAG
+              - text: "3"
+            - link "Page 4" [ref=f6e1072] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=30&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8tMDegQIVBAI
+              - text: "4"
+            - link "Page 5" [ref=f6e1074] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=40&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8tMDegQIVBAK
+              - text: "5"
+            - link "Page 6" [ref=f6e1076] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=50&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8tMDegQIVBAM
+              - text: "6"
+            - link "Page 7" [ref=f6e1078] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=60&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8tMDegQIVBAO
+              - text: "7"
+            - link "Page 8" [ref=f6e1080] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=70&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8tMDegQIVBAQ
+              - text: "8"
+            - link "Page 9" [ref=f6e1082] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=80&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8tMDegQIVBAS
+              - text: "9"
+            - link "Page 10" [ref=f6e1084] [cursor=pointer]:
+              - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=90&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8tMDegQIVBAU
+              - text: "10"
+            - heading [level=2] [ref=f6e1086]:
+              - link "Next" [ref=f6e1087] [cursor=pointer]:
+                - /url: /search?q=motorola+gts&sca_esv=91241afbd92acca7&sxsrf=APpeQnvb22r86iLKUQumjjTkZ5jIGrBC-A:1791005818469&ei=epTAarCjHIqUseMP6Yy-6QY&start=10&sa=N&sstk=AS6-VmKmYoBAvuCJ3MFBaovyULQAfkAGf0-tUCKpYGFRhUE7BZmiscMPMnZyh1R4iXNSXibZ92Yt5Vl2CZ2sgd5rUqr7zlMAwXpdmQ&ved=2ahUKEwiwyObMkJ2XAxUKSmwGHWmGL20Q8NMDegQIVBAW
+        - navigation
+    - contentinfo [ref=f6e1090]:
+      - heading "Footer links" [level=1] [ref=f6e1091]
+      - generic [ref=f6e1095]:
+        - generic [ref=f6e1097]:
+          - text: India
+          - generic [ref=f6e1099]:
+            - button "560023, Bengaluru, Karnataka - From your IP address" [ref=f6e1101] [cursor=pointer]:
+              - generic [ref=f6e1102]: 560023, Bengaluru, Karnataka
+              - generic [ref=f6e1104]:
+                - text: "-"
+                - generic [ref=f6e1105]: From your IP address
+            - text: "-"
+            - button "Update location" [ref=f6e1107] [cursor=pointer]
+        - generic [ref=f6e1110]:
+          - link "Help" [ref=f6e1111] [cursor=pointer]:
+            - /url: https://support.google.com/websearch/?p=ws_results_help&hl=en-IN&fg=1
+          - link "Send feedback" [ref=f6e1112] [cursor=pointer]:
+            - /url: "#"
+          - link "Privacy" [ref=f6e1113] [cursor=pointer]:
+            - /url: https://policies.google.com/privacy?hl=en-IN&fg=1
+          - link "Terms" [ref=f6e1114] [cursor=pointer]:
+            - /url: https://policies.google.com/terms?hl=en-IN&fg=1

@@ -1,0 +1,591 @@
+- generic [active] [ref=e1]:
+  - generic:
+    - generic:
+      - link "Skip to main content" [ref=e2] [cursor=pointer]
+      - link "Accessibility help" [ref=e3] [cursor=pointer]:
+        - /url: https://support.google.com/websearch/answer/181196?hl=en-IN
+  - generic [ref=e8]:
+    - search [ref=e9]:
+      - generic [ref=e11]:
+        - link "Go to Google Home" [ref=e13] [cursor=pointer]:
+          - /url: https://www.google.com/webhp?hl=en&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQPHoECAYQBA
+        - generic [ref=e22]:
+          - combobox "Search" [ref=e24]: apple image apple image
+          - generic [ref=e25]:
+            - button "Clear" [ref=e29] [cursor=pointer]
+            - generic [ref=e34]:
+              - button "Search by voice" [ref=e37] [cursor=pointer]
+              - button "Search by image" [ref=e42] [cursor=pointer]
+    - generic [ref=e45]:
+      - button "Settings" [ref=e47] [cursor=pointer]
+      - button "Share" [ref=e52] [cursor=pointer]
+      - generic [ref=e58]:
+        - button "Google apps" [ref=e60] [cursor=pointer]
+        - link "Sign in" [ref=e65] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/search%3Fq%3Dapple%2Bimage&ec=futura_srp_og_si_72236_p
+  - generic [ref=e68]:
+    - navigation [ref=e74]:
+      - generic [ref=e80]:
+        - list [ref=e81]:
+          - listitem [ref=e82]:
+            - link "AI Mode" [ref=e85] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&udm=50&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYQR84vEJkyW62ul7Q3Bkhu9lnQJN2b4NlD2btUk2oQl-tAyfQpnsQegeRn8ehPJ-mqzQ94nP3fPhVevKQwDPMWGLdnr2HMZFInNZP0Vx3WiDNA_ssgSC0Bhf_Nu4VPSZbg3rBBrpQjRlLnt_WTynmXmHxpuiw&vsint=&aep=1&ntc=1&cs=0&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ2J8OegQIDxAD
+          - listitem [ref=e89]:
+            - link "All" [disabled] [ref=e90]
+          - listitem [ref=e93]:
+            - link "Images" [ref=e94] [cursor=pointer]:
+              - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&udm=imgs&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYQR84vEJkyW62ul7Q3Bkhu9lnQJN2b4NlD2btUk2oQl-tAyfQpnsQegeRn8ehPJ-mqzQ94nP3fPhVevKQwDPMWGLdnr2HMZFInNZP0Vx3WiDNA_ssgSC0Bhf_Nu4VPSZbg3rBBrpQjRlLnt_WTynmXmHxpuiw&q=apple+image&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQtKgLegQIFxAB
+          - listitem [ref=e97]:
+            - link "Shopping" [ref=e98] [cursor=pointer]:
+              - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&udm=28&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYQR84vEJkyW62ul7Q3Bkhu9lnQJN2b4NlD2btUk2oQl-tAyfQpnsQegeRn8ehPJ-mqzQ94nP3fPhVevKQwDPMWGLdnr2HMZFInNZP0Vx3WiDNA_ssgSC0Bhf_Nu4VPSZbg3rBBrpQjRlLnt_WTynmXmHxpuiw&q=apple+image&ved=1t:220175&ictx=111
+          - listitem [ref=e101]:
+            - link "Videos" [ref=e102] [cursor=pointer]:
+              - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&udm=vids&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYQR84vEJkyW62ul7Q3Bkhu9lnQJN2b4NlD2btUk2oQl-tAyfQpnsQegeRn8ehPJ-mqzQ94nP3fPhVevKQwDPMWGLdnr2HMZFInNZP0Vx3WiDNA_ssgSC0Bhf_Nu4VPSZbg3rBBrpQjRlLnt_WTynmXmHxpuiw&q=apple+image&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQtKgLegQIExAB
+          - listitem [ref=e105]:
+            - link "News" [ref=e106] [cursor=pointer]:
+              - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&q=apple+image&tbm=nws&source=lnms&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYQR84vEJkyW62ul7Q3Bkhu9lnQJN2b4NlD2btUk2oQl-tAyfQpnsQegeRn8ehPJ-mqzQ94nP3fPhVevKQwDPMWGLdnr2HMZFInNZP0Vx3WiDNA_ssgSC0Bhf_Nu4VPSZbg3rBBrpQjRlLnt_WTynmXmHxpuiw&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ0pQJegQIFhAB
+          - listitem [ref=e109]:
+            - link "Short videos" [ref=e110] [cursor=pointer]:
+              - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&udm=39&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832SMIiTl3t-JZ4hGJOxPbHYQR84vEJkyW62ul7Q3Bkhu9lnQJN2b4NlD2btUk2oQl-tAyfQpnsQegeRn8ehPJ-mqzQ94nP3fPhVevKQwDPMWGLdnr2HMZFInNZP0Vx3WiDNA_ssgSC0Bhf_Nu4VPSZbg3rBBrpQjRlLnt_WTynmXmHxpuiw&q=apple+image&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQs6gLegQIFRAB
+          - listitem [ref=e113]:
+            - button [ref=e114] [cursor=pointer]:
+              - generic "More filters" [ref=e115]: More
+        - button "Tools" [ref=e122] [cursor=pointer]
+    - heading "Search Results" [level=1] [ref=e129]
+    - generic [ref=e134]:
+      - generic [ref=e142]:
+        - heading "Images" [level=2] [ref=e146]
+        - generic [ref=e151]:
+          - generic [ref=e155] [cursor=pointer]:
+            - link "Apple Images - Free Download on Magnific (formerly Freepik) Magnific" [ref=e156]:
+              - /url: /goto?url=CAESbQHrOzAV7ju-NwqiqZYh5vTMoKRA4zOwt30cgRiKuTPgSGoplpSrsOL5_ZA4FmnPi5oWyXshQ2Efif_aB2L3gX4sFeup95qWqWCcEPxyjy97MyaCO5hqBmFsgn6D2t2ZeO4_un49bpJ_0K5szok
+            - button [ref=e158]:
+              - img "Apple Images - Free Download on Magnific (formerly Freepik)" [ref=e160]
+            - generic [ref=e162]:
+              - generic [ref=e164]: Apple Images - Free Download on Magnific (formerly Freepik)
+              - generic [ref=e165]:
+                - generic [ref=e167]: Magnific
+                - button "About this result" [ref=e177]
+          - generic [ref=e185] [cursor=pointer]:
+            - link "1,227,800+ Apple Stock Photos and Royalty-Free Pictures - iStock iStock" [ref=e186]:
+              - /url: /goto?url=CAESYwHrOzAVdmaFGUJy-XfPEVPwsdjU24IZ3WtwU2Rd8V9aRbPOkKfmezkEwdAWtCSXGhzswJ9aRw5zuS8lfJPynDES7EvO4nSM0iJQfnzmhsLjUyD03Dm8oWeriWibc2msFSx9lQ
+            - button [ref=e188]:
+              - img "1,227,800+ Apple Stock Photos and Royalty-Free Pictures - iStock" [ref=e190]
+            - generic [ref=e192]:
+              - generic [ref=e194]: 1,227,800+ Apple Stock Photos and Royalty-Free Pictures - iStock
+              - generic [ref=e195]:
+                - generic [ref=e197]: iStock
+                - button "About this result" [ref=e207]
+          - generic [ref=e215] [cursor=pointer]:
+            - link "Apple PNG Transparent Images Free Download | Vector Files ... Pngtree" [ref=e216]:
+              - /url: /goto?url=CAESVwHrOzAV1NwE04wBsrWGJcScyHGDilFzK8p8X74B1Zj772-GJQ5PyRL5mfzYRk2WQ6eloML4s3bP7hPdQuSvBx9LC7T1jdcVGIdTAH469yeJyIpK29C3kw
+            - button [ref=e218]:
+              - img "Apple PNG Transparent Images Free Download | Vector Files ..." [ref=e220]
+            - generic [ref=e222]:
+              - generic [ref=e224]: Apple PNG Transparent Images Free Download | Vector Files ...
+              - generic [ref=e225]:
+                - generic [ref=e227]: Pngtree
+                - button "About this result" [ref=e237]
+          - generic [ref=e245] [cursor=pointer]:
+            - link "Apple fruit Images - Free Download on Magnific (formerly ... Magnific" [ref=e246]:
+              - /url: /goto?url=CAEScwHrOzAVpbKcFvzMQ9UohS997cT796Yi8xZIjvHR4rRe3vX7rT9vJJn882GCks8BGUayj3iN7skFrdtp4U6u3OpVzItCKTsMxQ5d3CuYvalF4B2ghBLNPvyokR6XeYRatkfQ98MRY6xvgcn0ljjqt3Vpo60
+            - button [ref=e248]:
+              - img "Apple fruit Images - Free Download on Magnific (formerly ..." [ref=e250]
+            - generic [ref=e252]:
+              - generic [ref=e254]: Apple fruit Images - Free Download on Magnific (formerly ...
+              - generic [ref=e255]:
+                - generic [ref=e257]: Magnific
+                - button "About this result" [ref=e267]
+          - generic [ref=e275] [cursor=pointer]:
+            - link "Apple photos and images | Canva Canva" [ref=e276]:
+              - /url: /goto?url=CAESYAHrOzAV8L8n99qMTExVCY7Ad8evr98_5rSWzTDkjSemWvTZj7PwiZl0mUliksMZz-zJiC8gALqpCHhLckV9ufaQ33AXhzhsIYPsDewcV2aSpMj1-v8YV8ZcnH7esehPLw
+            - button [ref=e278]:
+              - img "Apple photos and images | Canva" [ref=e280]
+            - generic [ref=e282]:
+              - generic [ref=e284]: Apple photos and images | Canva
+              - generic [ref=e285]:
+                - generic [ref=e287]: Canva
+                - button "About this result" [ref=e297]
+          - generic [ref=e305] [cursor=pointer]:
+            - link "Apple Photos, Download The BEST Free Apple Stock Photos & HD ... Pexels" [ref=e306]:
+              - /url: /goto?url=CAESXwHrOzAVdjDMXaE5hpboqR4j1wzkcAgmUUwAJbzG3HmSCw2eAjK0kvk3kbS6XHL_1COYWEFPviUj6g2ZYjl1fs7mmpZMPIDfvQVg685MzTPJBZfxd7kgHUsp0sJabKF3
+            - button [ref=e308]:
+              - img "Apple Photos, Download The BEST Free Apple Stock Photos & HD ..." [ref=e310]
+            - generic [ref=e312]:
+              - generic [ref=e314]: Apple Photos, Download The BEST Free Apple Stock Photos & HD ...
+              - generic [ref=e315]:
+                - generic [ref=e317]: Pexels
+                - button "About this result" [ref=e327]
+          - generic [ref=e335] [cursor=pointer]:
+            - link "405,400+ Green Apple Stock Photos and Royalty-Free Pictures ... iStock" [ref=e336]:
+              - /url: /goto?url=CAESaQHrOzAVCMfJIbxFz1O69jGzNKImqWpb2KcaT9m3nyKZ_giDWuFLj2no7GTnIdxmOLCDMqSNn3DFqrFJ82IEOiJgQGxcjY8Br6C-B1NZJuPO5-4_a94nW_C6e1xKWsRXDc73s75AeypyOg
+            - button [ref=e338]:
+              - img "405,400+ Green Apple Stock Photos and Royalty-Free Pictures ..." [ref=e340]
+            - generic [ref=e342]:
+              - generic [ref=e344]: 405,400+ Green Apple Stock Photos and Royalty-Free Pictures ...
+              - generic [ref=e345]:
+                - generic [ref=e347]: iStock
+                - button "About this result" [ref=e357]
+          - generic [ref=e365] [cursor=pointer]:
+            - link "1,354,796 Apple Stock Photos - Free & Royalty-Free Stock ... Dreamstime" [ref=e366]:
+              - /url: /goto?url=CAESbgHrOzAVgeg9TApw8Od8vPjWi0RKfLsa83OkfbW6G02eBC4LkzGzlrxqbk8kunIhG9sh0TajK_njeUnKMkxQEL9eb5jVEPnrMklBCseEQTEWQ8K1XpFT6qre1t-zBKTJgiD0GNV5BAvrR4_n5fCe
+            - button [ref=e368]:
+              - img "1,354,796 Apple Stock Photos - Free & Royalty-Free Stock ..." [ref=e370]
+            - generic [ref=e372]:
+              - generic [ref=e374]: 1,354,796 Apple Stock Photos - Free & Royalty-Free Stock ...
+              - generic [ref=e375]:
+                - generic [ref=e377]: Dreamstime
+                - button "About this result" [ref=e387]
+          - generic [ref=e395] [cursor=pointer]:
+            - link "Apple Fruit Vector Image on VectorStock | Cute apple vector ... Pinterest" [ref=e396]:
+              - /url: /goto?url=CAESkgEB6zswFfixuu4PaOXGCYr4NEQ2dc5sQflMU3rqkfJos7S1RKHx-tMf9TQ1U6YVt6rvA5wUy2j5oJrA1-rzsBXXD748kUkoP3DojfWUVUbby0_82y_E-jaihnRIpqmVisYSUWEgocahrVZG_9C1Q9c-lRSXZNvUaDcL7nHYNw8Lmg-1Tk0gkYvpSphu7ocPcULYkg
+            - button [ref=e398]:
+              - img "Apple Fruit Vector Image on VectorStock | Cute apple vector ..." [ref=e400]
+            - generic [ref=e402]:
+              - generic [ref=e404]: Apple Fruit Vector Image on VectorStock | Cute apple vector ...
+              - generic [ref=e405]:
+                - generic [ref=e407]: Pinterest
+                - button "About this result" [ref=e417]
+          - generic [ref=e425] [cursor=pointer]:
+            - link "9,000+ Free Apple - Fruit & Apple Images - Pixabay Pixabay" [ref=e426]:
+              - /url: /goto?url=CAESbwHrOzAVsBQWajVlVM1_T7EAYFxb-qAYeLiii39Tz2jxmQw4_qasRsWEDW3MruStoYCNVGgMYzgT52ocjs-ZF1pbpTfa6WUYGVfudbNuRliaRMrO2FgkoIZoOHafbF730S6l95R1Mw0Nfs-SUEO80g
+            - button [ref=e428]:
+              - img "9,000+ Free Apple - Fruit & Apple Images - Pixabay" [ref=e430]
+            - generic [ref=e432]:
+              - generic [ref=e434]: 9,000+ Free Apple - Fruit & Apple Images - Pixabay
+              - generic [ref=e435]:
+                - generic [ref=e437]: Pixabay
+                - button "About this result" [ref=e447]
+          - generic [ref=e456] [cursor=pointer]:
+            - link "Download Fresh Green Apple Image - Apple, Green, Fresh ... StockCake" [ref=e457]:
+              - /url: /goto?url=CAEScgHrOzAVgLWuwaB0LiFz-4olFPXhxBj90ZOay9hqeaN4Bsl1jBajkVAO1tPi_QPtPwln37QkchYKJa7D18113WACpsy-ia4MuQgteGeFlAmqEfQZWnjjKZwtZUleahIOjGasaDBipesw65h5VGUYUutxcA
+            - button [ref=e459]:
+              - img "Download Fresh Green Apple Image - Apple, Green, Fresh ..." [ref=e461]
+            - generic [ref=e463]:
+              - generic [ref=e465]: Download Fresh Green Apple Image - Apple, Green, Fresh ...
+              - generic [ref=e466]:
+                - generic [ref=e468]: StockCake
+                - button "About this result" [ref=e478]
+          - generic [ref=e487] [cursor=pointer]:
+            - link "Apple Outline Images – Browse 191,777 Stock Photos, Vectors ... Adobe Stock" [ref=e488]:
+              - /url: /goto?url=CAESaQHrOzAV2Ifyz_9_IbCBgxqb10dOWcwXpJHK_5_tZk5NYfAdRkx5lImrrfRFosZwSspcYk6Xjy99ZID5fGT9Vy_WmcHjXgltmB2suFegSWa0JDXDaAaw8fjN50j6orWpEnAT0csAWhGdOA
+            - button [ref=e490]:
+              - img "Apple Outline Images – Browse 191,777 Stock Photos, Vectors ..." [ref=e492]
+            - generic [ref=e494]:
+              - generic [ref=e496]: Apple Outline Images – Browse 191,777 Stock Photos, Vectors ...
+              - generic [ref=e497]:
+                - generic [ref=e499]: Adobe Stock
+                - button "About this result" [ref=e509]
+          - generic [ref=e518] [cursor=pointer]:
+            - link "2,466,746 Apple Fruit Royalty-Free Images, Stock Photos ... Shutterstock" [ref=e519]:
+              - /url: /goto?url=CAESagHrOzAVHqUgU8fvvnV8YwW-6qxKdYJK4cPdDgeUPZ_TNA7C4P9Jr8wYrS8mhthAogzTcWwkaljJMvqUmzFTQal7H7NcRDihhEM6GgNbhVMd0IRSJZIyUrUkaKkxOnsqzMISliKGwPh3NnA
+            - button [ref=e521]:
+              - img "2,466,746 Apple Fruit Royalty-Free Images, Stock Photos ..." [ref=e523]
+            - generic [ref=e525]:
+              - generic [ref=e527]: 2,466,746 Apple Fruit Royalty-Free Images, Stock Photos ...
+              - generic [ref=e528]:
+                - generic [ref=e530]: Shutterstock
+                - button "About this result" [ref=e540]
+          - generic [ref=e549] [cursor=pointer]:
+            - link "Apple PNG Transparent Images Free Download | Vector Files ... Pngtree" [ref=e550]:
+              - /url: /goto?url=CAESVwHrOzAV1NwE04wBsrWGJcScyHGDilFzK8p8X74B1Zj772-GJQ5PyRL5mfzYRk2WQ6eloML4s3bP7hPdQuSvBx9LC7T1jdcVGIdTAH469yeJyIpK29C3kw
+            - button [ref=e552]:
+              - img "Apple PNG Transparent Images Free Download | Vector Files ..." [ref=e554]
+            - generic [ref=e556]:
+              - generic [ref=e558]: Apple PNG Transparent Images Free Download | Vector Files ...
+              - generic [ref=e559]:
+                - generic [ref=e561]: Pngtree
+                - button "About this result" [ref=e571]
+        - button "Show more images" [ref=e577] [cursor=pointer]:
+          - separator [aria-hidden] [ref=e578]
+      - main [ref=e584]:
+        - generic [ref=e588]:
+          - generic [ref=e597]:
+            - generic [ref=e618]:
+              - heading [level=2] [ref=e623]:
+                - strong [ref=e624]: AI Overview
+              - generic [ref=e628]:
+                - generic [ref=e629]:
+                  - button [ref=e632]:
+                    - img "1,354,796 Apple Stock Photos - Free & Royalty-Free Stock ..." [ref=e633]
+                  - text: You can browse a wide variety of pictures and art ideas through
+                  - mark [ref=e634]:
+                    - link "Pinterest Apple Images" [ref=e636] [cursor=pointer]:
+                      - /url: /goto?url=CAESdQHrOzAVDCSR6XgD61Hh3lG50gDSwY7vhd21b1K9kxJNu6Hu_CGJzjwGg56_jg4iMUDEKuLk2tFYp4gVeIkkF9jmPLjzir8CXg_TI6a-KfchJXAGQIH1YTD5IpmB24j8BWfSL2aJig0ai338omzSei9yzM872g
+                  - text: .
+                  - button "Related results" [ref=e641] [cursor=pointer]
+                - heading "Where to Find Free Apple Photos" [level=3] [ref=e646]
+                - list [ref=e647]:
+                  - listitem [ref=e649]:
+                    - generic [ref=e650]:
+                      - strong [ref=e651]:
+                        - link "Unsplash" [ref=e653] [cursor=pointer]:
+                          - /url: /goto?url=CAESXgHrOzAVVbQLKN2TG3dinU6Ii8_YlzJ9l8fXaTKSbJarBtv9Q0xU-XRABfY-AO9XO8H6u0aL1LArdoOf9AxboV4AifypSTpPxiih3-i1KtlvpDrM_t4-VMbluqz5_18
+                        - text: ":"
+                      - text: Download high-resolution, free-to-use pictures of fresh apples.
+                    - generic [ref=e657]:
+                      - link "Unsplash" [ref=e658] [cursor=pointer]:
+                        - /url: /goto?url=CAESXgHrOzAVVbQLKN2TG3dinU6Ii8_YlzJ9l8fXaTKSbJarBtv9Q0xU-XRABfY-AO9XO8H6u0aL1LArdoOf9AxboV4AifypSTpPxiih3-i1KtlvpDrM_t4-VMbluqz5_18
+                      - button "Unsplash – related results" [ref=e659] [cursor=pointer]:
+                        - generic [ref=e660]: Unsplash
+                  - listitem [ref=e668]:
+                    - generic [ref=e669]:
+                      - strong [ref=e670]:
+                        - link "Pexels" [ref=e672] [cursor=pointer]:
+                          - /url: /goto?url=CAESXwHrOzAVRdd7TkLV7FP1uhWja3ZENM4ZMeVFJx1Y5lRsGj1dhu1Ks2If2cpxP-0UnUjHhk9I9wCw2yV65DzpCztNFHztFV-c4a3rKcyk7TMZyy-x_TccN9Rz09H061mR
+                        - text: ":"
+                      - text: Find free stock photos of red, green, and yellow apples in various settings.
+                    - generic [ref=e676]:
+                      - link "Pexels" [ref=e677] [cursor=pointer]:
+                        - /url: /goto?url=CAESXwHrOzAVRdd7TkLV7FP1uhWja3ZENM4ZMeVFJx1Y5lRsGj1dhu1Ks2If2cpxP-0UnUjHhk9I9wCw2yV65DzpCztNFHztFV-c4a3rKcyk7TMZyy-x_TccN9Rz09H061mR
+                      - button "Pexels – related results" [ref=e678] [cursor=pointer]:
+                        - generic [ref=e679]: Pexels
+                  - listitem [ref=e687]:
+                    - generic [ref=e688]:
+                      - strong [ref=e689]:
+                        - link [ref=e691] [cursor=pointer]:
+                          - /url: /goto?url=CAESYwHrOzAVeRUZW1AmnGulqAqFlJCYuS3oNfcmGev2NXTqC2tVq9p_MagCJlipQprT20LBSC5qBrxqFoylaH_Xwg9pPlcY_5QeJwauEzhNLlPpZo051y77D1IMCU7iv7upDtr_dA
+                          - text: Pixabay
+                        - text: ":"
+                      - text: Access free HD images, illustrations, and vectors of orchards and fruit.
+                    - generic [ref=e695]:
+                      - link [ref=e696] [cursor=pointer]:
+                        - /url: /goto?url=CAESYwHrOzAVeRUZW1AmnGulqAqFlJCYuS3oNfcmGev2NXTqC2tVq9p_MagCJlipQprT20LBSC5qBrxqFoylaH_Xwg9pPlcY_5QeJwauEzhNLlPpZo051y77D1IMCU7iv7upDtr_dA
+                      - button [ref=e697] [cursor=pointer]:
+                        - generic [ref=e698]: Pixabay
+                - heading [level=3] [ref=e706]: Popular Visual Styles
+                - list [aria-hidden] [ref=e707]:
+                  - listitem [ref=e709]:
+                    - generic [ref=e710]:
+                      - strong [ref=e711]: "Macro Photography:"
+                      - text: Close-up shots highlighting water droplets and crisp skin.
+                  - listitem [ref=e713]:
+                    - generic [ref=e714]:
+                      - strong [ref=e715]: "Orchard Scenes:"
+                      - text: Natural photos of apples hanging on tree branches.
+                  - listitem [ref=e717]:
+                    - generic [ref=e718]:
+                      - strong [ref=e719]: "Minimalist Art:"
+                      - text: Clean vector illustrations and outline drawings on white backgrounds.
+                - generic [ref=e724]:
+                  - list [ref=e725]:
+                    - listitem [ref=e726]:
+                      - generic [ref=e727]:
+                        - link [ref=e728] [cursor=pointer]:
+                          - /url: /goto?url=CAESXgHrOzAVVbQLKN2TG3dinU6Ii8_YlzJ9l8fXaTKSbJarBtv9Q0xU-XRABfY-AO9XO8H6u0aL1LArdoOf9AxboV4AifypSTpPxiih3-i1KtlvpDrM_t4-VMbluqz5_18
+                        - generic [ref=e729]:
+                          - generic [ref=e730]:
+                            - generic [ref=e733]: Unsplash
+                            - button [ref=e737] [cursor=pointer]
+                          - generic [ref=e743]:
+                            - generic [aria-hidden] [ref=e744]: Apple Pictures [HD] | Download Free Images on Unsplash
+                            - generic [ref=e745]: Download the perfect apple pictures. Find over 100+ of the best free apple images. Free for commercial use ✓ No attribution requir...
+                    - listitem [ref=e748]:
+                      - generic [ref=e749]:
+                        - link [ref=e750] [cursor=pointer]:
+                          - /url: /goto?url=CAESdQHrOzAVDCSR6XgD61Hh3lG50gDSwY7vhd21b1K9kxJNu6Hu_CGJzjwGg56_jg4iMUDEKuLk2tFYp4gVeIkkF9jmPLjzir8CXg_TI6a-KfchJXAGQIH1YTD5IpmB24j8BWfSL2aJig0ai338omzSei9yzM872g
+                        - generic [ref=e751]:
+                          - generic [ref=e752]:
+                            - generic [ref=e755]: Pinterest
+                            - button [ref=e759] [cursor=pointer]
+                          - generic [ref=e765]:
+                            - generic [aria-hidden] [ref=e766]: Apple Images
+                            - generic [ref=e767]: "* Categories: Fruit, drawing, green, art, red, hd, black and white, custard, ice, wild birds photography, apples photography, dark..."
+                    - listitem [ref=e770]:
+                      - generic [ref=e771]:
+                        - link [ref=e772] [cursor=pointer]:
+                          - /url: /goto?url=CAESXwHrOzAVRdd7TkLV7FP1uhWja3ZENM4ZMeVFJx1Y5lRsGj1dhu1Ks2If2cpxP-0UnUjHhk9I9wCw2yV65DzpCztNFHztFV-c4a3rKcyk7TMZyy-x_TccN9Rz09H061mR
+                        - generic [ref=e773]:
+                          - generic [ref=e774]:
+                            - generic [ref=e777]: Pexels
+                            - button [ref=e781] [cursor=pointer]
+                          - generic [ref=e787]:
+                            - generic [aria-hidden] [ref=e788]: Apple Photos, Download The BEST Free Apple Stock Photos & HD Images
+                            - generic [ref=e789]: "Image Categories: Apple fruit (75K), apple products (105K), red apple (388K), apple company (23K), apple store (40K), apple watch ..."
+                    - listitem [ref=e792]:
+                      - generic [ref=e793]:
+                        - link [ref=e794] [cursor=pointer]:
+                          - /url: /goto?url=CAESYwHrOzAVeRUZW1AmnGulqAqFlJCYuS3oNfcmGev2NXTqC2tVq9p_MagCJlipQprT20LBSC5qBrxqFoylaH_Xwg9pPlcY_5QeJwauEzhNLlPpZo051y77D1IMCU7iv7upDtr_dA
+                        - generic [ref=e795]:
+                          - generic [ref=e796]:
+                            - generic [ref=e799]: Pixabay
+                            - button [ref=e803] [cursor=pointer]
+                          - generic [ref=e809]:
+                            - generic [aria-hidden] [ref=e810]: "Free HD Apple Images: 10,000+ Stunning Photos of Apples and Fruit - Pixabay"
+                            - generic [ref=e811]: Pixabay offers a collection of over 10,000 free royalty-free HD images, illustrations, vectors, and photos of apples, apple trees,
+                  - button [aria-hidden] [ref=e814] [cursor=pointer]
+              - generic [ref=e822]:
+                - generic [ref=e823]:
+                  - status [ref=e824]
+                  - button [ref=e826] [cursor=pointer]
+                - button [ref=e836] [cursor=pointer]
+                - generic [ref=e842]:
+                  - button [ref=e844] [cursor=pointer]
+                  - button [ref=e849] [cursor=pointer]
+                - button [ref=e856] [cursor=pointer]
+            - button "Show more AI Overview" [ref=e864]:
+              - generic [ref=e865] [cursor=pointer]: Show more
+          - generic [ref=e875]:
+            - heading "Short videos" [level=2] [ref=e877]
+            - generic [ref=e879]:
+              - list [ref=e881]:
+                - listitem [ref=e882]:
+                  - generic [ref=e885]:
+                    - generic [ref=e887]:
+                      - link "Red apple images for free download by aifusionart on Pinterest. Play on Pinterest. 0:14" [ref=e889] [cursor=pointer]:
+                        - /url: /goto?url=CAESggEB6zswFZ1D96Tx6zv5NlF204inYxDSPY98O6OidyXS9bM8hWRP0EOnyeaRjMVgjpzBp9olvaIwB9ZAsrGyxNirNe75un5x5YMLjrsdu-pOrmXATqLyx7k478XTLiu2eNjUyhk2zHOLN1tkrZET721yfQ_k1axlf86WWrmiGHSpaBjU
+                        - generic [ref=e890]: 0:14
+                      - link "Red apple images for free download Pinterest · aifusionart" [ref=e902] [cursor=pointer]:
+                        - /url: /goto?url=CAESggEB6zswFZ1D96Tx6zv5NlF204inYxDSPY98O6OidyXS9bM8hWRP0EOnyeaRjMVgjpzBp9olvaIwB9ZAsrGyxNirNe75un5x5YMLjrsdu-pOrmXATqLyx7k478XTLiu2eNjUyhk2zHOLN1tkrZET721yfQ_k1axlf86WWrmiGHSpaBjU
+                        - generic [ref=e903]:
+                          - heading "Red apple images for free download" [level=3] [ref=e905]
+                          - generic [ref=e907]: Pinterest · aifusionart
+                    - button "About this result" [ref=e917] [cursor=pointer]
+                - listitem [ref=e922]:
+                  - generic [ref=e925]:
+                    - generic [ref=e927]:
+                      - link "Apple by mihairamonaflor on Pinterest. Play on Pinterest. 0:07" [ref=e929] [cursor=pointer]:
+                        - /url: /goto?url=CAESbAHrOzAVCcoN56XHwyEJoRsKdqA4WtB-iNPi9P8zlyD8rd-gIQsKqK9TGQHZQHdB1WVL7Vp_uf9ifBmt6hDfl0qCqqJEAcD7_dlO2Jge7u38bf8-4i5bnj2i338hc2gsmlQ3PUw2N2GgNAvTNg
+                        - generic [ref=e930]: 0:07
+                      - link "Apple Pinterest · mihairamonaflor" [ref=e939] [cursor=pointer]:
+                        - /url: /goto?url=CAESbAHrOzAVCcoN56XHwyEJoRsKdqA4WtB-iNPi9P8zlyD8rd-gIQsKqK9TGQHZQHdB1WVL7Vp_uf9ifBmt6hDfl0qCqqJEAcD7_dlO2Jge7u38bf8-4i5bnj2i338hc2gsmlQ3PUw2N2GgNAvTNg
+                        - generic [ref=e940]:
+                          - heading "Apple" [level=3] [ref=e942]
+                          - generic [ref=e944]: Pinterest · mihairamonaflor
+                    - button "About this result" [ref=e954] [cursor=pointer]
+                - listitem [ref=e959]:
+                  - generic [ref=e962]:
+                    - generic [ref=e964]:
+                      - link "apple 🍎 by gk0287185 on Pinterest. Play on Pinterest. 0:14" [ref=e966] [cursor=pointer]:
+                        - /url: /goto?url=CAEScgHrOzAV1VkIlBboqL4a9ghJfF0KrGSKCbrfZqi495tCQjoRRzCqPjrMMyC6_DMZryvGzd1RCQ3AwYBKWnMhY6F2R7ZzJi4w-5ICjYWgCL_LAxYKTwdvPE1ZMDCrTzLk9hFYW03IxBzKP6kVJBoLNd-vNQ
+                        - generic [ref=e967]: 0:14
+                      - link "apple Pinterest · gk0287185" [ref=e979] [cursor=pointer]:
+                        - /url: /goto?url=CAEScgHrOzAV1VkIlBboqL4a9ghJfF0KrGSKCbrfZqi495tCQjoRRzCqPjrMMyC6_DMZryvGzd1RCQ3AwYBKWnMhY6F2R7ZzJi4w-5ICjYWgCL_LAxYKTwdvPE1ZMDCrTzLk9hFYW03IxBzKP6kVJBoLNd-vNQ
+                        - generic [ref=e980]:
+                          - heading "apple" [level=3] [ref=e982]
+                          - generic [ref=e984]: Pinterest · gk0287185
+                    - button "About this result" [ref=e994] [cursor=pointer]
+                - listitem [ref=e999]:
+                  - generic [ref=e1002]:
+                    - generic [ref=e1004]:
+                      - link "Apple Drawing by farjann3 on Pinterest. Play on Pinterest. 0:14" [ref=e1006] [cursor=pointer]:
+                        - /url: /goto?url=CAESeQHrOzAVlmGDxqHBpuQinpzrQUFDLOtqJvcsxcHeBJjSlPqilj14c2stW-501Aa86aTqk5Eujm7jBiXtvpAXXCCQ-lomgKb85c7xHrdC0MnrV7QwRUFDS6r4YL6rCLzb9NiLjkSVtNRwxwmbzRJjKa-Vmk8beHfLHW8
+                        - generic [ref=e1007]: 0:14
+                      - link "Apple Drawing Pinterest · farjann3" [ref=e1016] [cursor=pointer]:
+                        - /url: /goto?url=CAESeQHrOzAVlmGDxqHBpuQinpzrQUFDLOtqJvcsxcHeBJjSlPqilj14c2stW-501Aa86aTqk5Eujm7jBiXtvpAXXCCQ-lomgKb85c7xHrdC0MnrV7QwRUFDS6r4YL6rCLzb9NiLjkSVtNRwxwmbzRJjKa-Vmk8beHfLHW8
+                        - generic [ref=e1017]:
+                          - heading "Apple Drawing" [level=3] [ref=e1019]
+                          - generic [ref=e1021]: Pinterest · farjann3
+                    - button "About this result" [ref=e1031] [cursor=pointer]
+                - listitem [ref=e1036]:
+                  - generic [ref=e1039]:
+                    - generic [ref=e1041]:
+                      - link "mmmmm perfectly ripe 🍎 apple butter brioche buns are back for ... by Poulette Bakeshop on Instagram. Play on Instagram. 0:12" [ref=e1043] [cursor=pointer]:
+                        - /url: /goto?url=CAESZgHrOzAVgOdz7JW9p2DQZQg6-TRPd3hxyp8xeWsTjxdhVi6SKNoADtOClRS4YfPAmEPbx0biaC19mJR3WK1QjS8poG3zsyKQZWPgp_5nU3yQLqsQwwbWs_mX5YpYKB3_Zw0aAp3O2w
+                        - generic [ref=e1044]: 0:12
+                      - link "mmmmm perfectly ripe apple butter brioche buns are back for ... Instagram · Poulette Bakeshop" [ref=e1053] [cursor=pointer]:
+                        - /url: /goto?url=CAESZgHrOzAVgOdz7JW9p2DQZQg6-TRPd3hxyp8xeWsTjxdhVi6SKNoADtOClRS4YfPAmEPbx0biaC19mJR3WK1QjS8poG3zsyKQZWPgp_5nU3yQLqsQwwbWs_mX5YpYKB3_Zw0aAp3O2w
+                        - generic [ref=e1054]:
+                          - heading "mmmmm perfectly ripe apple butter brioche buns are back for ..." [level=3] [ref=e1056]
+                          - generic [ref=e1058]: Instagram · Poulette Bakeshop
+                    - button "About this result" [ref=e1068] [cursor=pointer]
+                - listitem [ref=e1073]:
+                  - generic [ref=e1076]:
+                    - generic [ref=e1078]:
+                      - link "Bhavani mata wallpaper hd by rdarokar0 on Pinterest. Play on Pinterest. 0:28" [ref=e1080] [cursor=pointer]:
+                        - /url: /goto?url=CAESawHrOzAVag1Yk4gDCde5vwq3z_U4gCQB-Ee56M_wNNKZ03xQ3vbRnBmYImwptlNVaIjXnaTVy53JbknuFciMyPuVB0c_taXL53Edrk_kbTOanDki9nKSTFEN6ncyXnoAnlos6x5hSmnU5Vwu
+                        - generic [ref=e1081]: 0:28
+                      - link "Bhavani mata wallpaper hd Pinterest · rdarokar0" [ref=e1090] [cursor=pointer]:
+                        - /url: /goto?url=CAESawHrOzAVag1Yk4gDCde5vwq3z_U4gCQB-Ee56M_wNNKZ03xQ3vbRnBmYImwptlNVaIjXnaTVy53JbknuFciMyPuVB0c_taXL53Edrk_kbTOanDki9nKSTFEN6ncyXnoAnlos6x5hSmnU5Vwu
+                        - generic [ref=e1091]:
+                          - heading "Bhavani mata wallpaper hd" [level=3] [ref=e1093]
+                          - generic [ref=e1095]: Pinterest · rdarokar0
+                    - button "About this result" [ref=e1105] [cursor=pointer]
+              - button [aria-hidden] [ref=e1110] [cursor=pointer]
+            - link "More short videos" [ref=e1116] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&udm=39&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ3egMegQIQxAO
+              - separator [aria-hidden] [ref=e1117]
+          - generic [ref=e1125]:
+            - heading "Web results" [level=2] [ref=e1126]
+            - generic [ref=e1127]:
+              - generic [ref=e1130]:
+                - link "Apple Pictures [HD] | Download Free Images on Unsplash Unsplash https://unsplash.com › photos › apple" [ref=e1132] [cursor=pointer]:
+                  - /url: /goto?url=CAESXgHrOzAVh-ky4uDqfJoVyJa5iquC3J5imw5DkR_7gl1QLa91V-HwgZBY6jruRp_a0XcYpaK0BR9R57uXgVhuMagbI69cUvdAUluF3J98us5sVcMsH7GZ7lxlLdst00c
+                  - heading "Apple Pictures [HD] | Download Free Images on Unsplash" [level=3] [ref=e1133]
+                  - generic [ref=e1139]:
+                    - generic [ref=e1140]: Unsplash
+                    - generic [ref=e1142]: https://unsplash.com › photos › apple
+                - button "About this result" [ref=e1148] [cursor=pointer]
+              - generic [ref=e1155]:
+                - emphasis [ref=e1156]: Download the perfect apple pictures
+                - text: . Find over 100+ of the best free apple images. Free for commercial use ✓ No attribution required ✓ Copyright-free.
+              - link "apple image images from unsplash.com" [ref=e1158] [cursor=pointer]:
+                - /url: /goto?url=CAESXgHrOzAVh-ky4uDqfJoVyJa5iquC3J5imw5DkR_7gl1QLa91V-HwgZBY6jruRp_a0XcYpaK0BR9R57uXgVhuMagbI69cUvdAUluF3J98us5sVcMsH7GZ7lxlLdst00c
+          - generic [ref=e1170]:
+            - generic [ref=e1173]:
+              - link "Apple Outline Images – Browse 191777 ... Adobe Stock https://stock.adobe.com › search › k=apple+outline" [ref=e1175] [cursor=pointer]:
+                - /url: /goto?url=CAESaQHrOzAV2Ifyz_9_IbCBgxqb10dOWcwXpJHK_5_tZk5NYfAdRkx5lImrrfRFosZwSspcYk6Xjy99ZID5fGT9Vy_WmcHjXgltmB2suFegSWa0JDXDaAaw8fjN50j6orWpEnAT0csAWhGdOA
+                - heading "Apple Outline Images – Browse 191777 ..." [level=3] [ref=e1176]
+                - generic [ref=e1182]:
+                  - generic [ref=e1183]: Adobe Stock
+                  - generic [ref=e1185]: https://stock.adobe.com › search › k=apple+outline
+              - button "About this result" [ref=e1191] [cursor=pointer]
+            - generic [ref=e1198]:
+              - emphasis [ref=e1199]: Search from thousands of royalty-free Apple Outline stock images
+              - text: and video for your next project. Download royalty-free stock photos, vectors, ...
+          - generic [ref=e1203]:
+            - generic [ref=e1206]:
+              - link "Apple Images Pinterest https://www.pinterest.com › ideas › apple-images" [ref=e1208] [cursor=pointer]:
+                - /url: /goto?url=CAESdQHrOzAVFExPcHBFuorGErbcj7oMYdMKsySzZzd4sa-fwmFVSwylcxDieWHOqiQzkXWX8sh2HR2w96NPDYRT-Yb2TGaiCSwzQxJDYRkvd9gdDFeZJBHwAIQtZlIXiVzXHiZXtSsGX0JVcmHB8lF8hOZei49SAw
+                - heading "Apple Images" [level=3] [ref=e1209]
+                - generic [ref=e1215]:
+                  - generic [ref=e1216]: Pinterest
+                  - generic [ref=e1218]: https://www.pinterest.com › ideas › apple-images
+              - button "About this result" [ref=e1224] [cursor=pointer]
+            - generic [ref=e1230]:
+              - generic [ref=e1231]:
+                - text: Discover Pinterest's best ideas and inspiration for
+                - emphasis [ref=e1232]: Apple images
+                - text: . Get inspired and try out new things. 8k people searched this. ·. Last updated 1w.
+              - link "Read more" [ref=e1233] [cursor=pointer]:
+                - /url: /goto?url=CAESvgEB6zswFRIm2eqbEJNxdhMMxLH1U2Wvzmjena1Qy5A7-0697ufP1lmp_KdqBza9WKyZJe0dguu6_nqOszwcZm_n8VCw7nQsNkdbVXt5AJC31eU3OXFp_pJ7ljbyVVS9cdvzV5Wk1KNXlAKzTtkOfITQnprYOxB-mAauVZdExH8luMdnjK_holfdBVFxhdHI74uLqqnRzZ5mfmkg-VmdoC1sVuCTaBw5rTbmDfG7Sswd2_h-PGbmV3h_0RDl4FMv
+            - link [aria-hidden] [ref=e1236] [cursor=pointer]:
+              - /url: /goto?url=CAESdQHrOzAVFExPcHBFuorGErbcj7oMYdMKsySzZzd4sa-fwmFVSwylcxDieWHOqiQzkXWX8sh2HR2w96NPDYRT-Yb2TGaiCSwzQxJDYRkvd9gdDFeZJBHwAIQtZlIXiVzXHiZXtSsGX0JVcmHB8lF8hOZei49SAw
+          - generic [ref=e1242]:
+            - generic [ref=e1245]:
+              - link "Apple photos and images Canva https://www.canva.com › Photos › Apple" [ref=e1247] [cursor=pointer]:
+                - /url: /goto?url=CAESYAHrOzAV8L8n99qMTExVCY7Ad8evr98_5rSWzTDkjSemWvTZj7PwiZl0mUliksMZz-zJiC8gALqpCHhLckV9ufaQ33AXhzhsIYPsDewcV2aSpMj1-v8YV8ZcnH7esehPLw
+                - heading "Apple photos and images" [level=3] [ref=e1248]
+                - generic [ref=e1254]:
+                  - generic [ref=e1255]: Canva
+                  - generic [ref=e1257]: https://www.canva.com › Photos › Apple
+              - button "About this result" [ref=e1263] [cursor=pointer]
+            - generic [ref=e1270]:
+              - text: Discover
+              - emphasis [ref=e1271]: free and premium apple photos
+              - text: from Canva for your next design project.
+            - link "apple image images from www.canva.com" [ref=e1273] [cursor=pointer]:
+              - /url: /goto?url=CAESYAHrOzAV8L8n99qMTExVCY7Ad8evr98_5rSWzTDkjSemWvTZj7PwiZl0mUliksMZz-zJiC8gALqpCHhLckV9ufaQ33AXhzhsIYPsDewcV2aSpMj1-v8YV8ZcnH7esehPLw
+          - generic [ref=e1285]:
+            - generic [ref=e1288]:
+              - link "Free Apple Photos Pexels https://www.pexels.com › search › apple" [ref=e1290] [cursor=pointer]:
+                - /url: /goto?url=CAESXwHrOzAVdjDMXaE5hpboqR4j1wzkcAgmUUwAJbzG3HmSCw2eAjK0kvk3kbS6XHL_1COYWEFPviUj6g2ZYjl1fs7mmpZMPIDfvQVg685MzTPJBZfxd7kgHUsp0sJabKF3
+                - heading "Free Apple Photos" [level=3] [ref=e1291]
+                - generic [ref=e1297]:
+                  - generic [ref=e1298]: Pexels
+                  - generic [ref=e1300]: https://www.pexels.com › search › apple
+              - button "About this result" [ref=e1306] [cursor=pointer]
+            - generic [ref=e1313]:
+              - emphasis [ref=e1314]: Download and use 10000+ Apple stock photos for free
+              - text: . ✓ Thousands of new images every day ✓ Completely Free to Use ✓ High-quality videos and images from ...
+            - link "apple image images from www.pexels.com" [ref=e1316] [cursor=pointer]:
+              - /url: /goto?url=CAESXwHrOzAVdjDMXaE5hpboqR4j1wzkcAgmUUwAJbzG3HmSCw2eAjK0kvk3kbS6XHL_1COYWEFPviUj6g2ZYjl1fs7mmpZMPIDfvQVg685MzTPJBZfxd7kgHUsp0sJabKF3
+          - generic [ref=e1328]:
+            - generic [ref=e1331]:
+              - link "1227800+ Apple Stock Photos and Royalty-Free Pictures iStock https://www.istockphoto.com › ... › Food and drink" [ref=e1333] [cursor=pointer]:
+                - /url: /goto?url=CAESYwHrOzAVdmaFGUJy-XfPEVPwsdjU24IZ3WtwU2Rd8V9aRbPOkKfmezkEwdAWtCSXGhzswJ9aRw5zuS8lfJPynDES7EvO4nSM0iJQfnzmhsLjUyD03Dm8oWeriWibc2msFSx9lQ
+                - heading "1227800+ Apple Stock Photos and Royalty-Free Pictures" [level=3] [ref=e1334]
+                - generic [ref=e1340]:
+                  - generic [ref=e1341]: iStock
+                  - generic [ref=e1343]: https://www.istockphoto.com › ... › Food and drink
+              - button "About this result" [ref=e1349] [cursor=pointer]
+            - generic [ref=e1356]:
+              - emphasis [ref=e1357]: Search from 1227806 Apple stock photos, pictures and royalty-free images
+              - text: from iStock. Get iStock exclusive photos, illustrations, and more.
+            - link "apple image images from www.istockphoto.com" [ref=e1359] [cursor=pointer]:
+              - /url: /goto?url=CAESYwHrOzAVdmaFGUJy-XfPEVPwsdjU24IZ3WtwU2Rd8V9aRbPOkKfmezkEwdAWtCSXGhzswJ9aRw5zuS8lfJPynDES7EvO4nSM0iJQfnzmhsLjUyD03Dm8oWeriWibc2msFSx9lQ
+          - generic [ref=e1371]:
+            - generic [ref=e1374]:
+              - link "Apple Drawing Stock Photos - Getty Images gettyimages.in https://www.gettyimages.in › Stock photos" [ref=e1376] [cursor=pointer]:
+                - /url: /goto?url=CAESagHrOzAV2Zm527BwXWVWCoI9gqvBIMCLAv5EsNr58HGy5Dg4Le94Z3j_hQOj1MPorHLyRbfSUMaj5_b3MGZBLQDAKgaI1iaQsTmW_VuX5u-ZnkpBVI-A9dbca2zXPCWcY0USuM5s2vE85fU
+                - heading "Apple Drawing Stock Photos - Getty Images" [level=3] [ref=e1377]
+                - generic [ref=e1383]:
+                  - generic [ref=e1384]: gettyimages.in
+                  - generic [ref=e1386]: https://www.gettyimages.in › Stock photos
+              - button "About this result" [ref=e1392] [cursor=pointer]
+            - generic [ref=e1398]:
+              - generic [ref=e1399]:
+                - emphasis [ref=e1400]: Browse 5,058 authentic apple drawing stock photos
+                - text: ", high-res images, and pictures, or explore additional vintage apple drawing or candy apple drawing stock ..."
+              - link "Read more" [ref=e1401] [cursor=pointer]:
+                - /url: /goto?url=CAESywEB6zswFXZuZW0DXklsG7bhyHUq-EIzIZnwWmjM61okZcOo6lX8K4goESgx801ATu31t0i82hYjbwJ05EQpi4VbyZ2bhCeVm8Fjpi6lHjrpZbLcNveBZxXkQmSqxOk2PCxYYBCw898hFYQSWHbON80h8XqOPdJ4Aebf8RnmcmP1j1tuWc5lcZZV8d-i7BVsEeIxQoEg4NWQ1Aak8eSbyEjddkhOpVqcWiXm4EZ2oAabEUs7Dp9u1QyKUcWtrY0tcl8OIOOVgS3L-q-49Q
+            - link "apple image images from www.gettyimages.in" [ref=e1403] [cursor=pointer]:
+              - /url: /goto?url=CAESagHrOzAV2Zm527BwXWVWCoI9gqvBIMCLAv5EsNr58HGy5Dg4Le94Z3j_hQOj1MPorHLyRbfSUMaj5_b3MGZBLQDAKgaI1iaQsTmW_VuX5u-ZnkpBVI-A9dbca2zXPCWcY0USuM5s2vE85fU
+        - generic [ref=e1413]:
+          - generic [ref=e1418]:
+            - heading "People also search for" [level=2] [ref=e1420]
+            - generic [ref=e1422]:
+              - generic [ref=e1423]:
+                - link "Apple images iPhone" [ref=e1427] [cursor=pointer]:
+                  - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&q=Apple+images+iPhone&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ1QJ6BAg3EAE
+                - link "Apple images logo" [ref=e1441] [cursor=pointer]:
+                  - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&q=Apple+images+logo&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ1QJ6BAhLEAE
+                - link "Apple image wallpaper" [ref=e1455] [cursor=pointer]:
+                  - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&q=Apple+image+wallpaper&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ1QJ6BAhKEAE
+                - link "Apple images cartoon" [ref=e1469] [cursor=pointer]:
+                  - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&q=Apple+images+cartoon&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ1QJ6BAhEEAE
+              - generic [ref=e1480]:
+                - link "Apple images For drawing" [ref=e1484] [cursor=pointer]:
+                  - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&q=Apple+images+For+drawing&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ1QJ6BAhCEAE
+                - link "Apple image black" [ref=e1498] [cursor=pointer]:
+                  - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&q=Apple+image+black&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ1QJ6BAhBEAE
+                - link "Apple images download" [ref=e1512] [cursor=pointer]:
+                  - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&q=Apple+images+download&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ1QJ6BAg5EAE
+                - link "Download apple images free" [ref=e1526] [cursor=pointer]:
+                  - /url: /search?sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&q=Download+apple+images+free&sa=X&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ1QJ6BAg4EAE
+          - navigation [ref=e1537]:
+            - heading "Page navigation" [level=1] [ref=e1538]
+            - text: "1"
+            - link "Page 2" [ref=e1541] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=10&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8tMDegQIXxAE
+              - text: "2"
+            - link "Page 3" [ref=e1543] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=20&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8tMDegQIXxAG
+              - text: "3"
+            - link "Page 4" [ref=e1545] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=30&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8tMDegQIXxAI
+              - text: "4"
+            - link "Page 5" [ref=e1547] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=40&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8tMDegQIXxAK
+              - text: "5"
+            - link "Page 6" [ref=e1549] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=50&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8tMDegQIXxAM
+              - text: "6"
+            - link "Page 7" [ref=e1551] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=60&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8tMDegQIXxAO
+              - text: "7"
+            - link "Page 8" [ref=e1553] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=70&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8tMDegQIXxAQ
+              - text: "8"
+            - link "Page 9" [ref=e1555] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=80&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8tMDegQIXxAS
+              - text: "9"
+            - link "Page 10" [ref=e1557] [cursor=pointer]:
+              - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=90&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8tMDegQIXxAU
+              - text: "10"
+            - heading [level=2] [ref=e1559]:
+              - link "Next" [ref=e1560] [cursor=pointer]:
+                - /url: /search?q=apple+image&sca_esv=4724c275248d28cc&sxsrf=APpeQntzy0c1Ng-FZNmaHiTF0gSummBguA:1791007267934&ei=I5rAatHBOLSVseMPuOLCiAs&start=10&sa=N&sstk=AS6-VmLoClMjA8VwKeNyAoaMzbvYr0ldc7-c7cvtS8rZJ_L27x2iOWAHYYkXOnA_-YxEq1Jh_A_pAENKvIDFNJ12g7lb0Tibfl36bQ&ved=2ahUKEwiR3_r_lZ2XAxW0SmwGHTixELEQ8NMDegQIXxAW
+        - navigation
+    - contentinfo [ref=e1563]:
+      - heading "Footer links" [level=1] [ref=e1564]
+      - generic [ref=e1568]:
+        - generic [ref=e1570]:
+          - text: India
+          - generic [ref=e1572]:
+            - button "560023, Bengaluru, Karnataka - From your IP address" [ref=e1574] [cursor=pointer]:
+              - generic [ref=e1575]: 560023, Bengaluru, Karnataka
+              - generic [ref=e1577]:
+                - text: "-"
+                - generic [ref=e1578]: From your IP address
+            - text: "-"
+            - button "Update location" [ref=e1580] [cursor=pointer]
+        - generic [ref=e1583]:
+          - link "Help" [ref=e1584] [cursor=pointer]:
+            - /url: https://support.google.com/websearch/?p=ws_results_help&hl=en-IN&fg=1
+          - link "Send feedback" [ref=e1585] [cursor=pointer]:
+            - /url: "#"
+          - link "Privacy" [ref=e1586] [cursor=pointer]:
+            - /url: https://policies.google.com/privacy?hl=en-IN&fg=1
+          - link "Terms" [ref=e1587] [cursor=pointer]:
+            - /url: https://policies.google.com/terms?hl=en-IN&fg=1
