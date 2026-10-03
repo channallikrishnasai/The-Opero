@@ -45,8 +45,8 @@ CURRENT: the product ships as a Windows-first desktop application (PyQt6; PyInst
 
 ### 1.6 Primary use cases
 
-1. **Voice-first desktop operation** — "open Outlook", "what's on my screen", "summarize this page" (CURRENT: 60+ auto-discovered actions in `actions/`, Gemini Live tool dispatch in `core/tool_dispatch.py`).
-2. **Desktop perception** — explicit screen/window capture and browser context on request (CURRENT: `core/perception/`; captures are never auto-forwarded).
+1. **Voice-first desktop operation** — "open Outlook", "what's on my screen", "summarize this page" (CURRENT: 37 auto-discovered actions + 8 inline tools + 6 plugins; the live tool dispatch lives in `main.py` - `core/tool_dispatch.py` is orphaned).
+2. **Desktop perception** — explicit screen/window capture and browser context on request (PARTIAL: capture runs through `actions/screen_processor.py`; `core/perception/` has one production import plus tests; captures are never auto-forwarded).
 3. **Memory-backed conversation** — persistent preferences and notes recalled on demand (CURRENT: `memory/memory_manager.py`).
 4. **Visual explanation of objects** — "show me an apple" produces a real 3D object in the existing Three.js scene (CURRENT for the routed, asset-backed path; §6).
 5. **Structured visual reasoning** — inspection, process, causal, instructional scenes (PLANNED: schema exists in `core/visual/intent.py`; execution largely unwired; `PHASES.md` 9–12).

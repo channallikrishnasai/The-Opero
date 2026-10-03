@@ -209,7 +209,7 @@ Third‑party connections are stored separately, so no extra blocks are needed h
 ```bash
 python main.py
 ```
-The desktop HUD will appear, embedding the interactive **`site/index.html`** dashboard.
+The desktop HUD will appear, embedding the interactive **`site/web_background/index.html`** 3D background.
 
 ---
 

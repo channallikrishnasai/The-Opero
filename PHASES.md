@@ -20,7 +20,7 @@ PHASE 3  Asset Registry ──────────┼─► PHASE 4 Percepti
                                   │            (all IMPLEMENTED)         │
                                   └──────────────────────────────────────┘
                                                                       ▼
-                                              PHASE 6 Runtime stabilization ◄── NEXT
+                                              PHASE 6 Runtime stabilization ◄── DONE
                                                                       │
         ┌───────────────┬───────────────┬─────────────────────────────┤
         ▼               ▼               ▼                             ▼
@@ -50,8 +50,8 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 | Why | Nothing can be added credibly without a baseline that proves it didn't break |
 | Dependencies | none |
 | Scope | `pyproject.toml`, test suite, GitHub Actions CI, PyInstaller/NSIS packaging, docs (`README`, `CONTRIBUTING`, `docs/`) |
-| Deliverables | 208-test suite; CI matrix 3.11–3.13 (`compileall` → `ruff F821` → `pytest`); `OPERO.spec`; `installer/opero.nsi` |
-| Tests | `tests/` (33 files) green except the recorded pre-existing `test_landing_page` failure |
+| Deliverables | full test suite; CI matrix 3.11–3.13 (`compileall` → `ruff F821` → `pytest`); `OPERO.spec`; `installer/opero.nsi` |
+| Tests | `tests/` (27 files) green; the recorded `test_landing_page` failure was resolved in Phase 6B |
 | Acceptance | CI runs on push/PR; package builds are reproducible via `packaging/build-windows.ps1` |
 | Non-goals | Full lint cleanliness (owned by Phase 6); cross-platform packaging |
 | Exit criteria | ✅ met at specification time, with Phase 6 debt explicitly tracked |
@@ -150,7 +150,7 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 
 ## PHASE 6 — Runtime Stabilization
 
-**Status: IN PROGRESS — Phase 6A done (Python floor enforced at 3.11 with startup guard, README corrected, stale 3.10 `venv/` + mixed `__pycache__` purged, F821 gate green, guard tests added). Remaining: landing-page test divergence, StrEnum shim consolidation, lint policy, ARCHITECTURE §16 items**
+**Status: COMPLETE (Phase 6A + 6B)** — 6A: Python >=3.11 enforced (startup guard `core/python_guard.py`, README/pyproject/CI aligned, stale 3.10 `venv/` + mixed bytecode purged, F821 gate green, guard tests added). 6B: landing-page contract reconciled to `public/` (test + `site/README.md` + README corrected), full suite green (213/213), ARCHITECTURE/CONTRIBUTING/PRD counts and runtime claims corrected, StrEnum shims recorded as a KEEP decision, F821-only lint policy documented. **Deviations:** the stale `apple.json` asset note refresh is deferred (the registry override is tested and operative — ARCHITECTURE §16.3); StrEnum "consolidation into one module" resolved instead as keep-by-decision (§16.2); full ruff/format cleanup remains recorded deferred debt (§16.5).
 
 | | |
 |---|---|
@@ -158,11 +158,11 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 | Why | Every future phase compounds this debt; the StrEnum/stale-`.pyc` incident and the failing landing test prove instability is already costing time |
 | Dependencies | Phases 0–5 (in place) |
 | Scope | Fix `tests/test_landing_page.py` vs `netlify.toml` divergence; decide Python floor (3.11 per `pyproject` vs 3.10 shims/README) and apply consistently; document/purge `__pycache__` hazards; refresh stale `apple.json` asset note; `ruff check`/`ruff format` policy (fix or formally defer with CI gate decisions); `StrEnum` shim consolidation into one compatibility module |
-| Deliverables | Green full suite (208/208); single declared Python version across `pyproject`, README, shims; lint policy encoded in CI; `ARCHITECTURE.md` §16 items resolved or re-labeled |
+| Deliverables | Green full suite (213/213 at Phase 6B); single declared Python version across `pyproject`, README; lint policy documented (F821 gate enforced, broader debt deferred); `ARCHITECTURE.md` §16 items resolved or re-labeled |
 | Tests | Full `pytest` green; CI lint gate unchanged or tightened deliberately |
 | Acceptance | `python -m pytest tests -q` → 0 failures; no version contradictions in metadata; ruff debt plan recorded |
 | Non-goals | New features; full reformat of 160 files **unless** the phase explicitly chooses the one-time format commit |
-| Exit criteria | 208/208 tests pass; version story consistent; §16 contradictions closed; CI enforces the agreed gates |
+| Exit criteria | Full suite green (213/213 at Phase 6B); version story consistent; §16 contradictions resolved or re-labeled; CI enforces the agreed gates (F821) |
 
 ---
 
@@ -410,7 +410,7 @@ Ordering rationale: everything visual depends on 1–5 (done); **6 is the gate b
 | 3 | Asset Registry | IMPLEMENTED (`f0d498f`) |
 | 4 | Perception & Visual Routing | IMPLEMENTED (`b3edaac`, `d18e979`) |
 | 5 | Three.js Visual Bridge | IMPLEMENTED MVP (`b3affe3`) |
-| 6 | Runtime Stabilization | **NOT COMPLETE — next** |
+| 6 | Runtime Stabilization | **IMPLEMENTED (6A `05874b1` + 6B)** |
 | 7 | Face ↔ 3D Transition | PLANNED (hooks exist) |
 | 8 | Visual Director | PLANNED (role reserved) |
 | 9 | Object Inspection | PLANNED (schema partial) |

@@ -4,7 +4,7 @@
 |---|---|
 | Document | ARCHITECTURE.md (2 of 6) |
 | Status | Authoritative for CURRENT architecture |
-| Evidence rule | Every CURRENT claim verified against code at specification time (branch `abc`, HEAD `01362be`) |
+| Evidence rule | Every CURRENT claim verified against code at specification time (branch `abc`; last audited at commit `05874b1`, reconciled in Phase 6B) |
 | Labels | **CURRENT** = verified in code · **PLANNED** = specified, not implemented · **DEFERRED** = intentionally postponed |
 
 Related: `PRD.md`, `RULES.md`, `PHASES.md`, `DESIGN.md`, `MEMORY.md`.
@@ -14,27 +14,33 @@ Related: `PRD.md`, `RULES.md`, `PHASES.md`, `DESIGN.md`, `MEMORY.md`.
 ## 1. System overview
 
 ```text
-┌──────────────────── OPERO desktop process (Python 3.11+) ────────────────────┐
-│ main.py ── OperaLive (live session controller)                               │
-│   ├── core/session.py    Gemini Live (audio I/O, receive loop, reconnect)    │
-│   ├── core/gemini.py     one-shot calls                                      │
-│   ├── core/tool_dispatch.py ─ ToolDispatcher                                 │
-│   │     ├── inline tools (screen_process, save_memory, shutdown_opero, …)    │
-│   │     ├── core/action_loader.py ── actions/*.py  (TOOL dict discovery)     │
-│   │     └── core/plugin_loader.py ── plugins/*.py                            │
-│   │           └── safety: core/confirm.py · core/undo.py · core/validator.py │
-│   ├── core/visual/  router → intent → world model → assets → bridge          │
-│   ├── core/perception/  screen / windows / browser (observation only)        │
-│   └── memory/memory_manager.py  bounded, categorized recall                  │
-│                                                                              │
-│ ui/ ── OperaUI (ui/proxy.py) → MainWindow (ui/window.py, PyQt6)             │
-│   ├── HudCanvas (ui/widgets.py)  face / orb / core centrepiece               │
-│   ├── WebGLBackground (ui/widgets.py)  QWebEngineView → 3D page              │
-│   └── overlays / theme / panels                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌────────────── OPERO desktop process (Python 3.11+, enforced at startup) ───────────────┐
+│ main.py ── OperaLive (live session controller)                                         │
+│   ├── OWNS the Gemini Live session inline AND the effective dispatcher:                │
+│   │     TOOL_DECLARATIONS (main.py L325) → _execute_tool (main.py L1338, tool-call     │
+│   │     loop L1850) → inline tools / action registry / plugin registry                 │
+│   ├── core/live_reconnect.py · core/echo.py · core/viseme.py · core/wake_word.py       │
+│   ├── core/assemblyai_voice.py  (AssemblyAI path, function-level import)               │
+│   ├── core/action_loader.py ── actions/*.py  (TOOL dict discovery)                     │
+│   ├── core/plugin_loader.py ── plugins/*.py                                            │
+│   │     └── safety: core/confirm.py · core/undo.py (UI-issued, never model-forgeable)  │
+│   ├── core/visual/  router → intent → world model → assets → bridge                    │
+│   ├── core/perception/  PARTIAL — one lazy import (get_active_window) in               │
+│   │        actions/screen_processor.py; otherwise test-only                             │
+│   └── memory/memory_manager.py  bounded, categorized recall                            │
+│                                                                                        │
+│ ui/ ── OperaUI (ui/proxy.py) → MainWindow (ui/window.py, PyQt6)                        │
+│   ├── HudCanvas (ui/widgets.py)  face / orb / core centrepiece                          │
+│   ├── WebGLBackground (ui/widgets.py)  QWebEngineView → 3D page                         │
+│   └── overlays / theme / panels                                                        │
+└────────────────────────────────────────────────────────────────────────────────────────┘
         │  structured JSON visual commands (never AI-generated executable JS)
         ▼
  Three.js r128 scene (WebGL): galaxy background + window.operoVisual(cmd)
+
+ORPHANED / NOT ON CURRENT RUNTIME PATH (retained deliberately, not wired; see §3):
+ core/session.py · core/session_reconnect.py · core/tool_dispatch.py · core/stt.py ·
+ core/tts.py · core/audio_pipeline.py · core/llm_client.py · core/validator.py
 ```
 
 Two hard boundaries define the system:
@@ -64,24 +70,49 @@ Two hard boundaries define the system:
 
 ```text
 main.py                 composition root + live session (OperaLive)
+                        owns the Gemini Live session AND the effective dispatch
+                        (TOOL_DECLARATIONS L325, _execute_tool L1338)
 core/
-  session.py            Gemini Live: connect/reconnect, audio I/O, receive loop
-  gemini.py             one-shot Gemini calls
-  tool_dispatch.py      TOOL_DECLARATIONS (inline) + ToolDispatcher (file-backed)
-  action_loader.py      actions/*.py discovery: module TOOL dict → validated dispatch
-  plugin_loader.py      plugins/*.py twin of action_loader
-  confirm.py            UI-issued confirmation the model cannot forge
-  undo.py · validator.py · learned_rules.py
+  session.py            ORPHANED / NOT ON CURRENT RUNTIME PATH — Gemini Live
+                        connect/reconnect; main.py runs its own inline session
+  session_reconnect.py  ORPHANED (imported only by the orphaned session.py)
+  tool_dispatch.py      ORPHANED (imported only by session.py); its
+                        TOOL_DECLARATIONS/ToolDispatcher copy is dead — the live
+                        declarations live in main.py L325
+  gemini.py             PARTIAL — one-shot Gemini calls imported by
+                        file-processing actions (docx_tools, file_processor,
+                        pdf_tools, mobile_autopilot); not on the live-session path
+  action_loader.py      actions/*.py discovery: module TOOL dict → validated
+                        dispatch (wired: main.py L651, run at L1506)
+  plugin_loader.py      plugins/*.py twin of action_loader (wired: main.py L659)
+  validator.py          ORPHANED — imported only by tests/test_validator.py;
+                        dispatch does not invoke it (parameter contract is the
+                        Gemini function schema plus per-action checks)
+  confirm.py            UI-issued confirmation the model cannot forge (wired)
+  undo.py · learned_rules.py   wired (undo in dispatch L1408+; learned rules
+                        applied as prompt injections, main.py L296)
   voice_state.py        VoiceGate: IDLE/LISTENING/THINKING/SPEAKING + generation counter
-  stt/tts/assemblyai_voice/audio_*/wake_word/echo/viseme
-  perception/           observation-only screen/windows/browser capture
-  visual/               world_model, intent, assets, routing, bridge, concepts
+  stt.py                ORPHANED — STT is Gemini-native streaming + assemblyai_voice
+  tts.py                ORPHANED — not imported by the application
+  assemblyai_voice.py   wired (function-level import, main.py L2361/L2446)
+  audio_pipeline.py     ORPHANED
+  llm_client.py         ORPHANED (no importers)
+  echo/viseme/wake_word/hotkey/audio_devices   wired
+  perception/           PARTIAL — observation-only screen/windows/browser capture;
+                        production use = one lazy get_active_window import
+                        (actions/screen_processor.py L490), otherwise test-only
+  visual/               world_model, intent, assets, routing, bridge, concepts (wired)
   avatar.py · avatar_mesh.py · gradient_orb.py      HUD centrepieces
-  task_manager · recovery · health · boot_sentry
-actions/                60+ tool modules, each exposing a TOOL dict (auto-discovered)
-plugins/                optional capability packs (same contract)
+  task_manager · recovery · health · boot_sentry   task_manager journals every
+                        action run (action_loader); boot_sentry wired (main.py L78)
+actions/                52 modules; 37 expose a module-level TOOL dict →
+                        37 active discovered actions (measured Phase 6B)
+plugins/                6 active plugins: calendar_scheduler, calorie_counter,
+                        daily_briefing, pushup_counter, spotify_controller,
+                        upload_video (plus _template)
 memory/                 memory_manager.py (JSON categories), config_manager.py
-ui/                     PyQt6 shell (window, widgets, overlays, theme, proxy)
+ui/                     PyQt6 shell (window, widgets, overlays, theme, proxy);
+                        ui.py is a legacy re-export shim, shadowed by the ui/ package
 dashboard/              auxiliary FastAPI server · brahma_connect/ gateway
 whatsapp_bridge/        Node.js WhatsApp bridge (separate runtime)
 ```
@@ -128,7 +159,7 @@ TTS output ─► begin_speaking() ───────┘                     
 - **`core/voice_state.py` — `VoiceGate`**: the single gate between OPERO's speakers and its mic. States `IDLE / LISTENING / THINKING / SPEAKING`. Speech beginning bumps a **generation counter**; anything captured under an older generation is stale and rejected — this kills the TTS self-hearing loop even when a transcript lands after the acoustic tail (`tests/test_voice_state.py`, `tests/test_echo.py`).
 - Wake word (`core/wake_word.py`), hotkey (`core/hotkey.py`), mute → `MUTED` state (`ui/window.py` L2936).
 - STT: Gemini-native streaming plus AssemblyAI path (`core/assemblyai_voice.py`, optional extra `voice`).
-- TTS: `core/tts.py`; visemes/transcripts drive the avatar mouth (`core/viseme.py`; `main.py` L585).
+- TTS: Gemini Live native session audio — the receive loop drives playback and the viseme stream (`main.py` L585); `core/tts.py` (Edge/ElevenLabs engines) exists but is **ORPHANED — not imported by the application**; visemes/transcripts drive the avatar mouth (`core/viseme.py`).
 - Barge-in interruption, microphone lifecycle, and generation handling are gate concerns — authoritative rules in `RULES.md` §6.
 
 ---
@@ -136,24 +167,30 @@ TTS output ─► begin_speaking() ───────┘                     
 ## 6. Action architecture — CURRENT
 
 ```text
-Gemini function call
+Gemini function call (main.py L1850–1854)
       ↓
-core/tool_dispatch.py  (ToolDispatcher)
+main.py _execute_tool (L1338)   ← the effective dispatcher (CURRENT)
       ↓
-inline TOOL_DECLARATIONS ── or ── discovered actions/*.py / plugins/*.py
+search guard / visual routing first (core/visual/routing.py, main.py L1350+)
       ↓
-validation (core/validator.py) + learned rules (core/learned_rules.py)
+inline TOOL_DECLARATIONS (main.py L325)
+   ── or ── action registry run (core/action_loader → actions/*.py,
+              main.py L1500–1506; journals via core/task_manager)
+   ── or ── plugin registry run (core/plugin_loader → plugins/*.py,
+              main.py L1518–1521)
       ↓
 safety / confirmation (core/confirm.py)  ← token issued by the UI, never the model
       ↓
-execution (handler) ── undo stack (core/undo.py) ── task manager / recovery
+execution (handler) ── undo stack (core/undo.py)
       ↓
-structured result back to the session + activity log
+structured FunctionResponse back to the session + activity log
 ```
+
+- **`core/tool_dispatch.py` (ToolDispatcher) is ORPHANED / NOT ON CURRENT RUNTIME PATH** — imported only by the orphaned `core/session.py`; the live declarations and dispatch live in `main.py` (L325, L1338). Parameter validation is the Gemini function schema plus per-action checks — `core/validator.py` is imported only by its test. Learned rules (`core/learned_rules.py`) are applied as prompt injections (`main.py` L296), not as dispatch-time validation.
 
 - **Confirmation design** (`core/confirm.py`): an action calls `request(...)`; the module hands the UI a CONFIRM/CANCEL banner and returns immediately; only the user's CONFIRM runs the stored callable. The model never sees a token, so it cannot forge one. Reversible operations should use `undo` instead of asking.
 - Confirmation is actively used (CURRENT: `actions/computer_settings.py`, `actions/gmail.py`, `actions/instagram_messaging.py`, …).
-- **The visual path never enters this pipeline**: for `SEARCH_GUARD_TOOLS`, visual routing happens *before* dispatch (`main.py` L1347+), and renderer commands have no side effects outside the 3D scene.
+- **The visual path never enters this pipeline**: for `SEARCH_GUARD_TOOLS`, visual routing happens *before* dispatch (`main.py` L1350+), and renderer commands have no side effects outside the 3D scene.
 
 ---
 
@@ -181,7 +218,7 @@ Qt transport (proxy → window → widgets.execute_visual)
 Three.js (site/web_background/index.html)     GLTFLoader → scene object; structured result dict
 ```
 
-Integration points (CURRENT): `main.py` L560–566 builds `VisualBridge(_visual_router.world, _visual_router.registry, ui.set_visual_command)` and registers bundled assets; `main.py` L1347–1380 intercepts search-tool calls that name a visual concept and executes the bridge instead.
+Integration points (CURRENT): `main.py` L560–566 builds `VisualBridge(_visual_router.world, _visual_router.registry, ui.set_visual_command)` and registers bundled assets; `main.py` L1350–1380 intercepts search-tool calls that name a visual concept and executes the bridge instead.
 
 ### 7.2 Visual Intent — CURRENT
 
@@ -268,6 +305,7 @@ Success shape: `{success:true, action, entity_id?, asset_id?}`.
 - **SHOW ordering:** asset resolved **first** — a failed SHOW leaves no orphan entity; then entity create/reuse, `set_visible(True)`, command `{action, entity, asset, transform, data_base64}`.
 - **GLB transport:** asset bytes travel base64-encoded on SHOW only (one object, ~72 KB; bridge comment: switch to a file-URL fetch past ~500 KB — ponytail note with a known ceiling).
 - **Renderer validation:** JS side (`window.operoVisual`) returns structured `visualFail(...)` dicts for invalid commands, unknown entities, and unsupported actions; `window.__operoVisualReady` signals readiness.
+- **Verification status:** the bridge chain is covered by `tests/test_visual_bridge.py` (transport, ordering, failure shapes); actual on-screen rendering of the apple GLB is **NOT RUNTIME VERIFIED** (§16.8).
 
 ### 7.8 Semantic representation — PLANNED (constraint is CURRENT)
 
@@ -298,9 +336,11 @@ Nothing named "Visual Director" exists in the codebase today.
 
 ---
 
-## 8. Perception architecture — CURRENT
+## 8. Perception architecture — PARTIAL
 
 `core/perception/` — **observation only**:
+
+> **Runtime status:** NOT on the live-session path. The only production importer is a single lazy `from core.perception import get_active_window` inside `actions/screen_processor.py` (L490); `main.py`'s screen/camera capture (`_capture_screenshot`, `_capture_camera`) uses PIL/mss directly. Everything else is exercised by `tests/test_perception.py` / `tests/test_screen_capture.py` only.
 
 | Module | Capability |
 |---|---|
@@ -311,7 +351,7 @@ Nothing named "Visual Director" exists in the codebase today.
 
 Standing constraints (module docstring, tested by `tests/test_perception.py`, `tests/test_screen_capture.py`): nothing polls, caches, or auto-forwards captures; captures happen only when explicitly called; browser/app control stays in the action engine behind its existing confirmation gates.
 
-The older capture tool (`screen_process` inline tool in `tool_dispatch.py`) remains the Gemini-facing path — it sends the image **for that call only**.
+The older capture tool (`screen_process` inline tool in `main.py`'s `TOOL_DECLARATIONS`, L345) remains the Gemini-facing path — it sends the image **for that call only**.
 
 ---
 
@@ -413,7 +453,7 @@ Rules at the boundary:
 | PyInstaller | `OPERO.spec`; hooks `hooks/rthook_opero_qt.py`; `core/installer.py` |
 | Windows installer | `installer/opero.nsi` (NSIS); `packaging/build-windows.ps1`, `packaging/publish-release.ps1` |
 | Setup script | `setup.py` |
-| Runtime hardening | `core/patches.py` (CREATE_NO_WINDOW subprocess patch, code-page handling); Qt DLL search-path pinning (commit history) |
+| Runtime hardening | `core/patches.py` (Python >=3.11 startup guard via `core/python_guard.py`, CREATE_NO_WINDOW subprocess patch, code-page handling); Qt DLL search-path pinning (commit history) |
 
 ---
 
@@ -422,9 +462,9 @@ Rules at the boundary:
 | Piece | Detail |
 |---|---|
 | Runner | `pytest` (`testpaths = ["tests"]` in `pyproject.toml`) |
-| Suite | 208 tests across 33 files; visual suite covers world model, intent, assets, routing, bridge (~73 tests); plus perception, voice/echo, memory, confirm, dispatch loaders, recovery |
-| CI | `.github/workflows/ci.yml`: Python **3.11/3.12/3.13** matrix → `pip install -e ".[dev]"` → `python -m compileall` → `ruff check . --select F821` → `pytest tests -q` |
-| Lint scope | CI enforces **F821 (undefined names) only**; full `ruff check` currently reports ~1,849 pre-existing findings; `ruff format --check` reports 160 files would reformat — neither is enforced by CI today (see §16) |
+| Suite | 213 tests across 27 files (measured Phase 6B); visual suite covers world model, intent, assets, routing, bridge (76 tests); plus perception, voice/echo, memory, confirm, dispatch loaders, recovery, Python guard |
+| CI | `.github/workflows/ci.yml`: Python **3.11/3.12/3.13** matrix → `pip install -e ".[dev]"` → `python -m compileall` → `ruff check . --select F821` → `pytest tests -q` — F821 gate **GREEN (0 findings)** since Phase 6A |
+| Lint scope | CI enforces **F821 (undefined names) only** — deliberate policy, currently passing. Full `ruff check` reports 1,844 pre-existing findings (measured after Phase 6A); `ruff format --check` reports 160 files would reformat. Neither is enforced by CI; the broader cleanup is deferred technical debt (`PHASES.md` 6, §16.5), not a passing gate |
 | JS checks | No automated JS test harness; `node --check` passes for `whatsapp_bridge/bridge.js` and `_site_verify.cjs`; the Three.js page has an in-page `diagnostics` object |
 
 ---
@@ -433,9 +473,12 @@ Rules at the boundary:
 
 Recorded so no document pretends they don't exist:
 
-1. **Failing test (pre-existing):** `tests/test_landing_page.py` expects `netlify.toml` `publish = "site"`; the config publishes `public`. 207/208 tests pass; this one fails on a clean tree.
-2. **Python version mismatch:** `pyproject.toml` declares `requires-python >=3.11` and CI tests 3.11–3.13, yet `README.md` badges say "Python 3.10+", the dev venv may be 3.10, and several modules carry **Python 3.10 `StrEnum` shims** (`core/visual/assets.py`, `core/visual/intent.py`, `core/voice_state.py`). Runtime support for 3.10 is therefore accidental, not specified.
-3. **Stale concept metadata:** `data/visual_world/concepts/apple.json` says "No real 3D asset is bundled yet" although `apple.glb` exists and is registered (the registry override is what runs).
+1. **RESOLVED (Phase 6B) — landing-page contract:** repository evidence (deliberate commit `b6b791c` "publish public via Netlify" + subsequent feature commits to `public/`) shows `public/` is the intended Netlify deployment directory; `site/` is the retained original landing page and the desktop HUD's asset home. `tests/test_landing_page.py` now asserts the current contract (`publish = "public"`); the full suite is green (213/213).
+2. **RESOLVED (Phase 6A) — Python version story:** `pyproject.toml`, CI, and `README.md` all state >=3.11; a startup guard (`core/python_guard.py`, invoked from `core/patches.py` before any project module) rejects older interpreters with a clear message (proven against a real Python 3.10.11 interpreter); the stale 3.10 `venv/` and mixed `__pycache__` bytecode were removed. The Python 3.10 crash class (observed in `FATAL_CRASH.log` as a deep `asyncio` `TaskGroup` traceback) is closed.
+   **StrEnum decision (Phase 6B): KEEP the three shims** (`core/visual/assets.py`, `core/visual/intent.py`, `core/voice_state.py`). They subclass `str, Enum` and differ from stdlib `enum.StrEnum` in `str()`/format output (class-qualified vs value); all current usage is identity comparison (`.is`), `.value` reads, and dict keys — removal would change observable stringification for zero functional gain. Harmless compatibility debt, intentionally retained.
+3. **Stale concept metadata:** `data/visual_world/concepts/apple.json` says "No real 3D asset is bundled yet" although `apple.glb` exists and is registered (the registry override is what runs, and is tested). Data-file refresh deferred; harmless because the registry wins.
 4. **Schema ahead of execution:** intent modes/actions/camera/animation enums outnumber the 6 wired bridge actions and 6 JS-handled commands.
-5. **Lint/format debt:** ~1,849 ruff findings and 160 unformatted files (CI does not gate them; `PHASES.md` 6 owns the cleanup decision).
-6. **Branch state:** local branch `abc` (HEAD `01362be`) is ahead of `origin/main` (`c1206fa`) by the seven visual-phase commits + one; push policy is "never push unless explicitly requested" (`RULES.md` §7 rule 10).
+5. **Lint/format debt (deferred by policy):** 1,844 ruff findings and 160 unformatted files remain (measured after Phase 6A); CI deliberately gates F821 only. Full lint/format cleanup is separate technical debt (`PHASES.md` 6) — "ruff passes" means "the F821 gate passes", not a clean full run.
+6. **Branch state:** local branch `abc` is ahead of `origin/main` (`c1206fa`) by the unpushed phase history — 10 commits measured during Phase 6B, plus this documentation commit; 0 behind. Push policy is "never push unless explicitly requested" (`RULES.md` §7 rule 10).
+7. **Orphaned modules (retained deliberately):** `core/session.py`, `core/session_reconnect.py`, `core/tool_dispatch.py`, `core/stt.py`, `core/tts.py`, `core/audio_pipeline.py`, `core/llm_client.py`, `core/validator.py` are imported by nothing on the live path (session/tool_dispatch only import each other; validator is test-only). `core/perception/` is PARTIAL (one lazy import). `main.py` owns the live Gemini session and dispatch. Do NOT read the §3 tree entries for these as active — wiring/migration requires a separate architectural decision phase (PHASES.md).
+8. **Apple GLB rendering: NOT RUNTIME VERIFIED.** The chain (router → intent → world model → registry → bridge → `window.operoVisual` GLB load) is covered by tests (`tests/test_visual_bridge.py` et al.), but no on-screen rendering has been verified in a live session. Interactive visual verification remains open.

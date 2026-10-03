@@ -6,19 +6,19 @@ Thank you for your interest in contributing to Opero! This guide will help you g
 
 ```
 opero/
-├── main.py              # Entry point, OperaLive session manager, audio pipeline
-├── ui.py                # PyQt6 UI: MainWindow, all overlays, OperaUI wrapper
+├── main.py              # Entry point, OperaLive session manager, live Gemini session + tool dispatch
+├── ui/                  # PyQt6 UI package: window.py (MainWindow), widgets.py, overlays.py, theme.py, proxy.py (OperaUI); ui.py is a legacy re-export shim, shadowed by the package
 ├── core/
-│   ├── gemini.py        # Gemini Live API client with model fallback ladder
-│   ├── llm_client.py    # Local LLM support (Ollama, OpenAI-compatible)
-│   ├── action_loader.py # Discovers and dispatches tool calls from the LLM
+│   ├── gemini.py        # One-shot Gemini calls (used by file-processing actions)
+│   ├── llm_client.py    # Local LLM support (Ollama, OpenAI-compatible) — ORPHANED, not imported
+│   ├── action_loader.py # Discovers actions/*.py and dispatches their handlers
 │   ├── echo.py          # Content-based echo cancellation
 │   ├── viseme.py        # Lip-sync viseme generation
-│   ├── tts.py           # Multi-engine TTS (EdgeTTS, Kokoro, ElevenLabs)
-│   ├── stt.py           # Multi-engine STT (Whisper, Vosk)
+│   ├── tts.py           # Multi-engine TTS (EdgeTTS, Kokoro, ElevenLabs) — ORPHANED; runtime speech is Gemini-native
+│   ├── stt.py           # Multi-engine STT (Whisper, Vosk) — ORPHANED; runtime STT is Gemini-native + AssemblyAI
 │   ├── wake_word.py     # Local "Hey opero" wake word detection
 │   ├── confirm.py       # Human confirmation gate for destructive actions
-│   ├── validator.py     # Input validation for tool parameters
+│   ├── validator.py     # Input validation for tool parameters — ORPHANED (test-only)
 │   ├── logger.py        # Centralized logging configuration
 │   ├── installer.py     # Auto-dependency installer
 │   ├── avatar.py        # Avatar rendering (holographic orb)
@@ -26,8 +26,8 @@ opero/
 ├── actions/             # Self-registering tool modules (TOOL dict pattern)
 │   ├── browser_control.py
 │   ├── send_message.py
-│   ├── file_ops.py
-│   └── ...              # 21+ action modules
+│   ├── screen_processor.py
+│   └── ...              # 52 modules; 37 expose a TOOL dict → 37 active discovered actions
 ├── memory/
 │   ├── config_manager.py   # Settings persistence (JSON + AES encryption)
 │   └── memory_manager.py   # Long-term memory with search
@@ -42,19 +42,18 @@ opero/
 ## Key Design Patterns
 
 ### Tool Registration
-Every action module self-registers via a `TOOL` dict:
+Every action module exposes a module-level `TOOL` dict — the loader rejects the file if any required key is missing:
 ```python
+def execute(params: dict) -> str:
+    # params arrive from Gemini's function call; validate what matters to you
+    ...
+
 TOOL = {
     "name": "my_action",
-    "description": "What this tool does",
-    "parameters": { ... },  # JSON Schema
+    "description": "What this tool does",                              # what Gemini reads to route
+    "parameters": {"type": "OBJECT", "properties": { ... }},           # Gemini function-declaration schema
+    "handler": execute,                                                # required callable
 }
-
-VALIDATOR = { ... }  # Input validation rules (optional but recommended)
-
-def execute(params: dict) -> str:
-    # params are pre-validated by the dispatcher
-    ...
 ```
 
 ### Logging
@@ -93,15 +92,16 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 
 # Lint and type-check
-ruff check .
+ruff check . --select F821   # the enforced CI gate — must stay clean
+ruff check .                 # full run: known debt (~1,844 findings), not CI-enforced
 mypy .
 ```
 
 ## Adding a New Action
 
 1. Create `actions/my_action.py`
-2. Define `TOOL` dict and `VALIDATOR` dict
-3. Implement the `execute(params)` function
+2. Define the `TOOL` dict (`name`, `description`, `parameters`, `handler`)
+3. Implement the handler function referenced by `TOOL["handler"]`
 4. Add tests in `tests/test_my_action.py`
 5. The action is auto-discovered on next startup
 
