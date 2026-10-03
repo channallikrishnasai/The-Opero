@@ -44,7 +44,7 @@ class AssemblyAIVoice:
     @staticmethod
     def validate_configuration() -> str | None:
         if not get_assemblyai_key():
-            return "AssemblyAI API key is missing. Add it in Configure before switching."
+            return "AssemblyAI API key is missing. Add it in the API KEYS panel before switching."
         try:
             import assemblyai as aai
         except ImportError:

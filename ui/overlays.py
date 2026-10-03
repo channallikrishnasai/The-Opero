@@ -1793,20 +1793,26 @@ class APIKeysOverlay(QWidget):
     def _load_keys(self):
         """Load current API keys from config."""
         try:
-            cfg = json.loads(API_FILE.read_text(encoding="utf-8"))
+            cfg = json.loads(API_FILE.read_text(encoding="utf-8-sig"))
             self._gemini_input.setText(cfg.get("gemini_api_key", ""))
             self._aai_input.setText(cfg.get("assemblyai_api_key", ""))
         except Exception:
             pass
 
     def _save(self):
-        """Save API keys to config."""
+        """Save API keys to config. A blank field keeps the stored value —
+        an empty box must never erase a working key."""
         try:
+            from memory.config_manager import clean_key
             cfg = {}
             if API_FILE.exists():
-                cfg = json.loads(API_FILE.read_text(encoding="utf-8"))
-            cfg["gemini_api_key"] = self._gemini_input.text().strip()
-            cfg["assemblyai_api_key"] = self._aai_input.text().strip()
+                cfg = json.loads(API_FILE.read_text(encoding="utf-8-sig"))
+            gem = clean_key(self._gemini_input.text())
+            aai = clean_key(self._aai_input.text())
+            if gem:
+                cfg["gemini_api_key"] = gem
+            if aai:
+                cfg["assemblyai_api_key"] = aai
             API_FILE.write_text(json.dumps(cfg, indent=4), encoding="utf-8")
             self._saved.emit()
             self.hide()

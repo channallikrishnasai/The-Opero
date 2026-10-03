@@ -38,14 +38,36 @@ def save_api_keys(gemini_api_key: str) -> None:
         encoding="utf-8"
     )
 
+
+def save_setup_config(gemini_api_key: str, os_name: str) -> None:
+    """Merge the first-boot/reconfigure overlay's values into the stored
+    config. This is a read-modify-write on purpose: the overlay used to
+    rewrite the whole file with just these two fields, silently erasing the
+    AssemblyAI key (and every other setting) each time it ran."""
+    key = clean_key(gemini_api_key)
+    if not key:
+        return
+    _patch_config(gemini_api_key=key, os_system=str(os_name or ""))
+
+
 def load_api_keys() -> dict:
     if not CONFIG_FILE.exists():
         return {}
     try:
-        return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        # utf-8-sig also accepts a BOM-prefixed file: a BOM makes a plain
+        # utf-8 read raise, which surfaced as "key is missing" for a stored key.
+        return json.loads(CONFIG_FILE.read_text(encoding="utf-8-sig"))
     except Exception as e:
         log.error(f"❌ Failed to load api_keys.json: {e}")
         return {}
+
+def clean_key(value) -> str:
+    """Normalise a pasted API key: trim whitespace and one pair of wrapping
+    quotes. Used on save and on read so either path delivers the same value."""
+    v = str(value or "").strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+        v = v[1:-1].strip()
+    return v
 
 def get_gemini_key() -> str | None:
     return load_api_keys().get("gemini_api_key")
@@ -469,8 +491,12 @@ def save_voice_engine(engine: str) -> None:
 
 def get_assemblyai_key() -> str | None:
     """AssemblyAI API key (required only when voice_engine == 'assemblyai')."""
-    return (load_api_keys().get("assemblyai_api_key") or "").strip() or None
+    return clean_key(load_api_keys().get("assemblyai_api_key")) or None
 
 
 def save_assemblyai_key(key: str) -> None:
-    _patch_config(assemblyai_api_key=(key or "").strip())
+    """Persist the AssemblyAI key. Empty input is rejected: a blank field
+    must never overwrite a working key with nothing."""
+    v = clean_key(key)
+    if v:
+        _patch_config(assemblyai_api_key=v)

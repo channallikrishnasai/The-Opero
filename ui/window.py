@@ -63,7 +63,7 @@ API_FILE   = CONFIG_DIR / "api_keys.json"
 def _read_full_config() -> dict:
     """Read api_keys.json config dict. Returns {} on any error."""
     try:
-        return json.loads(API_FILE.read_text(encoding="utf-8"))
+        return json.loads(API_FILE.read_text(encoding="utf-8-sig"))
     except Exception:
         return {}
 
@@ -3045,11 +3045,10 @@ class MainWindow(QMainWindow):
         self._overlay = ov
 
     def _on_setup_done(self, key: str, os_name: str):
-        os.makedirs(CONFIG_DIR, exist_ok=True)
-        API_FILE.write_text(
-            json.dumps({"gemini_api_key": key, "os_system": os_name}, indent=4),
-            encoding="utf-8",
-        )
+        # Merge, never overwrite: a full rewrite here erased the stored
+        # AssemblyAI key (and every other setting) on each reconfigure.
+        from memory.config_manager import save_setup_config
+        save_setup_config(key, os_name)
         self._ready = True
         if self._overlay:
             self._overlay.hide()

@@ -766,7 +766,7 @@ TOOL = {
             "monitor": {"type": "NUMBER", "description": "Monitor index for anchors without a window (default 0 = primary)."},
             "dx": {"type": "NUMBER", "description": "Relative mouse move: X delta (move_relative)."},
             "dy": {"type": "NUMBER", "description": "Relative mouse move: Y delta (move_relative)."},
-            "points": {"type": "ARRAY", "description": "Waypoints [[x,y], …] for move_path."},
+            "points": {"type": "ARRAY", "items": {"type": "ARRAY", "items": {"type": "NUMBER"}}, "description": "Waypoints [[x,y], …] for move_path."},
             "duration": {"type": "NUMBER", "description": "Seconds for move/drag/move_path (smooth tween; default 0.3)."},
             "ease": {"type": "STRING", "description": "ease_out (default) | ease_in | ease_in_out | linear."},
             "x1": {"type": "NUMBER", "description": "Drag start X."},

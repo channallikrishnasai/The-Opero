@@ -309,6 +309,18 @@ _CTRL_RE = re.compile(r"<ctrl\d+>", re.IGNORECASE)
 _REPEAT_MIN = 12
 
 
+def _is_api_key_error(err: str) -> bool:
+    """True only when the server itself says the credential is at fault.
+
+    Transport failures must not land here: a WebSocket 1007 close means the
+    payload was rejected as malformed (e.g. a bad tool schema), and matching
+    it used to read as "invalid key", show the reconfigure overlay, and wipe
+    the saved config — including the AssemblyAI key — on every retry.
+    """
+    return ("API key not valid" in err
+            or "No API key was provided" in err)
+
+
 def _is_repeat_chunk(txt: str, buf: list) -> bool:
     """True if this transcript chunk has already been seen this turn.
 
@@ -412,7 +424,7 @@ TOOL_DECLARATIONS = [
                 "kind": {"type": "STRING", "description": "file | folder | tab | url | application | window"},
                 "id": {"type": "STRING", "description": "Resource identifier (path, URL, title)."},
                 "label": {"type": "STRING", "description": "Human-readable name for the resource."},
-                "items": {"type": "ARRAY", "description": "For results: the labels returned by the last tool, in order."},
+                "items": {"type": "ARRAY", "items": {"type": "STRING"}, "description": "For results: the labels returned by the last tool, in order."},
             },
             "required": [],
         },
@@ -2760,8 +2772,7 @@ class OperaLive:
                     continue
 
                 # Invalid API key — stop hammering the API, prompt re-configuration
-                if ("API key not valid" in err_str or "1007" in err_str
-                        or "No API key was provided" in err_str):
+                if _is_api_key_error(err_str):
                     self.ui.write_log("ERR: API key invalid — please re-enter your key.")
                     self.ui.set_state("SLEEPING")
                     self.ui.prompt_reconfig()
