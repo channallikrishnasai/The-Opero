@@ -13,11 +13,16 @@ import threading
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass, field, fields, replace
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 from typing import Any, TypeVar
 
 from .concepts import Concept, UnknownConceptError, VisualWorldError, load_concepts
+
+# Python 3.10 compatible StrEnum implementation
+class StrEnum(str, Enum):
+    """String enum base class for Python 3.10 compatibility."""
+    pass
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 

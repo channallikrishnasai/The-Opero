@@ -18,7 +18,12 @@ a transcript lands after the acoustic tail has expired.
 import threading
 import time
 from collections.abc import Callable
-from enum import StrEnum
+from enum import Enum
+
+# Python 3.10 compatible StrEnum implementation
+class StrEnum(str, Enum):
+    """String enum base class for Python 3.10 compatibility."""
+    pass
 
 
 class VoiceState(StrEnum):

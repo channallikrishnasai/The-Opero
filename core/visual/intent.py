@@ -9,11 +9,16 @@ decides HOW to execute an intent; the World Model owns WHAT currently exists.
 import json
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
-from enum import StrEnum
+from enum import Enum
 from typing import Any, TypeVar
 
 from .concepts import VisualWorldError
 from .world_model import UnknownEntityError, VisualWorldModel
+
+# Python 3.10 compatible StrEnum implementation
+class StrEnum(str, Enum):
+    """String enum base class for Python 3.10 compatibility."""
+    pass
 
 
 class IntentValidationError(VisualWorldError):

@@ -180,7 +180,7 @@ git clone https://github.com/channallikrishnasai/The-Opero.git
 cd The-Opero
 
 # (Optional) create a virtual env
-python -m venv venv && .\venv\Scripts\activate
+python -m venv venv; .\venv\Scripts\Activate.ps1
 
 # Install dependencies
 pip install -r requirements.txt

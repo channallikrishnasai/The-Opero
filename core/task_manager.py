@@ -9,8 +9,13 @@ import threading
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
-from enum import StrEnum
+from enum import Enum
 from typing import Any
+
+# Python 3.10 compatible StrEnum implementation
+class StrEnum(str, Enum):
+    """String enum base class for Python 3.10 compatibility."""
+    pass
 
 
 class TaskState(StrEnum):
